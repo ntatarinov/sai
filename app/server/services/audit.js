@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import {
+  currentAppRole,
   insertAudit,
   lastAuditHash,
   lockChain,
@@ -151,6 +152,11 @@ function check(entry) {
  */
 export async function appendAudit(q, entry, ctx) {
   check(entry);
+  // Only in a platform transaction (decisions/0137 Addition 4, SEC F1): under tenant settings the last hash
+  // is not visible, so the row would restart the chain from 64 zeros. A tenant route audits before its
+  // switch to tenant settings. The throw is a program error: the request rolls back, no row is written.
+  if ((await currentAppRole(q)) !== "platform")
+    throw new TypeError("audit: the writer runs only under platform settings");
   await lockChain(q);
   const id = await nextAuditId(q);
   const prev = (await lastAuditHash(q)) ?? ZERO_HASH;

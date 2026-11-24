@@ -7,7 +7,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 // reads the e-mail and the password in-process from the secret file named by SAI_UAT_IDENTITY_FILE, signs in
 // at <origin>, writes one session-state file of the browser kit at <file> (mode 0600, never over an existing
 // file) and prints only its path. Each refusal is exit 1 with one line on stderr, and no file is written. The
-// secret file must be a regular file outside the repository that only its owner can read; on Windows the
+// secret file must be a regular file outside the repository that only its owner can read, opened once without
+// following a link and checked and read on that descriptor; on Windows the
 // mode cannot be checked, so the script refuses there (fail closed, decisions/0137 О4). It starts no other
 // process and reads no keychain.
 
@@ -156,13 +157,38 @@ export async function run({
     return refuse(
       "file permissions cannot be checked on Windows; run it on Linux or macOS",
     );
-  if ((st.mode & 0o077) !== 0)
-    return refuse("the identity file can be read by group or others");
+  // One open that refuses a link (a file swapped for a link after the lstat above), then the checks and the
+  // read on that descriptor only (decisions/0137 Addition 4, SEC F3).
+  /** @type {number} */
+  let fd;
+  try {
+    fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+  } catch (err) {
+    return refuse(
+      /** @type {NodeJS.ErrnoException} */ (err).code === "ELOOP"
+        ? "the identity file is a symbolic link"
+        : "the identity file is missing",
+    );
+  }
+  /** @type {string} */
+  let text;
+  try {
+    const opened = fs.fstatSync(fd);
+    if (!opened.isFile())
+      return refuse("the identity file is not a regular file");
+    if ((opened.mode & 0o077) !== 0)
+      return refuse("the identity file can be read by group or others");
+    text = fs.readFileSync(fd, "utf8");
+  } catch {
+    return refuse("the identity file is not readable");
+  } finally {
+    fs.closeSync(fd);
+  }
 
   /** @type {{ email: string, password: string }} */
   let identity;
   try {
-    const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
+    const parsed = JSON.parse(text);
     const keys =
       parsed && typeof parsed === "object" && !Array.isArray(parsed)
         ? Object.keys(parsed).sort()

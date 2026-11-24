@@ -16,6 +16,31 @@ export const LIMITS = Object.freeze({
   user: { windowMs: 10 * 60 * 1000, max: 600 },
 });
 
+/**
+ * The address part of a limit key (decisions/0137 Addition 4, SEC F2): an IPv4 address whole, an IPv6 address
+ * by its /64 prefix (one ordinary IPv6 client holds a whole /64), any other text ("unknown") as it is. The
+ * address is the normalised text of http/client-ip.js (an IPv4-mapped address is already IPv4).
+ * @param {string} ip
+ * @returns {string}
+ */
+export function addressKey(ip) {
+  if (!ip.includes(":")) return ip;
+  const halves = ip.split("::");
+  /** @param {string} half */
+  const groups = (half) =>
+    half === ""
+      ? []
+      : half.split(":").flatMap((g) => (g.includes(".") ? ["0", "0"] : [g]));
+  const head = groups(halves[0]);
+  const tail = halves.length === 2 ? groups(halves[1]) : [];
+  const fill = Array.from({ length: 8 - head.length - tail.length }, () => "0");
+  const all = halves.length === 2 ? [...head, ...fill, ...tail] : head;
+  return `${all
+    .slice(0, 4)
+    .map((g) => g.replace(/^0+(?=.)/, ""))
+    .join(":")}::/64`;
+}
+
 /** The share of pipeline requests that run the lazy cleanup. */
 export const CLEANUP_SHARE = 0.01;
 
@@ -30,9 +55,10 @@ export const CLEANUP_SHARE = 0.01;
 export async function countRequest(q, mac, limit, subject, now) {
   const { windowMs, max } = LIMITS[limit];
   const windowStart = Math.floor(now / windowMs) * windowMs;
+  const key = limit === "user" ? subject : addressKey(subject);
   const count = await bumpRate(
     q,
-    mac("rl", `${limit}\u0000${subject}`),
+    mac("rl", `${limit}\u0000${key}`),
     windowStart,
   );
   if (count > max)

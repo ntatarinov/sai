@@ -1,0 +1,116 @@
+{
+  "handoff_id": "step02b-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "02b",
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/M2AUTH-20261123-01/step-02b-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114",
+      "REQ-115",
+      "REQ-120"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M2AUTH-20261123-01/step-03-security-reviewer.json (PASS; F1-F5)",
+      "handoffs/M2AUTH-20261123-01/step-04-reviewer.json (FAIL; F1 blocking)",
+      "decisions/0137 Addition 4 (what to fix and how)"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "rework_of": "handoffs/M2AUTH-20261123-01/step-02-backend-dev.json",
+    "write_set": [
+      ".github/workflows/app.yml",
+      "app/server/services/audit.js",
+      "app/server/http/rate-limit.js and app/server/routes/auth.js (only for the IPv6 /64 key and the reset codes on a password change)",
+      "app/server/db/auth-store.js (only if the reset deletion needs a statement there)",
+      "app/scripts/uat-login.js",
+      "docs/design/M2AUTH-accounts-tenancy-backup.md (ONLY the named residual of SEC F4 and one line per fix in its section 19 table, so the tests of step 5 have a design line to follow)",
+      "handoffs/M2AUTH-20261123-01/step-02b-backend-dev.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 2 rework 02b, BACKEND-DEV: fix exactly the six items of decisions/0137 Addition 4 (REVIEWER F1; SEC F1, F2, F3, F5; SEC F4 named in the design) in the files of the write set, nothing else. Prove each on your copy under <scratch> (the do-block runs on PGlite with $do$ quoting and raises on an empty table; appendAudit under tenant settings throws and writes nothing; two IPv6 addresses of one /64 share a limit key; uat-login refuses a link swapped after lstat; a password change leaves no unused reset code). prettier, eslint and tsc on the changed files. Verify traces 0, handoffs-check 0. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-24T01:14:53Z",
+  "started_at": "2026-11-24T01:14:54Z",
+  "completed_at": "2026-11-24T01:20:47Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework 02b: the six items of decisions/0137 Addition 4 are fixed on top of 2f267d1, nothing else. REVIEWER F1: the do block of the rehearsal step 14 is quoted $do$ … $do$ (cause: a String.prototype.replace in my edit script turned $$ into $). SEC F1: appendAudit throws TypeError before the chain lock unless app.role is platform. SEC F2: rate-limit and admin-delay keys use addressKey(ip): IPv4 whole, IPv6 by /64. SEC F3: uat-login opens the secret file with O_RDONLY|O_NOFOLLOW, checks fstat on the descriptor and reads from it. SEC F5: a password change deletes the user's unused reset codes. SEC F4: named residual row in design section 7; section 19 has one line per fix. Each item probed on the copy under <scratch>.",
+    "changes": [
+      {
+        "file": ".github/workflows/app.yml",
+        "remark": "REVIEWER F1",
+        "text": "step «Every table of B has a row»: `do $do$ … end $do$` in the one psql -c with ON_ERROR_STOP; nothing else in the file changed."
+      },
+      {
+        "file": "app/server/services/audit.js, app/server/db/audit-store.js",
+        "remark": "SEC F1",
+        "text": "audit-store.js: currentAppRole(q) (select coalesce(current_setting('app.role', true), '')); appendAudit checks it after the entry check and before lockChain, and throws TypeError «audit: the writer runs only under platform settings» otherwise."
+      },
+      {
+        "file": "app/server/http/rate-limit.js, app/server/routes/auth.js",
+        "remark": "SEC F2",
+        "text": "rate-limit.js: addressKey(ip) (IPv4 whole, IPv6 expanded and cut to its first four groups `a:b:c:d::/64`, other text as is); countRequest uses it for the setup, login and reset limits (the user limit stays keyed by the session id); auth.js: the admin delay key is mac(\"delay\", addressKey(ip or \"unknown\")). ip_hmac columns keep the whole address."
+      },
+      {
+        "file": "app/scripts/uat-login.js",
+        "remark": "SEC F3",
+        "text": "after the lstat checks and the win32 refusal: fs.openSync(file, O_RDONLY | O_NOFOLLOW) (ELOOP → «the identity file is a symbolic link»), fstatSync on that descriptor for the regular-file and mode checks, readFileSync of the descriptor, closeSync in finally."
+      },
+      {
+        "file": "app/server/routes/auth.js",
+        "remark": "SEC F5",
+        "text": "POST /api/auth/password: deleteUnusedResets(req.q, row.id) after deleteOtherSessions, in the same transaction (the statement already existed in auth-store.js; auth-store.js unchanged)."
+      },
+      {
+        "file": "docs/design/M2AUTH-accounts-tenancy-backup.md",
+        "remark": "SEC F4 and the section-19 lines",
+        "text": "section 7: one row naming the residual of the 3-connection pool held through scrypt (503 at the deadline under anonymous login load, bounded by the per-address limit and the admin delay, measured after the deploy); section 19: table «Rework 02b», one line per fix with the test line for step 5."
+      }
+    ],
+    "self_check": [
+      "On the copy under <scratch> (Node 22.23.4, PGlite); no repository test suite, npm run check, node --test or e2e.",
+      "probe p8-rework: the do block read from app.yml on PGlite → P0001 on a database with empty tables, runs on the fully seeded one; appendAudit under withTenant → «TypeError: audit: the writer runs only under platform settings», audit_log 2 → 2; under withPlatform → written, 3; addressKey: 2001:db8:1:2::5 and 2001:db8:1:2:ffff:ffff:ffff:ffff → 2001:db8:1:2::/64, 2001:0db8:0001:0003::1 → 2001:db8:1:3::/64, 192.0.2.7 and unknown unchanged; eleven logins from eleven addresses of one /64 → 401 ×10 then 429, one from another /64 → 401; the admin delay: a wrong login from 2001:db8:9:9::1 then the right password from 2001:db8:9:9::2 → 429 rate_limited, from 2001:db8:9:a::1 → 200; password change → 200, unused reset codes 0, the earlier reset link → 400 reset_invalid; uat-login win32 and the POSIX mode branch (fstat) refuse with their lines; O_NOFOLLOW is not defined on Windows, so the link case is proved only on Linux CI.",
+      "probes p2-app, p3-fail, p6-scripts and p5-guards rerun: exit 0; audit verify ok 50; import-boundaries, no-string-sql, ENV-1 finders []; database calls only under server/db; ciFindings of app.yml → [\"jobs\", \"docker 0001 row\"] (the expected ones).",
+      "npx prettier --check (the five .js files and app.yml) → exit 0; npx eslint (the five .js files) --max-warnings 0 → exit 0; npx tsc --noEmit -p jsconfig.json → exit 0.",
+      "cd tools && npm run -s traces → 0 traces; cd tools && npm run -s handoffs-check → exit 0 (after this result)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "SEC F1 needs one statement (the app.role read), and design 4.5.4 / DBC-1 allow statements only under app/server/db/. The write set names services/audit.js but not audit-store.js, so I added currentAppRole(q) to app/server/db/audit-store.js, the file of the audit statements by 4.11. This is the only file changed outside the listed write set. ORCH, please record or object."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "SEC F3: Node has no O_NOFOLLOW on Windows, and the script refuses on win32 before the open anyway. So the «link swapped after lstat» case (UL-2) can be proved only on the Linux CI job."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "For TEST-DESIGNER: the rate-limit and admin-delay keys are now mac of the /64 text for IPv6, so RL-1's «no address in clear» search still holds. AC-3 can call appendAudit under withTenant and expect the TypeError with audit_log unchanged."
+      },
+      {
+        "id": "I4",
+        "kind": "EXPECTED_RED",
+        "text": "Unchanged from step 02: MG-1, MP-1, MP-2, CIW-1, CIW-2. The fixes add none."
+      }
+    ],
+    "artifacts_out": [
+      ".github/workflows/app.yml",
+      "app/server/services/audit.js",
+      "app/server/db/audit-store.js",
+      "app/server/http/rate-limit.js",
+      "app/server/routes/auth.js",
+      "app/scripts/uat-login.js",
+      "docs/design/M2AUTH-accounts-tenancy-backup.md"
+    ]
+  }
+}

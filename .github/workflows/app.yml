@@ -214,7 +214,7 @@ jobs:
         working-directory: app
         run: SAI_VERIFY_A_URL="postgres://postgres:$POSTGRES_PASSWORD@127.0.0.1:5433/a" SAI_VERIFY_B_URL="postgres://postgres:$POSTGRES_PASSWORD@127.0.0.1:5433/b" node scripts/db-verify.js --previous-schema
       - name: Every table of B has a row
-        run: docker exec sai-reh psql -v ON_ERROR_STOP=1 -U postgres -d b -c 'do $ declare t text; n bigint; begin for t in select table_name from information_schema.tables where table_schema = $s$public$s$ and table_type = $s$BASE TABLE$s$ loop execute format($f$select count(*) from public.%I$f$, t) into n; if n = 0 then raise exception $m$a public table has no row$m$; end if; end loop; end $'
+        run: docker exec sai-reh psql -v ON_ERROR_STOP=1 -U postgres -d b -c 'do $do$ declare t text; n bigint; begin for t in select table_name from information_schema.tables where table_schema = $s$public$s$ and table_type = $s$BASE TABLE$s$ loop execute format($f$select count(*) from public.%I$f$, t) into n; if n = 0 then raise exception $m$a public table has no row$m$; end if; end loop; end $do$'
       - name: Start the app on B
         working-directory: app
         run: |

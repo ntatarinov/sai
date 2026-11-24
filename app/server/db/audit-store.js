@@ -8,6 +8,19 @@
 export const AUDIT_LOCK_KEY = 7300115;
 
 /**
+ * The app.role of the caller's transaction ('' when none is set): the writer refuses anything but
+ * 'platform', because the chain's last hash is visible to platform settings only (decisions/0137 Addition 4).
+ * @param {Q} q
+ * @returns {Promise<string>}
+ */
+export async function currentAppRole(q) {
+  const r = await q.query(
+    "select coalesce(current_setting('app.role', true), '') as role",
+  );
+  return String(r.rows[0]?.role ?? "");
+}
+
+/**
  * @param {Q} q
  */
 export async function lockChain(q) {

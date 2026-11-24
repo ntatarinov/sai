@@ -53,3 +53,16 @@ CODE-DESIGN-VALIDATOR gave FAIL (`handoffs/M2AUTH-20261123-01/step-01b-code-desi
 - **I2** `AUTH_CODES` has 23 codes (design 4.8 rules over the count of 5.3); every code has a text key (FRONTEND-DEV wrote all 23).
 - **Pages and the kk region** Each new page carries exactly one `sai:kk` region around its kk button, as the five existing pages do; the guard edit A6 of the design («no region») is read as «no kk outside the one region», and TEST-DESIGNER writes it so at step 5. The setup page's language select offers ru and en only (kk stays hidden, G9).
 - **Turning TOTP off takes two codes** (the re-auth consumes one step) — accepted as designed; the page says so.
+
+## Addition 4 — the review gates of step 3 and 4, 2026-11-24
+
+SECURITY-REVIEWER gave PASS with five non-blocking findings and REVIEWER gave FAIL on one blocking finding (`handoffs/M2AUTH-20261123-01/step-03-security-reviewer.json`, `step-04-reviewer.json`). ORCH has them all fixed now, in one rework of BACKEND-DEV, before the tests are written:
+
+- **REVIEWER F1** `.github/workflows/app.yml`, the step «Every table of B has a row»: the `do` block is quoted `$do$ … $do$`, one `psql -c` with `ON_ERROR_STOP`.
+- **SEC F1** `appendAudit` refuses (a thrown program error, no write) unless `current_setting('app.role', true) = 'platform'`, before it takes the chain lock; a tenant caller of REQ-117 therefore audits before `switchToTenant` (the REQ-117 design names it).
+- **SEC F2** an IPv6 client is keyed by its /64 prefix for the rate limits and the admin delay (IPv4 by the whole address).
+- **SEC F3** `app/scripts/uat-login.js` opens the secret file with `O_NOFOLLOW`, checks the descriptor with `fstat` and reads from that descriptor.
+- **SEC F5** a password change deletes the user's unused reset codes in the same transaction.
+- **SEC F4** (the pool of three connections held through scrypt) is a named residual: the design and the post-deploy steps name the bound; it is measured after the deploy.
+- The REVIEWER lows F2-F6 are accepted as they are (F5 and F6 were already decided in Addition 3).
+- **I1 of rework 02b** `app/server/db/audit-store.js` gains `currentAppRole(q)` (the statement the SEC F1 check needs lives under `app/server/db/`, design 4.5.4); accepted.

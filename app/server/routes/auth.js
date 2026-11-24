@@ -16,6 +16,7 @@ import {
   deleteDelay,
   deleteOtherSessions,
   deleteSession,
+  deleteUnusedResets,
   deleteUserSessions,
   findAccount,
   insertAdmin,
@@ -39,6 +40,7 @@ import {
   useRecovery,
 } from "../db/auth-store.js";
 import { keysOf } from "../http/auth-mw.js";
+import { addressKey } from "../http/rate-limit.js";
 import { HttpError } from "../http/errors.js";
 import { emailNorm, withBody } from "../http/schema.js";
 import { appendAudit } from "../services/audit.js";
@@ -379,7 +381,7 @@ export function authRoutes(ctx) {
    * @param {string} norm
    */
   async function admin(req, id, norm) {
-    const key = keysOf(ctx).mac("delay", req.clientIp ?? "unknown");
+    const key = keysOf(ctx).mac("delay", addressKey(req.clientIp ?? "unknown"));
     const d = await lockDelay(req.q, key, req.now);
     const nextAt = msOf(d.next_at);
     if (isAhead(nextAt, req.now)) {
@@ -540,6 +542,8 @@ export function authRoutes(ctx) {
       lockedUntil: null,
     });
     await deleteOtherSessions(req.q, row.id, session.id);
+    // An unused reset link of the admin no longer sets a password (decisions/0137 Addition 4, SEC F5).
+    await deleteUnusedResets(req.q, row.id);
     await audit(ctx, req, {
       action: "auth.password_change",
       actorKind: row.is_platform_admin ? "admin" : "user",
