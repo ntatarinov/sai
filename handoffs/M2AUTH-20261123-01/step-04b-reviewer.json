@@ -1,0 +1,71 @@
+{
+  "handoff_id": "step04b-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "04b",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/M2AUTH-20261123-01/step-04b-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114",
+      "REQ-115",
+      "REQ-120"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M2AUTH-20261123-01/step-04-reviewer.json (your pass-1 findings)",
+      "handoffs/M2AUTH-20261123-01/step-02b-backend-dev.json (the rework, per item)",
+      "decisions/0137 Addition 4 and its last line (I1)",
+      "git diff 2f267d1 bddef13 (the rework)"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "rework_of": "handoffs/M2AUTH-20261123-01/step-04-reviewer.json",
+    "write_set": [
+      "handoffs/M2AUTH-20261123-01/step-04b-reviewer.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "Narrow pass 2 of your gate over the rework 02b (git diff 2f267d1 bddef13): each item of decisions/0137 Addition 4 is fixed as it says, nothing else changed, nothing new weakens the code; re-run the probes of your pass 1 that touch the changed lines on a fresh checkout of bddef13. PASS or FAIL. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-24T01:21:07Z",
+  "started_at": "2026-11-24T01:21:18Z",
+  "completed_at": "2026-11-24T01:24:09Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Verdict PASS. Narrow pass 2 over git diff 2f267d1 bddef13 (6 code files, decisions/0137 Addition 4, design 7 and 19). Each item of Addition 4 is fixed as it says, nothing else changed in code, and nothing new weakens it. No Critical, High or Medium finding; two Low notes.\nREVIEWER F1 (blocking in pass 1) fixed: .github/workflows/app.yml step 'Every table of B has a row' now reads do $do$ declare ... end $do$ in one psql -c with ON_ERROR_STOP. I cut the exact text out of the real file and ran it on PGlite: a database whose tables all have a row -> OK; with an empty table -> 'a public table has no row'.\nSEC F1: appendAudit (services/audit.js) calls currentAppRole(q) after check(entry) and before lockChain, and throws TypeError unless the role is platform. Probe on PGlite (migrated, login role): two appends under withPlatform work and verifyAudit gives ok, count 2; the same append under withTenant and in a transaction with no role set both throw 'audit: the writer runs only under platform settings' and audit_log still has 2 rows. The new statement stands in app/server/db/audit-store.js (design 4.5.4); the db-calls rule still holds. The developer's I1 (a file outside the listed write set) is accepted by decisions/0137 Addition 4.\nSEC F2: addressKey in http/rate-limit.js is used for the setup, login and reset keys (not for 'user', whose subject is the session id) and for the admin delay key in routes/auth.js. Probe over 13 inputs: an IPv4 address stays whole; '2001:db8::', '2001:db8::1' and '2001:0db8:0:0:1:2:3:4' all give 2001:db8:0:0::/64; a different 4th group gives a different key; '::', '::1', an IPv4 tail ('64:ff9b::1.2.3.4', '1:2:3:4:5:6:1.2.3.4') and 'unknown' behave as designed. ip_hmac columns of sessions and audit keep the whole address, as the design says.\nSEC F3: uat-login opens the file once with O_RDONLY | O_NOFOLLOW, refuses ELOOP as a link, checks regular file and mode with fstat on that descriptor, reads from it and closes it in finally; the win32 refusal still comes first, so the missing O_NOFOLLOW on Windows is never reached. Read only: the success path and the swapped-link case need Linux (the developer's I2; the Linux CI job).\nSEC F5: password() calls deleteUnusedResets(req.q, row.id) after deleteOtherSessions and before the audit row, in the same request transaction; the statement already existed in auth-store.js.\nSEC F4: a named residual row is added to design section 7 (the pool of 3 connections held through scrypt), measured after the deploy; section 19 has one line per fix with its test line for step 5. No code change expected, none made.\nOwn checks on a fresh checkout of bddef13 (Node 22.23.4, npm ci unchanged, the package files are not in the diff): prettier --check . exit 0; eslint . --max-warnings 0 exit 0; tsc --noEmit -p jsconfig.json exit 0 (run after moving my own probe files out of the clone). The pass-1 finder script over the new tree: import-boundaries findings [], fileFindings [], stringSql [] (server and db-verify), ENV-1 [], ciFindings only the two expected ones (jobs, docker 0001 row). Erosion grep over the six changed files: no match; no CR; no machine path. cd tools && npm run -s traces: 0 traces; handoffs-check: 0 violations.\nExpected-red list: unchanged (MG-1, MP-1, MP-2, CIW-1, CIW-2, PB-6, PP-1, the forbidden-words lists); the rework adds none, which I confirm by reading that it touches no statement, name or file any existing test reads. For TEST-DESIGNER: the section 19 lines (CIW text with do $do$ and end $do$; AC-3 audit under withTenant throws and leaves audit_log unchanged; RL two IPv6 addresses of one /64 share a window and a delay row; UL-2 on Linux only; SS-8 an unused reset code answers reset_invalid after a password change).",
+    "findings": [
+      {
+        "id": "P2-1",
+        "place": "app/server/http/rate-limit.js:19-42 (addressKey)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "An IPv6 text that is not a normal client address collapses into a shared bucket: '::', '::1' and a hex-written mapped address such as '::ffff:102:304' all key to 0:0:0:0::/64. On Node the socket gives the dotted mapped form, which client-ip.js already turns into IPv4, and on Vercel the header is a normal address, so no real client is affected.",
+        "fix": "None needed now. If a hex mapped form is ever seen in a log, make client-ip.js normalise it to IPv4 before addressKey."
+      },
+      {
+        "id": "P2-2",
+        "place": "app/scripts/uat-login.js:160-190",
+        "severity": "Low",
+        "blocking": false,
+        "what": "The open has no O_NONBLOCK: a file swapped for a FIFO between the lstat and the open would block the script on the open. It needs a local attacker with write access to the owner's secret folder and only hangs the script; the fstat check that follows would refuse it.",
+        "fix": "Optional: add fs.constants.O_NONBLOCK to the open flags."
+      }
+    ],
+    "self_check": [
+      "A checkout of bddef13 in my own clone under <scratch>; no repository test suite, npm run check, node --test or e2e was run; no server was started.",
+      "cd app && npx prettier --check . -> 'All matched files use Prettier code style!'; npx eslint . --max-warnings 0 -> exit 0; npx tsc --noEmit -p jsconfig.json -> exit 0.",
+      "Finder script (test files copied with the node:test import replaced by a no-op) -> IB [] file [] ; SQL [] []; CI [\"jobs\",\"docker 0001 row\"]; ENV [].",
+      "Probe 1 under <scratch>: the real step 14 text from app.yml on PGlite: all tables filled -> OK; empty table -> 'a public table has no row'; the text starts 'do $do$ decl' and ends 'end $do$'.",
+      "Probe 2: addressKey over 13 inputs (see summary); appendAudit under withPlatform x2 (verify ok, count 2), under withTenant (TypeError), in a transaction without app.role (TypeError), audit_log count after: 2.",
+      "git diff 2f267d1 bddef13 --name-only -- app .github lists exactly: app.yml, uat-login.js, audit-store.js, rate-limit.js, routes/auth.js, services/audit.js. grep -nE 'TODO|FIXME|.skip(|eslint-disable|ts-ignore|\\|\\| true|continue-on-error|set \\+e|console\\.' over them -> no match; CR count 0.",
+      "cd tools && npm run -s traces -> 0 traces (3061 files); npm run -s handoffs-check -> 0 violations (1642 files)."
+    ],
+    "issues": [],
+    "artifacts_out": []
+  }
+}
