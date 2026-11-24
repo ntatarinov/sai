@@ -58,12 +58,13 @@ function canonicalJson(v) {
 /**
  * Every stored row in id order, read by the owner, each with the hash recomputed here: sha256(prev_hash ||
  * canonical_json(row without hash)), the id as decimal text and created_at as ISO text with milliseconds.
+ * The order names the table's column: a bare `order by id` would sort by the text alias (1, 10, 11, …, 2).
  * @param {import("pg").Client} c
  */
 async function chain(c) {
   const rows = (
     await c.query(
-      "select id::text as id, org_id, actor_kind, actor_id, action, target_kind, target_id, ip_hmac, details, prev_hash, hash, created_at from audit_log order by id",
+      "select id::text as id, org_id, actor_kind, actor_id, action, target_kind, target_id, ip_hmac, details, prev_hash, hash, created_at from audit_log order by audit_log.id",
     )
   ).rows;
   return rows.map((r) => {

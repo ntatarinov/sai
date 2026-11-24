@@ -17,12 +17,18 @@ import { snapshot, tree } from "../fixtures/snapshot.js";
 // nothing (the rows of the code design, section 11 row 8).
 
 const PUBLIC = path.join(APP, "public");
-// The files that the public set may change (the code design 4.11); examples.html is removed.
+// The files that the public set may change (the code design 4.11); examples.html is removed. The four
+// account pages of REQ-114 hold one kk region each (decisions/0137 Addition 3), which the open build cuts, so
+// they are on the list too (as in public-build.test.js).
 const CHANGED = [
   "index.html",
   "how.html",
   "demo.html",
   "404.html",
+  "admin-totp.html",
+  "login.html",
+  "reset.html",
+  "setup.html",
   "shared/i18n/texts.js",
 ];
 const MARK = ["pg", "marker", "Q7"].join("-");
