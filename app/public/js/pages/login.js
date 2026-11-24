@@ -17,6 +17,7 @@ function start(doc) {
   const who = doc.getElementById("who");
   const info = doc.getElementById("info");
   const err = doc.getElementById("err");
+  const prompt = doc.getElementById("prompt");
   const toTotp = /** @type {HTMLElement} */ (doc.getElementById("to-totp"));
   const submit = /** @type {HTMLButtonElement} */ (
     doc.getElementById("submit")
@@ -53,6 +54,7 @@ function start(doc) {
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     frame.clear(err);
+    frame.clear(prompt);
     submit.disabled = true;
     const code = field("code").value.replace(/\s+/g, "").toUpperCase();
     /** @type {{ email: string, password: string, code?: string }} */
@@ -64,10 +66,15 @@ function start(doc) {
     const result = await call("POST", "/api/auth/login", body);
     if (!result.ok) {
       submit.disabled = false;
-      if (result.code === "totp_required") rowCode.hidden = false;
-      frame.say(err, errorKey(result.code));
-      if (result.code === "totp_required" || result.code === "totp_invalid")
+      if (result.code === "totp_required") {
+        // not a failure: the password was right and the form asks for the code
+        rowCode.hidden = false;
+        frame.say(prompt, errorKey(result.code));
         field("code").focus();
+        return;
+      }
+      frame.say(err, errorKey(result.code));
+      if (result.code === "totp_invalid") field("code").focus();
       else field("password").value = "";
       return;
     }

@@ -1,0 +1,80 @@
+{
+  "handoff_id": "step08-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "08",
+  "from_agent": "ORCH",
+  "to_agent": "UAT-RUNNER",
+  "file": "handoffs/M2AUTH-20261123-01/step-08-uat-runner.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/requirements.yaml REQ-114 (what the owner must be able to do: the post-deploy paragraph too)",
+      "docs/design/M2AUTH-accounts-tenancy-backup.md sections 5 (pages), 4.4 (routes), 14 (post-deploy record)",
+      "app/README.md (how to run the app locally: node server/node-main.js with PGlite or a local database; the env it needs: SECRET_PEPPER, SETUP_TOKEN_HASH from app/scripts/setup-token.js)",
+      "docs/workflows/WF-02-development.md step 8, .claude/agents/uat-runner.md"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "write_set": [
+      "docs/uat/M2AUTH-20261123-01.md (new: the acceptance record)",
+      "handoffs/M2AUTH-20261123-01/step-08-uat-runner.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 8, UAT-RUNNER: accept M2.2 as the owner will use it, on a local stand of commit 5f229ba (a fresh clone under <scratch>, npm ci in app/, the server started from the clone with PGlite or the in-memory database the README names, a fresh SECRET_PEPPER and a setup token made by app/scripts/setup-token.js, bound to port 0 or a free high port, stopped by its exact pid). In one real headless Chrome with a fresh temporary profile (one browser at a time), in ru and en, at 390×844 and 1470×784: /setup.html with the token → the admin account; the second visit of /setup.html is the uniform 404; /login.html with a wrong password (the plain message) and the right one; enrolling TOTP on /admin-totp.html (compute the codes yourself from the shown secret with your own RFC 6238 script) and a login that then asks for the code; logout; a reset link issued by the admin and used once on /reset.html; the lockout message after the wrong passwords; no console error, no failed request except the declared refusals, no horizontal scroll, the texts plain (no code words). Screenshots into <scratch>; open at least four. Write docs/uat/M2AUTH-20261123-01.md (English, the form of the earlier UAT records in docs/uat/, no machine path, no secret: never write the pepper, the token, a password or a TOTP secret into it). PASS or FAIL with findings. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-24T03:12:30Z",
+  "started_at": "2026-11-24T03:12:31Z",
+  "completed_at": "2026-11-24T03:22:58Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "FAIL on one finding (F-1, major, not blocking); every flow works. Stand: fresh clone at 5f229ba in <scratch>, npm ci, node server/node-main.js with PORT=0, in-memory PGlite, fresh SECRET_PEPPER and SETUP_TOKEN_HASH (app/scripts/setup-token.js); three stands one after another, each stopped by its exact pid. Real Chrome 157 headless, one browser, fresh profile, DevTools protocol; ru and en, 390x844 light and 1470x784 dark. S1 setup 201 and the done line: PASS. S2 second setup: POST /api/auth/setup 404 {\"error\":\"not_found\"}, byte-equal to an admin route and an unknown route without a session, page text «Page not found.»: PASS. S3 wrong password 401 invalid_credentials with the plain message, right password 200, reload keeps the session, cookie sai_s HttpOnly SameSite=Lax: PASS. S4 TOTP enrolment: key (32 base32) and otpauth address shown as text, wrong code 401 totp_invalid, computed RFC 6238 code confirmed 200, 10 backup codes, key emptied: PASS (layout F-1 at 390). S5 logout 200, reload shows the form, me 401, no cookie: PASS. S6 login asks for the code (401 totp_required, the code field appears), code 200: PASS. S7 reset link issued by the admin (reauth 200, reset-link 200, form /reset.html#c=<22>), fragment cleared, reset 200, second use 400 reset_invalid with the plain message, old session ended, old password refused, new password + code signs in: PASS. S8 lockout: 5 x 401 then 429 locked «Слишком много неудачных попыток. Попробуйте позже.» / en «Too many failed attempts. Try again later.»: PASS. S9 the admin is not locked: second wrong password 429 rate_limited «Too many requests. Try again later.»: PASS. All 37 snapshots: no horizontal scroll of the document, no code word, ru Cyrillic / en none. Console: no script error; every line is Chrome «Failed to load resource» of a declared refusal (one 403 csrf_refused retried by design, M-2). Record: docs/uat/M2AUTH-20261123-01.md.",
+    "findings": [
+      {
+        "id": "F-1",
+        "scenario": "X2 (S4 at ru, 390x844, light), the step after «Начать настройку»",
+        "severity": "major (not blocking)",
+        "expected": "every text of the TOTP enrolment view readable inside the 390 window",
+        "actual": "the note «Добавьте ключ или адрес в приложение-аутентификатор, ...» is cut at «приложение-аутенти» and the otpauth:// address is cut after «&issu» at the right edge of the panel; no document scroll because body has overflow-x: hidden and .panel overflow-x: clip (app/public/css/site.css), so the overflow is clipped; the key fits and the enrolment works",
+        "evidence": "<scratch>/snaps3/05-totp-secret-ru-390-light.png, 06-totp-wrong-code-ru-390-light.png",
+        "proposed": "let the long words and the address wrap in this view (e.g. overflow-wrap: anywhere on the note and #otpauth-text) under WF-03, then repeat X2 at 390 and 320 in ru and en"
+      }
+    ],
+    "self_check": [
+      "git clone -c core.autocrlf=false <project> <scratch>/repo; git checkout 5f229ba; cd app && npm ci → exit 0",
+      "node scripts/setup-token.js (clone) → two lines; only the hash went into SETUP_TOKEN_HASH of the stand; the pepper 32 random bytes base64url, in process memory only",
+      "PORT=0 node server/node-main.js (clone, no DATABASE_URL) ×3 → GET /api/health {\"ok\":true,\"db\":\"ok\",\"role\":\"ok\",\"migrations_pending\":0,...}; each stopped by its exact pid, exit observed",
+      "server logs (140, 45, 95 lines) searched for the token, the pepper and both passwords → 0 hits",
+      "own RFC 6238 code checked on RFC 6238 appendix B (59 s, 8 digits) → 94287082, equal",
+      "every response >= 400 and every console line recorded per scenario: 26 + 7 console lines, all «Failed to load resource» of declared refusals; no pageerror; no requestfailed",
+      "snapshots: 37 full-page PNG in <scratch>/snaps and <scratch>/snaps3; opened and looked at: 02-setup-done-ru-390, 03-setup-second-404-en-1470, 08-totp-secret-en-1470, 12-login-code-asked-ru-390, 16-reset-second-use-en-1470, 20-lock-6th-ru-390, snaps3 06-totp-wrong-code-ru-390, 07-totp-codes-ru-390",
+      "not run: npm run check, node --test, repository tests, e2e; ports 4780-4782 and 4790 not touched"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "No scenario file of BA-ANALYST exists for this run; the scenarios are those of the handoff task with REQ-114 and the code design 4.4, 4.9, 5. BA-ANALYST signs the result."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "The lockout of an ordinary account was not carried out: M2.2 has no way to create one (invites are REQ-116). The message was shown for an e-mail without an account, which the design 4.9.5 puts under the same rule."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Remarks M-1..M-7 of the record (browser console lines of declared refusals; one csrf_refused retry on reset.html with a session present; the setup code shown in clear text; the code prompt shown under «ERROR»; __Host- cookie is a post-deploy check; Windows stop by pid is immediate; one X3 step not counted). Not failures (AP-117)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/uat/M2AUTH-20261123-01.md"
+    ]
+  }
+}

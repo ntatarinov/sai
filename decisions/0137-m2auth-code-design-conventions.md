@@ -70,3 +70,7 @@ SECURITY-REVIEWER gave PASS with five non-blocking findings and REVIEWER gave FA
 ## Addition 5 — a defect found by the tests of step 5, 2026-11-24
 
 TEST-DESIGNER (lane auth) found with the new test ADD-4 that `app/server/db/pg.js` `transaction()` attaches no `error` listener to the client it checks out of the pool, so a connection that drops in the middle of a request emits an unhandled `error` and ends the process (REQ-114 c10, Q10). Fixed now by BACKEND-DEV (rework 02c): a listener on the checked-out client for the whole time it is held, which marks the transaction failed (answered 503 by the existing path) and releases the client as broken; then a narrow pass of SECURITY-REVIEWER and REVIEWER over that change.
+
+## Addition 6 — the acceptance of step 8, 2026-11-24
+
+UAT-RUNNER (`docs/uat/M2AUTH-20261123-01.md`) found every flow working and one major look defect F-1: at 390 px the TOTP enrolment note and the `otpauth://` address are cut at the right edge (hidden by the page's `overflow-x` clipping). Fixed now by FRONTEND-DEV (rework 02d): the note and the address wrap (`overflow-wrap: anywhere` on exactly those elements; `app/public/css/site.css` joins the write set for that one rule); and the prompt «enter the code» after a right password is shown as a prompt, not under the error label. Then a narrow REVIEWER pass and a UAT re-check at 390 and 320 in ru and en.
