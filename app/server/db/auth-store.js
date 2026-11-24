@@ -266,14 +266,15 @@ export async function readProfile(q, id) {
 }
 
 /**
- * The memberships of a user, read with an explicit user filter under platform settings.
+ * The memberships of a user with the organisation's name and kind, read with an explicit user filter under
+ * platform settings (the user's own rows only).
  * @param {Q} q
  * @param {string} userId
- * @returns {Promise<Array<{ org_id: string, role: string }>>}
+ * @returns {Promise<Array<{ org_id: string, name: string, kind: string, role: string }>>}
  */
 export async function listMemberships(q, userId) {
   const r = await q.query(
-    "select org_id, role from org_members where user_id = $1 order by org_id",
+    "select m.org_id, o.name, o.kind, m.role from org_members m join orgs o on o.id = m.org_id where m.user_id = $1 order by m.org_id",
     [userId],
   );
   return r.rows;
@@ -478,6 +479,13 @@ export async function cleanup(q, now) {
   );
   await q.query(
     "delete from password_resets where expires_at < $1::timestamptz",
+    [month],
+  );
+  // Unused invites past their expiry by 30 days (ARCH §4 retention; the code design M2PROJ, 4.4). Under platform
+  // settings this reaches every organisation's invites; under tenant settings only the caller's (row-level
+  // security), so the cleanup of a tenant route does less, never more.
+  await q.query(
+    "delete from invites where used_at is null and expires_at < $1::timestamptz",
     [month],
   );
 }

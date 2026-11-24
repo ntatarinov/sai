@@ -339,6 +339,7 @@ test("SS-9 GET /api/auth/me answers the id, name, language, platform-admin flag,
     assert.equal(r.status, 200);
     assert.deepEqual(Object.keys(r.json).sort(), [
       "csrf",
+      "deletion_requested_at",
       "id",
       "language",
       "memberships",
@@ -349,13 +350,24 @@ test("SS-9 GET /api/auth/me answers the id, name, language, platform-admin flag,
       "select display_name, language from users where id = $1",
       [a.id],
     );
+    const [org] = await h.sql("select name, kind from orgs where id = $1", [
+      a.orgId,
+    ]);
     assert.equal(r.json.id, a.id);
     assert.equal(r.json.name, row.display_name);
     assert.equal(r.json.language, row.language);
     assert.equal(r.json.platform_admin, admin_);
+    // The organisation's name and kind are read with the membership (guard row G10, REQ-116 criterion 7).
     assert.deepEqual(r.json.memberships, [
-      { org_id: a.orgId, role: admin_ ? "org_owner" : "viewer" },
+      {
+        org_id: a.orgId,
+        name: org.name,
+        kind: org.kind,
+        role: admin_ ? "org_owner" : "viewer",
+      },
     ]);
+    assert.equal(org.kind, admin_ ? "owner" : "customer");
+    assert.equal(r.json.deletion_requested_at, null);
     assert.match(r.json.csrf, /^[A-Za-z0-9_-]{43}$/);
     assert.equal(r.json.csrf, a.csrf);
     for (const word of [
@@ -371,4 +383,16 @@ test("SS-9 GET /api/auth/me answers the id, name, language, platform-admin flag,
       assert.ok(!r.text.includes(m[0]));
   }
   assert.equal(u.orgId !== null, true);
+  // An open deletion request shows its time on the user's own answer and on nobody else's.
+  h.tick(1000);
+  const asked = await h.call("POST", "/api/account/deletion-request", {
+    as: u,
+    body: { password: u.password },
+  });
+  assert.equal(asked.status, 200, asked.text);
+  assert.equal(
+    (await me(h, u)).json.deletion_requested_at,
+    new Date(h.now()).toISOString(),
+  );
+  assert.equal((await me(h, admin)).json.deletion_requested_at, null);
 });

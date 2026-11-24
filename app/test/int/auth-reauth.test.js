@@ -10,7 +10,7 @@ import { authHarness, totpCode } from "../fixtures/auth.js";
 // without a token with the state unchanged. A planted route of the test (deps.routeTable) consumes the purpose
 // «settings», so the binding to the user is checked for an ordinary user too.
 
-/** The purposes of the closed table of the code design, 4.9.4. */
+/** The purposes of the closed table of the code design, 4.9.4, and user_delete (the code design M2PROJ, C12, guard row G2). */
 const PURPOSES = [
   "reset_link",
   "totp_enrol",
@@ -23,6 +23,7 @@ const PURPOSES = [
   "ai_allow",
   "codes",
   "owner_identity",
+  "user_delete",
 ];
 
 /** A planted route that consumes the purpose «settings» and counts the actions it does. */
@@ -241,6 +242,7 @@ test("RA-5 every route of the real table marked reauth answers 403 reauth_requir
   const { h, rows } = await harness(t);
   const admin = await h.signIn(await h.setup());
   const target = await h.addUser();
+  const victim = await h.addUser({ email: "victim@example.test" });
   // TOTP on, so that the switch-off route would act if the token were not checked.
   const enrol = await h.call("POST", "/api/admin/totp/enrol", {
     as: admin,
@@ -258,7 +260,7 @@ test("RA-5 every route of the real table marked reauth answers 403 reauth_requir
     200,
   );
   h.tick(30000);
-  /** @type {Record<string, () => { path: string, body: Record<string, string> }>} */
+  /** @type {Record<string, () => { path: string, body: Record<string, unknown> }>} */
   const CASES = {
     "POST /api/admin/users/:id/reset-link": () => ({
       path: `/api/admin/users/${target.id}/reset-link`,
@@ -273,10 +275,30 @@ test("RA-5 every route of the real table marked reauth answers 403 reauth_requir
       body: { code: totpCode(secret, h.now()) },
     }),
     "POST /api/test/settings": () => ({ path: "/api/test/settings", body: {} }),
+    // REQ-116 (guard row G2): the invite route (purpose owner_identity) and the deletion route (user_delete).
+    "POST /api/admin/invites": () => ({
+      path: "/api/admin/invites",
+      body: {
+        email: "invited@example.test",
+        role: "org_owner",
+        owner_identity: true,
+        org_name: "Invited Co",
+      },
+    }),
+    "POST /api/admin/users/:id/delete": () => ({
+      path: `/api/admin/users/${victim.id}/delete`,
+      body: {},
+    }),
   };
   const marked = rows().filter((r) => r.meta.reauth !== null);
   t.diagnostic(`RA-5 routes marked reauth: ${marked.length}`);
-  assert.ok(marked.length >= 3);
+  assert.ok(marked.length >= 6);
+  const markedKeys = marked.map((r) => `${r.method} ${r.path}`);
+  for (const key of [
+    "POST /api/admin/invites",
+    "POST /api/admin/users/:id/delete",
+  ])
+    assert.ok(markedKeys.includes(key), `${key} is marked reauth`);
   for (const r of marked) {
     const key = `${r.method} ${r.path}`;
     assert.ok(CASES[key], `no case for ${key}`);

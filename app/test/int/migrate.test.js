@@ -46,10 +46,13 @@ async function state(dir) {
   return { rows, tables, cols, settings };
 }
 
-// The tables of 0001 and 0002 (0002 has eleven; the code design M2AUTH, 4.2 and B7a), sorted.
+// The tables of 0001, 0002 and 0003 (0002 has eleven, the code design M2AUTH, 4.2 and B7a; 0003 four, M2PROJ
+// 4.2.2 and guard row G13), sorted.
 const TABLES = [
   "audit_log",
   "auth_sessions",
+  "deletion_requests",
+  "idea_versions",
   "invites",
   "login_delays",
   "login_failures",
@@ -57,9 +60,11 @@ const TABLES = [
   "orgs",
   "password_resets",
   "platform_settings",
+  "projects",
   "rate_limits",
   "reauth_tokens",
   "schema_migrations",
+  "user_consents",
   "users",
 ];
 
@@ -293,18 +298,23 @@ const APP_GRANTS = [
   ...["INSERT", "SELECT"].map((p) => `audit_log ${p}`),
   "audit_log_id_seq USAGE",
   ...["DELETE", "INSERT", "SELECT", "UPDATE"].map((p) => `auth_sessions ${p}`),
-  ...["INSERT", "SELECT", "UPDATE"].map((p) => `invites ${p}`),
+  // The blocks of 0003 (4.2.4 of the code design M2PROJ): org_members and invites gain DELETE, four tables are new.
+  ...["INSERT", "SELECT", "UPDATE"].map((p) => `deletion_requests ${p}`),
+  ...["DELETE", "INSERT", "SELECT"].map((p) => `idea_versions ${p}`),
+  ...["DELETE", "INSERT", "SELECT", "UPDATE"].map((p) => `invites ${p}`),
   ...["DELETE", "INSERT", "SELECT", "UPDATE"].map((p) => `login_delays ${p}`),
   ...["DELETE", "INSERT", "SELECT", "UPDATE"].map((p) => `login_failures ${p}`),
-  ...["INSERT", "SELECT"].map((p) => `org_members ${p}`),
+  ...["DELETE", "INSERT", "SELECT"].map((p) => `org_members ${p}`),
   ...["INSERT", "SELECT"].map((p) => `orgs ${p}`),
   ...["DELETE", "INSERT", "SELECT", "UPDATE"].map(
     (p) => `password_resets ${p}`,
   ),
   ...["INSERT", "SELECT"].map((p) => `platform_settings ${p}`),
+  ...["DELETE", "INSERT", "SELECT", "UPDATE"].map((p) => `projects ${p}`),
   ...["DELETE", "INSERT", "SELECT", "UPDATE"].map((p) => `rate_limits ${p}`),
   ...["DELETE", "INSERT", "SELECT", "UPDATE"].map((p) => `reauth_tokens ${p}`),
   "schema_migrations SELECT",
+  ...["INSERT", "SELECT"].map((p) => `user_consents ${p}`),
   ...["INSERT", "SELECT", "UPDATE"].map((p) => `users ${p}`),
 ].sort();
 // The grants of a database built from 0001 alone: those of its own two tables.

@@ -25,12 +25,23 @@ import { fileNames, snapshot } from "../fixtures/snapshot.js";
 const PUBLIC = path.join(APP, "public");
 const CONTENT = path.join(APP, "content");
 const TEXTS = "shared/i18n/texts.js";
-// The four account pages of REQ-114 (the code design M2AUTH, 5): each holds exactly one region, the kk region
-// around its kk button, and no order region (decisions/0137 Addition 3, the guard edit A6); the open build
-// cuts that region, so they are files the public set changes too.
+// The fourteen pages of M2 (the four account pages of REQ-114, the code design M2AUTH, 5, and the ten of
+// REQ-116 and REQ-117, M2PROJ 4.9; guard row G16): each holds exactly one region, the kk region around its kk
+// button, and no order region (decisions/0137 Addition 3, the guard edit A6); the open build cuts that region,
+// so they are files the public set changes too.
 const ACCOUNT_PAGES = [
+  "account.html",
+  "admin-audit.html",
+  "admin-deletions.html",
+  "admin-invites.html",
+  "admin-request.html",
   "admin-totp.html",
+  "admin.html",
+  "invite.html",
   "login.html",
+  "project-new.html",
+  "project.html",
+  "projects.html",
   "reset.html",
   "setup.html",
 ];
@@ -826,12 +837,22 @@ test("PB-6 the source pages' regions: each marker alone, one of the four forms, 
     .sort();
   assert.deepEqual(pages, [
     "404.html",
+    "account.html",
+    "admin-audit.html",
+    "admin-deletions.html",
+    "admin-invites.html",
+    "admin-request.html",
     "admin-totp.html",
+    "admin.html",
     "demo.html",
     "examples.html",
     "how.html",
     "index.html",
+    "invite.html",
     "login.html",
+    "project-new.html",
+    "project.html",
+    "projects.html",
     "reset.html",
     "setup.html",
   ]);

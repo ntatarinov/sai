@@ -21,13 +21,13 @@ end $$;
 
 do $$ begin
   if to_regclass('public.org_members') is not null then
-    grant select, insert on public.org_members to sai_app;
+    grant select, insert, delete on public.org_members to sai_app;
   end if;
 end $$;
 
 do $$ begin
   if to_regclass('public.invites') is not null then
-    grant select, insert, update on public.invites to sai_app;
+    grant select, insert, update, delete on public.invites to sai_app;
   end if;
 end $$;
 
@@ -77,5 +77,29 @@ end $$;
 do $$ begin
   if to_regclass('public.platform_settings') is not null then
     grant select, insert on public.platform_settings to sai_app;
+  end if;
+end $$;
+
+do $$ begin
+  if to_regclass('public.projects') is not null then
+    grant select, insert, update, delete on public.projects to sai_app;
+  end if;
+end $$;
+
+do $$ begin
+  if to_regclass('public.idea_versions') is not null then
+    grant select, insert, delete on public.idea_versions to sai_app;
+  end if;
+end $$;
+
+do $$ begin
+  if to_regclass('public.deletion_requests') is not null then
+    grant select, insert, update on public.deletion_requests to sai_app;
+  end if;
+end $$;
+
+do $$ begin
+  if to_regclass('public.user_consents') is not null then
+    grant select, insert on public.user_consents to sai_app;
   end if;
 end $$;

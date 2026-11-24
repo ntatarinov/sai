@@ -173,6 +173,50 @@ export const LISTS = Object.freeze({
 
 /** The name of the rule of one hundred percent, a list without forms of its own. */
 const PERCENT = "П";
+/**
+ * The one narrow exception of the lint (REQ-111 criterion 3 as amended, decisions/0135 О13 and 0136 О16; the code
+ * design M2PROJ, 4.8): the five sentences of the consent of an invitation name the term in which a deletion
+ * request is carried out. These are the keys of those sentences in the texts module; the same list stands in
+ * public/shared/consent.js, which cannot import from here (a test asserts the two are equal).
+ */
+export const CONSENT_KEYS = Object.freeze([
+  "consent_s1",
+  "consent_s2",
+  "consent_s3",
+  "consent_s4",
+  "consent_s5",
+]);
+
+/**
+ * For each language, the one phrase that is taken out of the value of a consent key before the lists are
+ * applied. Its list Ц form («дней», «күні», «days») stands once in each language, inside this phrase only.
+ * @type {Readonly<Record<Lang, string>>}
+ */
+export const DELETION_TERM = Object.freeze({
+  ru: "в течение 15 рабочих дней",
+  kk: "15 жұмыс күні ішінде",
+  en: "within 15 working days",
+});
+
+/**
+ * The value of a consent key with the first occurrence of its language's deletion-term phrase taken out, once;
+ * a value without the phrase comes back as it is. Nothing else is taken out.
+ * @param {string} value
+ * @param {string} lang one of LANGS (anything else throws a RangeError)
+ * @returns {string}
+ */
+export function stripDeletionTerm(value, lang) {
+  if (typeof value !== "string")
+    throw new TypeError("stripDeletionTerm: the value is not a string");
+  if (typeof lang !== "string" || !LANGS.includes(lang))
+    throw new RangeError(
+      "stripDeletionTerm: the language is not one of ru, kk, en",
+    );
+  const phrase = DELETION_TERM[/** @type {Lang} */ (lang)];
+  const at = value.indexOf(phrase);
+  return at < 0 ? value : value.slice(0, at) + value.slice(at + phrase.length);
+}
+
 /** The sign of the tenge: a finding of list Ц wherever it stands, in every language. */
 const TENGE_SIGN = "₸";
 /** The list whose finding the sign of the tenge is. */

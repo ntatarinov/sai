@@ -11,8 +11,9 @@ import { HttpError } from "./errors.js";
  * - text: a string of `min` to `max` code points (after trim for `min`) with no forbidden sign;
  * - email: printable ASCII, exactly one "@", 1-64 before it and 1-189 after it (4.4, B6);
  * - enum: one of `values`;
- * - form: a string that matches `re` (anchored).
- * @typedef {{ kind: "text", min?: number, max: number, optional?: boolean } | { kind: "email", optional?: boolean } | { kind: "enum", values: readonly string[], optional?: boolean } | { kind: "form", re: RegExp, optional?: boolean }} Field
+ * - form: a string that matches `re` (anchored);
+ * - bool: a JSON true or false and nothing else (the one kind that is not a string, the code design M2PROJ, C15).
+ * @typedef {{ kind: "text", min?: number, max: number, optional?: boolean } | { kind: "email", optional?: boolean } | { kind: "enum", values: readonly string[], optional?: boolean } | { kind: "form", re: RegExp, optional?: boolean } | { kind: "bool", optional?: boolean }} Field
  */
 
 /** @typedef {Readonly<Record<string, Field>>} Shape */
@@ -36,6 +37,7 @@ export const emailNorm = (email) =>
  * @returns {boolean}
  */
 function fits(value, field) {
+  if (field.kind === "bool") return value === true || value === false;
   if (typeof value !== "string") return false;
   if (field.kind === "email")
     return EMAIL.test(value) && value.split("@").length === 2;
@@ -52,7 +54,7 @@ function fits(value, field) {
 /**
  * @param {Uint8Array} bytes
  * @param {Shape} shape
- * @returns {Record<string, string>}
+ * @returns {Record<string, any>} the checked body: the route's shape is the contract of each value's type
  */
 export function parseBody(bytes, shape) {
   let parsed;
@@ -68,7 +70,7 @@ export function parseBody(bytes, shape) {
   const body = /** @type {Record<string, unknown>} */ (parsed);
   for (const key of Object.keys(body))
     if (!Object.hasOwn(shape, key)) throw new HttpError("bad_body");
-  /** @type {Record<string, string>} */
+  /** @type {Record<string, any>} */
   const out = {};
   for (const [key, field] of Object.entries(shape)) {
     if (!Object.hasOwn(body, key)) {
@@ -76,7 +78,7 @@ export function parseBody(bytes, shape) {
       throw new HttpError("bad_body");
     }
     if (!fits(body[key], field)) throw new HttpError("bad_body");
-    out[key] = /** @type {string} */ (body[key]);
+    out[key] = body[key];
   }
   return out;
 }

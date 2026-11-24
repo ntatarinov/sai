@@ -1,0 +1,63 @@
+{
+  "handoff_id": "step02d-pages-M2PROJ-20261124-01",
+  "run_id": "M2PROJ-20261124-01",
+  "workflow_id": "WF-02",
+  "step": "02d",
+  "from_agent": "ORCH",
+  "to_agent": "FRONTEND-DEV",
+  "file": "handoffs/M2PROJ-20261124-01/step-02d-frontend-dev-pages.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-117"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M2PROJ-20261124-01/step-05-test-designer-projects.json (BLOCKED I1: the released guard PB-5 «PUBLIC_LANGS defined once» in app/test/unit/public-build.test.js is red on fa32e0a because app/public/shared/project/quick-facts.js holds the literal [\"ru\",\"en\"])",
+      "app/public/shared/i18n/lang.js (where the public language list is defined once)",
+      "app/test/unit/public-build.test.js PB-5 (read the rule; do NOT edit tests)"
+    ],
+    "base_tag": "base/M2PROJ-20261124-01",
+    "rework_of": "handoffs/M2PROJ-20261124-01/step-02c-frontend-dev-pages.json",
+    "write_set": [
+      "app/public/shared/project/quick-facts.js (derive OPTIONS.lang from the one definition in lang.js; the QF-1 pinned set stays exactly ru and en while kk is hidden)",
+      "handoffs/M2PROJ-20261124-01/step-02d-frontend-dev-pages.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 2 rework 02d, FRONTEND-DEV: fix the code to satisfy the released guard PB-5 (the language list is defined once, in lang.js): quick-facts.js derives its `lang` options from that definition (public languages as the site serves them: ru and en on the open build while kk is hidden) and holds no literal language list. Behaviour unchanged: the same options, the same order. Prove: cut PB-5's rule into your own script and run it on your tree (green), and on a copy with the literal back (red); the page probe still passes. prettier, eslint, tsc, check-public; traces 0; handoffs-check 0. result.status COMPLETED. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-24T18:40:41Z",
+  "started_at": "2026-11-24T18:40:42Z",
+  "completed_at": "2026-11-24T18:43:18Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": [
+      "quick-facts.js no longer holds a literal language list: OPTIONS.lang is SOURCE_LANGS of shared/i18n/lang.js without kk (ARCH §17: kk output of the AI is not offered), frozen, giving the same options in the same order (ru, en). PUBLIC_LANGS is not named in the file: PB-5 also refuses any file other than its two readers that names it, so the list is derived from SOURCE_LANGS and not imported as PUBLIC_LANGS."
+    ],
+    "changes": [
+      {
+        "file": "app/public/shared/project/quick-facts.js",
+        "what": "import { SOURCE_LANGS } from ../i18n/lang.js (inside public/shared, allowed); lang: Object.freeze(SOURCE_LANGS.filter((l) => l !== \"kk\")); the header comment says where the list comes from",
+        "by": "rework 02d, guard PB-5"
+      }
+    ],
+    "self_check": [
+      "PB-5 rule (constantFindings cut out of public-build.test.js into <scratch>/m2proj-02f/pb5.mjs, run over the 90 source files of app/ without the test folder): on my tree findings [] (exit 0); on a copy with the literal list of ru and en put back: [\"public/shared/project/quick-facts.js holds a literal list of ru and en\"] (exit 1). The node:test run of PB-5 itself was not made (decisions/0110).",
+      "Behaviour: OPTIONS.lang is [\"ru\",\"en\"] and frozen; isOption(\"lang\",\"en\") is true, isOption(\"lang\",\"kk\") is false. Page probes in one headless Chrome: live.mjs LIVE all ok (129 checks, among them the language taps of the new-project page) and probe02c.mjs PROBE all ok. static.mjs gives 25 of 26 ok; the one red line is the probe's own expected key count (118, now 119 after rework 02c), not a defect.",
+      "prettier --check public: all files in style; eslint public --max-warnings 0 and tsc --noEmit -p jsconfig.json: no output; node scripts/check-public.js: app/public is clean; cd tools && npm run -s traces: 0 traces; npm run -s handoffs-check: 0 violations."
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "For TEST-DESIGNER: QF-1 pins lang to exactly ru and en while kk is hidden; that still holds. If kk is ever added to the languages the open build serves, the options follow lang.js without an edit here (the filter removes kk only)."
+      }
+    ],
+    "artifacts_out": [
+      "app/public/shared/project/quick-facts.js",
+      "handoffs/M2PROJ-20261124-01/step-02d-frontend-dev-pages.json"
+    ]
+  }
+}

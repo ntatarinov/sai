@@ -2,7 +2,12 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { LANGS as LINT_LANGS, lintText } from "./word-lists.js";
+import {
+  CONSENT_KEYS,
+  LANGS as LINT_LANGS,
+  lintText,
+  stripDeletionTerm,
+} from "./word-lists.js";
 
 // check-public (REQ-109 criterion 7, REQ-111 criteria 3 and 10, ARCH §3; design
 // docs/design/REQ-111-112-public-landing.md, 4.10): forbidden texts and forms in the served files of a public
@@ -251,7 +256,13 @@ async function lintTextsModule(dir, add) {
       const value = /** @type {Record<string, unknown>} */ (entry)[lang];
       if (typeof value !== "string") add(`key ${key}: ${lang}: not a string`);
       else
-        for (const item of lintItems(value, lang, false))
+        // The one narrow exception (REQ-111 criterion 3 as amended): a consent key is linted with its deletion
+        // term phrase taken out once; every other value of every key is linted whole.
+        for (const item of lintItems(
+          CONSENT_KEYS.includes(key) ? stripDeletionTerm(value, lang) : value,
+          lang,
+          false,
+        ))
           add(`key ${key}: ${lang}: ${item}`);
     }
   }

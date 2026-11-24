@@ -1149,4 +1149,599 @@ export const TEXTS = Object.freeze({
     kk: "Қызмет қазір қолжетімсіз. Кейінірек қайталаңыз.",
     en: "The service is unavailable now. Try again later.",
   }),
+  m2_footer: Object.freeze({
+    ru: "Закрытый тест. Данные хранятся за рубежом (Германия, Франкфурт); тексты для ИИ обрабатывает Anthropic (за рубежом).",
+    kk: "Жабық сынақ. Деректер шетелде сақталады (Германия, Франкфурт); ЖИ мәтіндерін Anthropic өңдейді (шетелде).",
+    en: "Closed test. Data is stored abroad (Germany, Frankfurt); texts for the AI are processed by Anthropic (abroad).",
+  }),
+  consent_s1: Object.freeze({
+    ru: "Я соглашаюсь на обработку моих данных, чтобы работать в Sai по приглашению.",
+    kk: "Мен Sai жүйесінде шақыру бойынша жұмыс істеу үшін деректерімді өңдеуге келісемін.",
+    en: "I agree to the processing of my data so that I can work in Sai by invitation.",
+  }),
+  consent_s2: Object.freeze({
+    ru: "Данные: адрес почты, имя, хеш пароля, запись об этом согласии и HMAC-код IP-адреса.",
+    kk: "Деректер: пошта мекенжайы, аты, құпиясөз хэші, осы келісім туралы жазба және IP мекенжайының HMAC коды.",
+    en: "Data: e-mail, name, password hash, this consent record and an HMAC code of the IP.",
+  }),
+  consent_s3: Object.freeze({
+    ru: "Данные хранятся до удаления учётной записи.",
+    kk: "Деректер есептік жазба жойылғанға дейін сақталады.",
+    en: "The data is kept until the account is deleted.",
+  }),
+  consent_s4: Object.freeze({
+    ru: "Данные хранятся в Германии (Франкфурт); тексты для ИИ обрабатывает Anthropic в США.",
+    kk: "Деректер Германияда (Франкфурт) сақталады; ЖИ мәтіндерін АҚШ-тағы Anthropic өңдейді.",
+    en: "The data is stored in Germany (Frankfurt); texts for the AI are processed by Anthropic in the USA.",
+  }),
+  consent_s5: Object.freeze({
+    ru: "Согласие можно отозвать, а данные удалить по запросу в течение 15 рабочих дней.",
+    kk: "Келісімді қайтарып алуға болады, ал деректер сұраныс бойынша 15 жұмыс күні ішінде жойылады.",
+    en: "I can withdraw consent, and the data is deleted on request within 15 working days.",
+  }),
+  inv_title: Object.freeze({
+    ru: "Приглашение — Sai",
+    kk: "Шақыру — Sai",
+    en: "Invitation — Sai",
+  }),
+  inv_h: Object.freeze({
+    ru: "Приглашение",
+    kk: "Шақыру",
+    en: "Invitation",
+  }),
+  inv_f_org: Object.freeze({
+    ru: "Организация",
+    kk: "Ұйым",
+    en: "Organisation",
+  }),
+  inv_f_role: Object.freeze({
+    ru: "Роль",
+    kk: "Рөл",
+    en: "Role",
+  }),
+  inv_note_new: Object.freeze({
+    ru: "Для вас будет создана новая организация.",
+    kk: "Сіз үшін жаңа ұйым құрылады.",
+    en: "A new organisation will be created for you.",
+  }),
+  inv_f_email: Object.freeze({
+    ru: "Электронная почта из приглашения",
+    kk: "Шақырудағы электрондық пошта",
+    en: "E-mail from the invitation",
+  }),
+  inv_h_consent: Object.freeze({
+    ru: "Согласие на обработку данных",
+    kk: "Деректерді өңдеуге келісім",
+    en: "Consent to data processing",
+  }),
+  inv_f_consent: Object.freeze({
+    ru: "Да, я согласен с этим текстом",
+    kk: "Иә, мен осы мәтінмен келісемін",
+    en: "Yes, I agree with this text",
+  }),
+  inv_b_accept: Object.freeze({
+    ru: "Принять приглашение",
+    kk: "Шақыруды қабылдау",
+    en: "Accept the invitation",
+  }),
+  inv_check: Object.freeze({
+    ru: "Ссылка не подходит: она неверная, устарела или уже использована. Попросите новую ссылку.",
+    kk: "Сілтеме жарамайды: ол қате, ескірген немесе қолданылған. Жаңа сілтеме сұраңыз.",
+    en: "This link does not work: it is wrong, expired or already used. Ask for a new link.",
+  }),
+  inv_role_org_owner: Object.freeze({
+    ru: "Владелец организации",
+    kk: "Ұйым иесі",
+    en: "Organisation owner",
+  }),
+  inv_role_org_admin: Object.freeze({
+    ru: "Администратор организации",
+    kk: "Ұйым әкімшісі",
+    en: "Organisation admin",
+  }),
+  inv_role_member: Object.freeze({
+    ru: "Участник",
+    kk: "Қатысушы",
+    en: "Member",
+  }),
+  inv_role_viewer: Object.freeze({
+    ru: "Наблюдатель",
+    kk: "Бақылаушы",
+    en: "Viewer",
+  }),
+  acc_title: Object.freeze({
+    ru: "Учётная запись — Sai",
+    kk: "Есептік жазба — Sai",
+    en: "Account — Sai",
+  }),
+  acc_h: Object.freeze({
+    ru: "Учётная запись",
+    kk: "Есептік жазба",
+    en: "Account",
+  }),
+  acc_h_del: Object.freeze({
+    ru: "Удаление учётной записи",
+    kk: "Есептік жазбаны жою",
+    en: "Account deletion",
+  }),
+  acc_del_text: Object.freeze({
+    ru: "Вы можете запросить удаление учётной записи. Для запроса введите пароль.",
+    kk: "Есептік жазбаны жоюды сұрай аласыз. Сұрау үшін құпиясөзді енгізіңіз.",
+    en: "You can request the deletion of your account. Enter your password to send the request.",
+  }),
+  acc_b_del: Object.freeze({
+    ru: "Запросить удаление",
+    kk: "Жоюды сұрау",
+    en: "Request deletion",
+  }),
+  acc_del_note: Object.freeze({
+    ru: "Запрос на удаление отправлен: {when}.",
+    kk: "Жою сұрауы жіберілді: {when}.",
+    en: "The deletion request was sent: {when}.",
+  }),
+  acc_to_projects: Object.freeze({
+    ru: "Мои проекты",
+    kk: "Менің жобаларым",
+    en: "My projects",
+  }),
+  acc_to_account: Object.freeze({
+    ru: "Моя учётная запись",
+    kk: "Менің есептік жазбам",
+    en: "My account",
+  }),
+  acc_to_admin: Object.freeze({
+    ru: "Страницы администратора",
+    kk: "Әкімші беттері",
+    en: "Admin pages",
+  }),
+  prj_title: Object.freeze({
+    ru: "Мои проекты — Sai",
+    kk: "Менің жобаларым — Sai",
+    en: "My projects — Sai",
+  }),
+  prj_h: Object.freeze({
+    ru: "Проекты",
+    kk: "Жобалар",
+    en: "Projects",
+  }),
+  prj_b_new: Object.freeze({
+    ru: "Новый проект",
+    kk: "Жаңа жоба",
+    en: "New project",
+  }),
+  prj_empty: Object.freeze({
+    ru: "Проектов пока нет. Нажмите «Новый проект».",
+    kk: "Жобалар әзірге жоқ. «Жаңа жоба» түймесін басыңыз.",
+    en: "No projects yet. Press “New project”.",
+  }),
+  prj_title_new: Object.freeze({
+    ru: "Новый проект — Sai",
+    kk: "Жаңа жоба — Sai",
+    en: "New project — Sai",
+  }),
+  prj_h_new: Object.freeze({
+    ru: "Новый проект",
+    kk: "Жаңа жоба",
+    en: "New project",
+  }),
+  prj_f_title: Object.freeze({
+    ru: "Название",
+    kk: "Атауы",
+    en: "Title",
+  }),
+  prj_f_idea: Object.freeze({
+    ru: "Опишите вашу идею своими словами",
+    kk: "Идеяңызды өз сөзіңізбен сипаттаңыз",
+    en: "Describe your idea in your own words",
+  }),
+  prj_b_create: Object.freeze({
+    ru: "Создать",
+    kk: "Құру",
+    en: "Create",
+  }),
+  prj_err_facts: Object.freeze({
+    ru: "Выберите вариант в каждом из трёх вопросов.",
+    kk: "Үш сұрақтың әрқайсысынан нұсқа таңдаңыз.",
+    en: "Pick an option in each of the three questions.",
+  }),
+  prj_to_list: Object.freeze({
+    ru: "К списку проектов",
+    kk: "Жобалар тізіміне",
+    en: "Back to projects",
+  }),
+  prj_title_view: Object.freeze({
+    ru: "Проект — Sai",
+    kk: "Жоба — Sai",
+    en: "Project — Sai",
+  }),
+  prj_h_stage: Object.freeze({
+    ru: "Этап проекта",
+    kk: "Жоба кезеңі",
+    en: "Project stage",
+  }),
+  prj_h_facts: Object.freeze({
+    ru: "О проекте",
+    kk: "Жоба туралы",
+    en: "About the project",
+  }),
+  prj_h_versions: Object.freeze({
+    ru: "Версии идеи",
+    kk: "Идея нұсқалары",
+    en: "Versions of the idea",
+  }),
+  prj_version: Object.freeze({
+    ru: "Версия {n}",
+    kk: "{n}-нұсқа",
+    en: "Version {n}",
+  }),
+  prj_f_why: Object.freeze({
+    ru: "Почему",
+    kk: "Неліктен",
+    en: "Why",
+  }),
+  prj_h_edit: Object.freeze({
+    ru: "Изменить идею",
+    kk: "Идеяны өзгерту",
+    en: "Change the idea",
+  }),
+  prj_f_text: Object.freeze({
+    ru: "Текст идеи",
+    kk: "Идея мәтіні",
+    en: "Text of the idea",
+  }),
+  prj_b_edit: Object.freeze({
+    ru: "Сохранить новую версию",
+    kk: "Жаңа нұсқаны сақтау",
+    en: "Save a new version",
+  }),
+  prj_author_platform: Object.freeze({
+    ru: "Команда Sai",
+    kk: "Sai командасы",
+    en: "The Sai team",
+  }),
+  adm_title: Object.freeze({
+    ru: "Заявки — Sai",
+    kk: "Өтінімдер — Sai",
+    en: "Requests — Sai",
+  }),
+  adm_h: Object.freeze({
+    ru: "Заявки",
+    kk: "Өтінімдер",
+    en: "Requests",
+  }),
+  board_new: Object.freeze({
+    ru: "Новые",
+    kk: "Жаңа",
+    en: "New",
+  }),
+  adm_to_invites: Object.freeze({
+    ru: "Приглашения",
+    kk: "Шақырулар",
+    en: "Invitations",
+  }),
+  adm_to_deletions: Object.freeze({
+    ru: "Запросы на удаление",
+    kk: "Жою сұраулары",
+    en: "Deletion requests",
+  }),
+  adm_to_audit: Object.freeze({
+    ru: "Журнал действий",
+    kk: "Әрекеттер журналы",
+    en: "Action log",
+  }),
+  adm_to_board: Object.freeze({
+    ru: "К заявкам",
+    kk: "Өтінімдерге",
+    en: "Back to requests",
+  }),
+  adm_title_request: Object.freeze({
+    ru: "Заявка — Sai",
+    kk: "Өтінім — Sai",
+    en: "Request — Sai",
+  }),
+  adm_h_request: Object.freeze({
+    ru: "Заявка",
+    kk: "Өтінім",
+    en: "Request",
+  }),
+  adm_f_stage: Object.freeze({
+    ru: "Этап",
+    kk: "Кезең",
+    en: "Stage",
+  }),
+  adm_f_created: Object.freeze({
+    ru: "Создана",
+    kk: "Құрылды",
+    en: "Created",
+  }),
+  adm_f_updated: Object.freeze({
+    ru: "Обновлена",
+    kk: "Жаңартылды",
+    en: "Updated",
+  }),
+  adm_b_edit: Object.freeze({
+    ru: "Изменить заявку",
+    kk: "Өтінімді өзгерту",
+    en: "Edit the request",
+  }),
+  adm_admin_mark: Object.freeze({
+    ru: "администратор",
+    kk: "әкімші",
+    en: "admin",
+  }),
+  adm_title_audit: Object.freeze({
+    ru: "Журнал действий — Sai",
+    kk: "Әрекеттер журналы — Sai",
+    en: "Action log — Sai",
+  }),
+  adm_h_audit: Object.freeze({
+    ru: "Журнал действий",
+    kk: "Әрекеттер журналы",
+    en: "Action log",
+  }),
+  adm_b_more: Object.freeze({
+    ru: "Ещё",
+    kk: "Тағы",
+    en: "More",
+  }),
+  adm_empty_audit: Object.freeze({
+    ru: "Записей нет.",
+    kk: "Жазбалар жоқ.",
+    en: "No entries.",
+  }),
+  adm_title_invites: Object.freeze({
+    ru: "Новое приглашение — Sai",
+    kk: "Жаңа шақыру — Sai",
+    en: "New invitation — Sai",
+  }),
+  adm_h_invites: Object.freeze({
+    ru: "Новое приглашение",
+    kk: "Жаңа шақыру",
+    en: "New invitation",
+  }),
+  adm_f_org_mode: Object.freeze({
+    ru: "Организация приглашённого",
+    kk: "Шақырылған адамның ұйымы",
+    en: "Organisation of the invited person",
+  }),
+  adm_org_existing: Object.freeze({
+    ru: "Существующая организация",
+    kk: "Бар ұйым",
+    en: "Existing organisation",
+  }),
+  adm_org_new: Object.freeze({
+    ru: "Новая организация",
+    kk: "Жаңа ұйым",
+    en: "New organisation",
+  }),
+  adm_f_organisation: Object.freeze({
+    ru: "Идентификатор организации",
+    kk: "Ұйым идентификаторы",
+    en: "Organisation ID",
+  }),
+  adm_f_org_name: Object.freeze({
+    ru: "Название новой организации",
+    kk: "Жаңа ұйымның атауы",
+    en: "Name of the new organisation",
+  }),
+  adm_f_owner_identity: Object.freeze({
+    ru: "Это личность владельца Sai",
+    kk: "Бұл Sai иесінің жеке басы",
+    en: "This is an identity of the Sai owner",
+  }),
+  adm_f_password: Object.freeze({
+    ru: "Ваш пароль для подтверждения",
+    kk: "Растау үшін құпиясөзіңіз",
+    en: "Your password to confirm",
+  }),
+  adm_b_invite: Object.freeze({
+    ru: "Создать приглашение",
+    kk: "Шақыру құру",
+    en: "Create the invitation",
+  }),
+  adm_f_link: Object.freeze({
+    ru: "Ссылка для приглашённого",
+    kk: "Шақырылған адамға арналған сілтеме",
+    en: "Link for the invited person",
+  }),
+  adm_link_note: Object.freeze({
+    ru: "Ссылка показана один раз. Скопируйте её и отправьте приглашённому.",
+    kk: "Сілтеме бір рет көрсетіледі. Оны көшіріп, шақырылған адамға жіберіңіз.",
+    en: "The link is shown once. Copy it and send it to the invited person.",
+  }),
+  adm_title_deletions: Object.freeze({
+    ru: "Запросы на удаление — Sai",
+    kk: "Жою сұраулары — Sai",
+    en: "Deletion requests — Sai",
+  }),
+  adm_h_deletions: Object.freeze({
+    ru: "Запросы на удаление",
+    kk: "Жою сұраулары",
+    en: "Deletion requests",
+  }),
+  adm_del_empty: Object.freeze({
+    ru: "Открытых запросов нет.",
+    kk: "Ашық сұраулар жоқ.",
+    en: "No open requests.",
+  }),
+  adm_f_requested: Object.freeze({
+    ru: "Запрос отправлен",
+    kk: "Сұрау жіберілді",
+    en: "Requested",
+  }),
+  adm_b_delete: Object.freeze({
+    ru: "Удалить учётную запись",
+    kk: "Есептік жазбаны жою",
+    en: "Delete the account",
+  }),
+  qf_what_label: Object.freeze({
+    ru: "Что вы хотите сделать?",
+    kk: "Нені жасағыңыз келеді?",
+    en: "What do you want to make?",
+  }),
+  qf_whom_label: Object.freeze({
+    ru: "Для кого это?",
+    kk: "Бұл кімге арналған?",
+    en: "Who is it for?",
+  }),
+  qf_lang_label: Object.freeze({
+    ru: "Язык проекта",
+    kk: "Жоба тілі",
+    en: "Language of the project",
+  }),
+  qf_what_site: Object.freeze({
+    ru: "Сайт",
+    kk: "Сайт",
+    en: "Website",
+  }),
+  qf_what_shop: Object.freeze({
+    ru: "Интернет-магазин",
+    kk: "Интернет-дүкен",
+    en: "Online shop",
+  }),
+  qf_what_bot: Object.freeze({
+    ru: "Бот",
+    kk: "Бот",
+    en: "Bot",
+  }),
+  qf_what_app: Object.freeze({
+    ru: "Приложение",
+    kk: "Қосымша",
+    en: "App",
+  }),
+  qf_what_tool: Object.freeze({
+    ru: "Рабочий инструмент",
+    kk: "Жұмыс құралы",
+    en: "Work tool",
+  }),
+  qf_what_unknown: Object.freeze({
+    ru: "Пока не знаю",
+    kk: "Әзірге білмеймін",
+    en: "Not sure yet",
+  }),
+  qf_whom_customers: Object.freeze({
+    ru: "Для клиентов",
+    kk: "Клиенттер үшін",
+    en: "For customers",
+  }),
+  qf_whom_team: Object.freeze({
+    ru: "Для команды",
+    kk: "Команда үшін",
+    en: "For my team",
+  }),
+  qf_whom_myself: Object.freeze({
+    ru: "Для себя",
+    kk: "Өзім үшін",
+    en: "For myself",
+  }),
+  qf_whom_unknown: Object.freeze({
+    ru: "Пока не знаю",
+    kk: "Әзірге білмеймін",
+    en: "Not sure yet",
+  }),
+  qf_lang_ru: Object.freeze({
+    ru: "Русский",
+    kk: "Орыс тілі",
+    en: "Russian",
+  }),
+  qf_lang_en: Object.freeze({
+    ru: "Английский",
+    kk: "Ағылшын тілі",
+    en: "English",
+  }),
+  stage_draft: Object.freeze({
+    ru: "Черновик",
+    kk: "Жоба нұсқасы",
+    en: "Draft",
+  }),
+  stage_interview: Object.freeze({
+    ru: "Интервью",
+    kk: "Сұхбат",
+    en: "Interview",
+  }),
+  stage_spec: Object.freeze({
+    ru: "Техническое задание",
+    kk: "Техникалық тапсырма",
+    en: "Requirements",
+  }),
+  stage_approved: Object.freeze({
+    ru: "Утверждено",
+    kk: "Бекітілді",
+    en: "Approved",
+  }),
+  stage_dev_requested: Object.freeze({
+    ru: "Разработка запрошена",
+    kk: "Әзірлеу сұралды",
+    en: "Development requested",
+  }),
+  stage_in_development: Object.freeze({
+    ru: "В разработке",
+    kk: "Әзірленуде",
+    en: "In development",
+  }),
+  stage_built: Object.freeze({
+    ru: "Собрано",
+    kk: "Жиналды",
+    en: "Built",
+  }),
+  stage_delivered: Object.freeze({
+    ru: "Передано",
+    kk: "Тапсырылды",
+    en: "Delivered",
+  }),
+  stage_accepted: Object.freeze({
+    ru: "Принято",
+    kk: "Қабылданды",
+    en: "Accepted",
+  }),
+  stage_returned: Object.freeze({
+    ru: "Возвращено на доработку",
+    kk: "Пысықтауға қайтарылды",
+    en: "Returned for rework",
+  }),
+  stage_archived: Object.freeze({
+    ru: "В архиве",
+    kk: "Мұрағатта",
+    en: "Archived",
+  }),
+  auth_err_personal_data_gate: Object.freeze({
+    ru: "Сейчас приглашать может только владелец Sai.",
+    kk: "Әзірге тек Sai иесі шақыра алады.",
+    en: "For now, only the Sai owner can invite.",
+  }),
+  auth_err_registration_closed: Object.freeze({
+    ru: "Регистрация сейчас закрыта.",
+    kk: "Тіркеу қазір жабық.",
+    en: "Registration is closed now.",
+  }),
+  auth_err_forbidden: Object.freeze({
+    ru: "У вас нет прав на это действие.",
+    kk: "Бұл әрекетке құқығыңыз жоқ.",
+    en: "You do not have permission for this action.",
+  }),
+  auth_err_owner_identity_required: Object.freeze({
+    ru: "Для организации владельца нужна личность владельца.",
+    kk: "Иесінің ұйымына иесінің жеке басы қажет.",
+    en: "The owner organisation needs an owner identity.",
+  }),
+  auth_err_consent_required: Object.freeze({
+    ru: "Нужно согласие на обработку данных: отметьте его.",
+    kk: "Деректерді өңдеуге келісім қажет: белгіні қойыңыз.",
+    en: "Consent to data processing is needed: tick the box.",
+  }),
+  auth_err_consent_stale: Object.freeze({
+    ru: "Текст согласия изменился. Обновите страницу и согласитесь ещё раз.",
+    kk: "Келісім мәтіні өзгерді. Бетті жаңартып, қайта келісіңіз.",
+    en: "The consent text has changed. Reload the page and agree again.",
+  }),
+  auth_err_account_exists: Object.freeze({
+    ru: "Учётная запись с этой почтой уже есть.",
+    kk: "Бұл поштамен есептік жазба бұрыннан бар.",
+    en: "An account with this e-mail already exists.",
+  }),
+  auth_err_bad_request: Object.freeze({
+    ru: "Запрос составлен неверно.",
+    kk: "Сұраныс дұрыс құрылмаған.",
+    en: "The request is not valid.",
+  }),
 });

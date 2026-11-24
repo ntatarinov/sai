@@ -1,0 +1,75 @@
+{
+  "handoff_id": "step03b-M2PROJ-20261124-01",
+  "run_id": "M2PROJ-20261124-01",
+  "workflow_id": "WF-02",
+  "step": "03b",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/M2PROJ-20261124-01/step-03b-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-116",
+      "REQ-117"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "git diff e656e6c fa32e0a (rework 02b: F1, F2, F4; and the design section 16)",
+      "your pass-1 findings (step-03-security-reviewer.json)",
+      "decisions/0138 Addition 2"
+    ],
+    "base_tag": "base/M2PROJ-20261124-01",
+    "rework_of": "handoffs/M2PROJ-20261124-01/step-03-security-reviewer.json",
+    "write_set": [
+      "handoffs/M2PROJ-20261124-01/step-03b-security-reviewer.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "Narrow pass 2 of your security gate over rework 02b (git diff e656e6c fa32e0a): F1 fixed (the second unused invite is gone after a deletion and after an acceptance; the old code answers 404; no address left in clear; the claim and the delete happen in the right transaction and order), F2 fixed (N13 holds no admin id or name), F4 fixed (purge of the owner organisation refused, other organisations still purge); nothing else changed. Re-run your pass-1 probes that touch those lines on a fresh checkout of fa32e0a. PASS or FAIL. result.status COMPLETED. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-24T17:57:55Z",
+  "started_at": "2026-11-24T17:57:56Z",
+  "completed_at": "2026-11-24T18:00:51Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "scope": "Narrow pass 2 over rework 02b: git diff e656e6c fa32e0a changes four code files (app/server/db/org-store.js, app/server/db/project-store.js, app/server/services/orgs.js, app/server/services/projects.js) plus decisions/0138 Addition 2, the design and handoffs. No file of app/public, app/db, app/scripts or .github changed. Read each changed line against Addition 2 and probed on a fresh clone of fa32e0a under <scratch> (npm ci in app/; PGlite, app.request). No repository suite, npm run check, node --test or e2e (decision 0110).",
+      "per_item": {
+        "F1": "fixed as Addition 2 says. deleteUnusedInvitesOf (org-store.js:138) is one constant statement 'delete from invites where email_norm = $1 and used_at is null and ($2::uuid is null or id <> $2::uuid)'. In deleteAccount (orgs.js:386) it runs with the target's email_norm, which lockUserForDelete now selects under the row lock (org-store.js:239) BEFORE anonymiseUser changes it, after scrubInviteEmails and before the purge and the audit row, all in the one platform transaction. In acceptInvite (orgs.js:276) it runs after the claim, the user, consent, membership and setInviteUsedBy, with the used invite's id as the exception, before the audit row, in the same transaction. Probes (sp12): three invites for one address, accepting one leaves only the used one; the other two old codes answer 404 for view and accept; an invite of another address is untouched; after the deletion of that account an unused invite planted for the address is gone, no invite row holds the address (the used one holds the placeholder), the planted code answers 404 and cannot create the account again; a deletion failing at the audit step rolls everything back (user still active, the unused invite still there); an acceptance failing at the audit step deletes nothing (both invites still unused, no user). My pass-1 probe sp10 now passes (the second invite is 404 after the deletion).",
+        "F2": "fixed: services/projects.js:275-277 returns {id: null, name: null, platform: true} for a version whose author is the platform admin; other authors keep id and name; the admin's card (N8) is unchanged. Probe: the N13 answer holds neither the admin's user id nor his name anywhere in its text, members' own authors are unchanged, and the admin card still shows the real author with the admin flag.",
+        "F4": "fixed: purgeOrg (project-store.js:237-239) reads the organisation's kind with one constant statement after the platform-settings check and before the purge setting is set, and throws a TypeError for kind owner with no delete. Probe: the owner organisation's project and version stay after a purge attempt (TypeError); a purge under tenant settings is still refused; a customer organisation still purges (3 versions, 1 project) and app.purge_org is empty afterwards; an unknown organisation id is a no-op.",
+        "nothing_else": "No other code line changed: the diff of the four files holds only these changes; no check, refusal, limit or grant was removed or loosened; the new statements are constants with bound parameters (Q9). F3 stays a recorded LOW defect as decisions/0138 Addition 2 says."
+      },
+      "items": {
+        "Q7": "met (no new literal; no e-mail or name in logs or audit rows after the probe).",
+        "Q8": "met (N13 now shows customers less; row-level security and grants unchanged).",
+        "Q9": "met (two new constant statements, both bound).",
+        "Q10": "met (both new deletes are inside the request transaction and roll back with a failure; the purge guard throws before any delete).",
+        "Q11": "not applicable.",
+        "R2": "not applicable.",
+        "R3": "not applicable (decision 0033)."
+      },
+      "probes": "sp12-rework (new) 20/20 PASS (my first run had one failure of my own: a re-auth token fetched while my failure injector was armed took the injected failure; after I fetched the token first, it passes); sp8-invites 77/77 PASS; sp9-tenant 71/72, the one fail is the pass-1 assertion that the customer sees the admin's name, which F2 changes on purpose (sp12 checks the new shape); sp10-leftover PASS (the F1 case)."
+    },
+    "findings": [],
+    "self_check": {
+      "diff": "git diff --stat e656e6c fa32e0a → 10 files: the four code files above, decisions/0138, the design, step-02b-backend-dev.json, step-02c-frontend-dev-pages.json, step-03-security-reviewer.json, step-04-reviewer.json.",
+      "hashes": "sha256sum of the 10 changed files of e656e6c..fa32e0a in the fresh clone, the list hashed: dfbb5b1a32487c8f726e01304321d147d28ef82fee0d2f777bae5aaced2276e2 before the probes and the same after; no tracked change in the clone (only the untracked probe folder in <scratch>).",
+      "commands": "Node v22.23.4 first on PATH; node sprobe/sp12-rework.mjs → SUMMARY 20/20 pass; sp8-invites → 77/77; sp9-tenant → 71/72 (the expected change of F2); sp10-leftover → 1/1. No server was started."
+    },
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "For FRONTEND-DEV (a display defect, not a security one): app/public/js/pages/project.js:81 still writes `${String(v.author.name)}` for the author, so a version edited by the platform admin would show «null» as the name now that N13 gives {name: null, platform: true}. The page was not changed in fa32e0a (the frontend step 02c handoff has no result yet); it needs the «platform» mark text and the new shape before the release UAT."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Still to be proven on GitHub, as in pass 1: the invite claim and version-number row locks, RLS, the purge trigger and grants on Postgres 17, and the migration rehearsal for 0003."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

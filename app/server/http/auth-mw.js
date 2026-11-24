@@ -1,3 +1,7 @@
+import crypto from "node:crypto";
+import { TEXTS as SERVED_TEXTS } from "../../public/shared/i18n/texts.js";
+import { SOURCE_LANGS } from "../../public/shared/i18n/lang.js";
+import { consentText } from "../../public/shared/consent.js";
 import { makeKeys } from "../auth/keys.js";
 import { passwords as defaultPasswords } from "../auth/password.js";
 import { REAUTH_HEADER, consumeReauthToken } from "../auth/reauth.js";
@@ -5,8 +9,11 @@ import { cookieName, readCookie, readLiveSession } from "../auth/sessions.js";
 import { touchSession } from "../db/auth-store.js";
 import { TX_DEADLINE_MS } from "../db/index.js";
 import { switchToTenant, withPlatform } from "../db/tx.js";
+import { PERSONAL_DATA_GATE } from "../services/orgs.js";
+import { appendAudit } from "../services/audit.js";
 import { csrfEqual, isJsonType, originAllowed } from "./csrf.js";
 import { HttpError } from "./errors.js";
+import { PLANNED_AUDIT_KEYS, planOf } from "./plan.js";
 import { countRequest, maybeCleanup } from "./rate-limit.js";
 import { bodyShapeOf, parseBody } from "./schema.js";
 
@@ -15,7 +22,9 @@ import { bodyShapeOf, parseBody } from "./schema.js";
 // deadline (C3, C17): the session read, every check, the counters, the re-auth consumption and the handler's
 // action. A refusal that must be counted is returned by the handler (its counters commit); every other
 // refusal is thrown (the transaction rolls back, so the state is unchanged). A tenant route's transaction is
-// switched to tenant settings after the checks and before its handler (9b).
+// switched to tenant settings after the checks and before its handler (9b); a tenant route that writes has a
+// plan (http/plan.js) that runs before the switch, on the platform settings, and whose audit entry is appended
+// first (9a), so the audit row commits with the action (the code design M2PROJ, C1 and 4.4).
 
 /** @typedef {import("../db/index.js").Q} Q */
 /** @typedef {import("../auth/sessions.js").Session} Session */
@@ -33,6 +42,9 @@ import { bodyShapeOf, parseBody } from "./schema.js";
  * @property {() => number} [random]
  * @property {Hasher} [passwords]
  * @property {number} [txDeadlineMs]
+ * @property {"owner_only" | "invited"} [personalDataGate] the G7 gate (tests plant it); by default the constant of services/orgs.js
+ * @property {Readonly<Record<string, Readonly<Record<string, string>>>>} [consentTexts] the texts the consent
+ *   digests are computed from (tests plant a stale sentence); by default the texts module of the pages
  */
 
 /**
@@ -46,7 +58,28 @@ import { bodyShapeOf, parseBody } from "./schema.js";
  * @property {() => number} clock
  * @property {() => number} random
  * @property {number} txDeadlineMs
+ * @property {"owner_only" | "invited"} gate the G7 gate of the personal-data rule (the code design M2PROJ, C7)
+ * @property {Readonly<Record<string, string | null>>} consent the sha256 hex of the five consent sentences of each
+ *   language, null for a language whose served texts lack one (C9)
  */
+
+/**
+ * The sha256 of the consent sentence of each language, from the texts the server holds.
+ * @param {Readonly<Record<string, Readonly<Record<string, string>>>>} texts
+ * @returns {Record<string, string | null>}
+ */
+export function consentDigests(texts) {
+  /** @type {Record<string, string | null>} */
+  const out = {};
+  for (const lang of SOURCE_LANGS) {
+    const text = consentText(texts, lang);
+    out[lang] =
+      text === null
+        ? null
+        : crypto.createHash("sha256").update(text, "utf8").digest("hex");
+  }
+  return out;
+}
 
 /**
  * @param {AuthDeps | undefined} auth
@@ -64,6 +97,8 @@ export function authContext(auth, appOrigin) {
     clock: auth?.clock ?? (() => Date.now()),
     random: auth?.random ?? (() => Math.random()),
     txDeadlineMs: auth?.txDeadlineMs ?? TX_DEADLINE_MS,
+    gate: auth?.personalDataGate ?? PERSONAL_DATA_GATE,
+    consent: consentDigests(auth?.consentTexts ?? SERVED_TEXTS),
   };
 }
 
@@ -80,7 +115,7 @@ export function keysOf(ctx) {
  * What a handler of the pipeline gets (4.7): for a tenant route `q` is already under tenant settings.
  * @typedef {object} PipelineRequest
  * @property {URLSearchParams} query
- * @property {Record<string, string>} body the checked body (an empty object for GET)
+ * @property {Record<string, any>} body the checked body (an empty object for GET); the route's shape types each value
  * @property {Record<string, string>} params
  * @property {Headers} headers
  * @property {string | null} clientIp
@@ -88,11 +123,12 @@ export function keysOf(ctx) {
  * @property {Session | null} session
  * @property {Q} q
  * @property {string | null} reauthId
+ * @property {unknown} plan what the route's plan returned as `state`, or null (a route without a plan)
  */
 
 /**
  * @typedef {object} PipelineRoute
- * @property {Readonly<{ tenant: boolean, admin: boolean, reauth: string | null, worker: boolean, session: boolean, rateLimit: "setup" | "login" | "reset" | "user" | null }>} meta
+ * @property {Readonly<{ tenant: boolean, admin: boolean, reauth: string | null, worker: boolean, session: boolean, rateLimit: "setup" | "login" | "reset" | "user" | "invite" | "invite_view" | null }>} meta
  * @property {(req: PipelineRequest) => RouteAnswer | Promise<RouteAnswer>} handler
  */
 
@@ -173,13 +209,6 @@ export async function runPipeline(ctx, db, route, req) {
       }
       // 9: the body.
       const body = write ? parseBody(req.bodyBytes, bodyShapeOf(route)) : {};
-      // 9b: a tenant route runs its handler under tenant settings of the session's organisation.
-      if (meta.tenant) {
-        const orgId = /** @type {Session} */ (session).orgId;
-        if (orgId === null) throw new HttpError("not_found");
-        await switchToTenant(q, orgId);
-      }
-      // 10: the handler, with the query of this transaction.
       /** @type {PipelineRequest} */
       const pr = {
         query: req.query,
@@ -191,7 +220,50 @@ export async function runPipeline(ctx, db, route, req) {
         session,
         q,
         reauthId,
+        plan: null,
       };
+      if (meta.tenant) {
+        const s = /** @type {Session} */ (session);
+        const orgId = s.orgId;
+        if (orgId === null) throw new HttpError("not_found");
+        // 9a: the plan runs on the platform settings of this transaction, then its audit entry is appended; the
+        // entry is built from the session and the request FIRST (organisation, actor, address), and exactly four
+        // values are copied from the plan, so a plan can never overwrite a session value (F23). Anything the
+        // plan throws rolls the whole transaction back: no audit row, no action.
+        const plan = planOf(route);
+        if (plan) {
+          const planned = await plan(pr);
+          const a = planned.audit;
+          if (a !== null) {
+            const given = Object.keys(a);
+            if (
+              given.length !== PLANNED_AUDIT_KEYS.length ||
+              !PLANNED_AUDIT_KEYS.every((k) => Object.hasOwn(a, k))
+            )
+              throw new TypeError(
+                "plan: a key outside action, targetKind, targetId, details, or a missing one",
+              );
+            await appendAudit(
+              q,
+              {
+                orgId,
+                actorKind: s.isAdmin ? "admin" : "user",
+                actorId: s.userId,
+                ip: req.clientIp,
+                action: a.action,
+                targetKind: a.targetKind,
+                targetId: a.targetId,
+                details: a.details,
+              },
+              { now, mac: keys.mac },
+            );
+          }
+          pr.plan = planned.state;
+        }
+        // 9b: the handler runs under tenant settings of the session's organisation.
+        await switchToTenant(q, orgId);
+      }
+      // 10: the handler, with the query of this transaction.
       const answer = await route.handler(pr);
       // 11: the session was used (the only column a GET changes); no row when the handler ended it.
       if (session) await touchSession(q, session.id, now);

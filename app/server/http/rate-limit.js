@@ -8,13 +8,23 @@ import { HttpError } from "./errors.js";
 
 /** @typedef {import("../db/index.js").Q} Q */
 
-/** @type {Readonly<Record<"setup" | "login" | "reset" | "user", { windowMs: number, max: number }>>} */
+/** @typedef {"setup" | "login" | "reset" | "user" | "invite" | "invite_view" | "project"} LimitName */
+
+/** @type {Readonly<Record<LimitName, { windowMs: number, max: number }>>} */
 export const LIMITS = Object.freeze({
   setup: { windowMs: 3600 * 1000, max: 5 },
   login: { windowMs: 15 * 60 * 1000, max: 10 },
   reset: { windowMs: 15 * 60 * 1000, max: 10 },
   user: { windowMs: 10 * 60 * 1000, max: 600 },
+  // Invitations and projects (the code design M2PROJ, C14): an accept per address, a view of an invite per
+  // address, a project creation per user in a fixed 24-hour window.
+  invite: { windowMs: 3600 * 1000, max: 10 },
+  invite_view: { windowMs: 3600 * 1000, max: 60 },
+  project: { windowMs: 24 * 3600 * 1000, max: 20 },
 });
+
+/** The limits whose subject is not an address: a session id ("user") or a user id ("project"). */
+const SUBJECT_LIMITS = Object.freeze(["user", "project"]);
 
 /**
  * The address part of a limit key (decisions/0137 Addition 4, SEC F2): an IPv4 address whole, an IPv6 address
@@ -48,14 +58,14 @@ export const CLEANUP_SHARE = 0.01;
  * Counts one request in its window; throws 429 rate_limited over the limit.
  * @param {Q} q
  * @param {(label: string, text: string) => string} mac
- * @param {"setup" | "login" | "reset" | "user"} limit
- * @param {string} subject the normalised address or "unknown", or the session id for "user"
+ * @param {LimitName} limit
+ * @param {string} subject the normalised address or "unknown", the session id for "user", the user id for "project"
  * @param {number} now
  */
 export async function countRequest(q, mac, limit, subject, now) {
   const { windowMs, max } = LIMITS[limit];
   const windowStart = Math.floor(now / windowMs) * windowMs;
-  const key = limit === "user" ? subject : addressKey(subject);
+  const key = SUBJECT_LIMITS.includes(limit) ? subject : addressKey(subject);
   const count = await bumpRate(
     q,
     mac("rl", `${limit}\u0000${key}`),

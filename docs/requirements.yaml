@@ -17581,7 +17581,7 @@ requirements:
   - id: REQ-117
     title: Projects and the request board — «Новый проект» with a title, the idea and three one-tap quick facts, versioned ideas with a reason, the stage strip from shared/project/stages.js, the admin request board with counts by stage, the request card with «Изменить заявку», the audit log page and the KZ date and number formats (PUBLIC-V1, R2.4)
     owner: BACKEND-DEV   # services projects and audit, the project and admin routes, migration 0003; the app and admin pages, public/js/api.js and the two shared modules by FRONTEND-DEV in the same run; lane FULL
-    status: pending   # 2026-11-23T18:13:13Z, run M2AUTH-20261123-01, rework of the grants micro-amendment (REQ-ANALYST, handoffs/M2AUTH-20261123-01/step-01a-req-analyst-grants-b.json) by the findings G1 of handoffs/M2AUTH-20261123-01/step-01a-req-validator-grants-gate.json and decisions/0137 О1, in the form of decisions/0079 item 5; no criterion changed
+    status: pending   # 2026-11-24T16:58:09Z, run M2PROJ-20261124-01, WF-01 micro-amendment (REQ-ANALYST, handoffs/M2PROJ-20261124-01/step-01a-req-analyst-files.json) by decisions/0138 О1, in the form of decisions/0079 item 5: the statements of projects stand in app/server/db/project-store.js (the rule DBC-1 of app/test/unit/db-calls.test.js keeps every statement under app/server/db/) and app/server/services/projects.js orchestrates and holds none; only the file names of criteria 3 and 9 and of the lines that repeat them changed, no criterion's meaning changed; before this: 2026-11-23T18:13:13Z, run M2AUTH-20261123-01, rework of the grants micro-amendment (REQ-ANALYST, handoffs/M2AUTH-20261123-01/step-01a-req-analyst-grants-b.json) by the findings G1 of handoffs/M2AUTH-20261123-01/step-01a-req-validator-grants-gate.json and decisions/0137 О1, in the form of decisions/0079 item 5; no criterion changed
     depends_on: [REQ-116]   # accounts and organisations of the invited client (REQ-116, which depends on REQ-114 and REQ-115); built in run M2.3 together with REQ-116
     original_request: >
       Слова владельца дословно. 2026-11-23, чат сессии на компьютере владельца с Windows (decisions/0133, раздел
@@ -17628,11 +17628,14 @@ requirements:
       за рубежом (Германия, Франкфурт); тексты для ИИ обрабатывает Anthropic (за рубежом).» (en «Closed test. Data is
       stored abroad (Germany, Frankfurt); texts for the AI are processed by Anthropic (abroad).»). Deleting an account
       (REQ-116 criterion 6) that leaves an organisation without members deletes that organisation's projects and idea
-      versions through one purge helper of the projects service; the insert-only trigger refuses every other UPDATE
+      versions through one purge helper (a function of app/server/db/project-store.js, called by the projects
+      service); the insert-only trigger refuses every other UPDATE
       and DELETE (open question О12).
 
       Files (from the root of Sai; new unless said): app/db/migrations/0003_projects.sql (projects, idea_versions and
-      their RLS; shared with REQ-116; their grants go into app/db/grants.sql of REQ-115, decisions/0137 О1); app/server/services/projects.js and the audit page route in the
+      their RLS; shared with REQ-116; their grants go into app/db/grants.sql of REQ-115, decisions/0137 О1); app/server/db/project-store.js (every statement of
+      projects, idea versions, the board and the purge, decisions/0138 О1); app/server/services/projects.js (orchestrates,
+      holds no statement) and the audit page route in the
       admin routes; app/server/routes/projects.js and app/server/routes/admin.js (the names may change in the design),
       app/server/routes/index.js (changed); app/public/js/api.js; app/public/shared/format/kz.js,
       app/public/shared/project/stages.js and the quick-facts module; the app pages (project list, new project,
@@ -17692,7 +17695,8 @@ requirements:
         the module's answer «allowed» equals the test's own literal table, and `archived` is reachable from every other
         stage; the module has no import of a node: module and no Math.random, Date.now or `new Date` (the rules of
         import-boundaries.test.js); command `grep -rniE 'update[[:space:]]+projects' app/server` prints lines of
-        app/server/services/projects.js only (only the projects service changes a project, and so its stage).
+        app/server/db/project-store.js only (only the projects store holds a statement that changes a project, and so
+        its stage; the projects service calls it).
       - >-
         Isolation on the real routes (AC2.1). Test app/test/int/isolation.test.js (REQ-115 criterion 7): on the real
         route table of this run the printed number of cases is at least 2 (GET /api/projects/:id and POST
@@ -17738,7 +17742,7 @@ requirements:
         organisation's projects and idea versions through the purge helper (counts 0) and keeps their audit rows with ids
         only; deleting one member of an organisation that keeps another member keeps the projects; the purge helper is
         the only place that deletes idea_versions (command `grep -rniE 'delete[[:space:]]+from[[:space:]]+idea_versions'
-        app/server` prints lines of app/server/services/projects.js only).
+        app/server` prints lines of app/server/db/project-store.js only).
       - >-
         The whole path in a browser (AC2.6 sharpened). Test app/test/e2e/accounts.test.js (created by this work; the e2e
         job of app.yml, real Chrome through playwright-core, a local server on port 0 with a fresh PGlite): setup with a

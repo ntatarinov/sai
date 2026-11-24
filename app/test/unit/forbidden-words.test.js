@@ -3,8 +3,16 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
-import { LANGS, LISTS, lintText } from "../../scripts/word-lists.js";
+import {
+  CONSENT_KEYS,
+  DELETION_TERM,
+  LANGS,
+  LISTS,
+  lintText,
+  stripDeletionTerm,
+} from "../../scripts/word-lists.js";
 import { APP, tempDir } from "../fixtures/helpers.js";
+import { CONSENT } from "../fixtures/m23.js";
 
 // REQ-111 criterion 3: the forbidden-words lint. The lists are written here as a literal table (the forms of
 // the requirement), so the test does not read its oracle from the module under test.
@@ -652,4 +660,215 @@ test("FW-8 the module of the lists is the one file of app/ outside app/test that
   };
   walk(APP);
   assert.deepEqual(found, ["scripts/word-lists.js"]);
+});
+
+// ---------------------------------------------------------------------------------------------------------
+// FW-8b and FW-9: the one narrow exception of REQ-111 criterion 3 as amended (decisions/0135 О13, 0136 О16; the
+// code design M2PROJ, 4.8): the five consent keys of the invitation page are linted with the exact
+// deletion-term phrase of their language taken out once; every other value of every key, and every page text,
+// is linted whole. The consent sentences are the test's own literals (fixtures/m23.js).
+
+/**
+ * Changes the real sentence of a consent key in one language in the texts module of a planted copy.
+ * @param {string} root
+ * @param {"ru" | "kk" | "en"} lang
+ * @param {number} index 0 to 4: consent_s1 to consent_s5
+ * @param {(sentence: string) => string} edit
+ */
+function editConsent(root, lang, index, edit) {
+  const file = path.join(root, "public/shared/i18n/texts.js");
+  const src = fs.readFileSync(file, "utf8");
+  const old = JSON.stringify(CONSENT[lang][index]);
+  assert.ok(
+    src.includes(old),
+    `consent_s${index + 1} ${lang} stands in the module`,
+  );
+  fs.writeFileSync(
+    file,
+    src.replace(old, () => JSON.stringify(edit(CONSENT[lang][index]))),
+  );
+}
+
+/** The list Ц form of each language and a form of list Б, built from parts (the test names no form whole). */
+const DAYS = {
+  ru: ["дн", "ей"].join(""),
+  kk: ["күн", "і"].join(""),
+  en: ["da", "ys"].join(""),
+};
+const FREE = ["бесплат", "но"].join("");
+
+test("FW-8b the exception is narrow: the deletion-term phrase is taken out of the consent keys once and nothing else; in a copy a second list form, the phrase twice, the phrase in another key or another wording are still findings", (t) => {
+  assert.deepEqual(
+    [...CONSENT_KEYS],
+    ["consent_s1", "consent_s2", "consent_s3", "consent_s4", "consent_s5"],
+  );
+  assert.deepEqual(
+    { ...DELETION_TERM },
+    {
+      ru: "в течение 15 рабочих дней",
+      kk: "15 жұмыс күні ішінде",
+      en: "within 15 working days",
+    },
+  );
+  for (const lang of /** @type {const} */ (["ru", "kk", "en"])) {
+    const s5 = CONSENT[lang][4];
+    // Without the exception the sentence holds the list form of its language; with it, nothing.
+    assert.deepEqual(
+      lintText(s5, lang).map((f) => `${f.list}:${f.form}`),
+      [`Ц:${DAYS[lang]}`],
+      `${lang} without the exception`,
+    );
+    const stripped = stripDeletionTerm(s5, lang);
+    assert.deepEqual(lintText(stripped, lang), [], `${lang} with it`);
+    assert.equal(stripped.length, s5.length - DELETION_TERM[lang].length);
+    // Once: the second occurrence stays; the first goes.
+    const twice = `${DELETION_TERM[lang]} ${DELETION_TERM[lang]}`;
+    assert.equal(stripDeletionTerm(twice, lang), ` ${DELETION_TERM[lang]}`);
+    // A value without the phrase, or with the phrase of another language, comes back as it is.
+    assert.equal(stripDeletionTerm("plain text", lang), "plain text");
+    for (const other of /** @type {const} */ (["ru", "kk", "en"]))
+      if (other !== lang)
+        assert.equal(
+          stripDeletionTerm(DELETION_TERM[other], lang),
+          DELETION_TERM[other],
+        );
+    // The other four sentences hold no form of any list.
+    for (const k of [0, 1, 2, 3])
+      assert.deepEqual(
+        lintText(CONSENT[lang][k], lang),
+        [],
+        `${lang} s${k + 1}`,
+      );
+  }
+  assert.throws(() => stripDeletionTerm("x", "de"), RangeError);
+  assert.throws(
+    () => stripDeletionTerm(/** @type {any} */ (5), "ru"),
+    TypeError,
+  );
+  // The real files pass (the exception exists and is enough).
+  const real = run(copies(t));
+  assert.equal(real.status, 0, real.stdout);
+  assert.equal(real.stdout, "check-public: app/public is clean\n");
+  /** @type {Array<[string, (root: string) => void, string]>} */
+  const planted = [
+    [
+      "a second list form in the ru fifth sentence",
+      (root) =>
+        editConsent(root, "ru", 4, (v) =>
+          v.replace(
+            "в течение 15 рабочих дней",
+            `в течение 15 рабочих дней и 30 ${DAYS.ru}`,
+          ),
+        ),
+      `check-public: shared/i18n/texts.js: key consent_s5: ru: list Ц «${DAYS.ru}»`,
+    ],
+    [
+      "a second list form in the en fifth sentence",
+      (root) => editConsent(root, "en", 4, (v) => `${v} Or 30 ${DAYS.en}.`),
+      `check-public: shared/i18n/texts.js: key consent_s5: en: list Ц «${DAYS.en}»`,
+    ],
+    [
+      "a second list form in the kk fifth sentence",
+      (root) => editConsent(root, "kk", 4, (v) => `${v} Тағы 30 ${DAYS.kk}.`),
+      `check-public: shared/i18n/texts.js: key consent_s5: kk: list Ц «${DAYS.kk}»`,
+    ],
+    [
+      "the ru phrase twice",
+      (root) =>
+        editConsent(
+          root,
+          "ru",
+          4,
+          (v) => `${v} Ещё в течение 15 рабочих дней.`,
+        ),
+      `check-public: shared/i18n/texts.js: key consent_s5: ru: list Ц «${DAYS.ru}»`,
+    ],
+    [
+      "another wording of the term (not the exact phrase)",
+      (root) =>
+        editConsent(root, "ru", 4, (v) =>
+          v.replace("в течение 15 рабочих дней", `в течение 15 ${DAYS.ru}`),
+        ),
+      `check-public: shared/i18n/texts.js: key consent_s5: ru: list Ц «${DAYS.ru}»`,
+    ],
+    [
+      "a form of another list in a consent key",
+      (root) =>
+        editConsent(root, "ru", 2, (v) =>
+          v.replace("хранятся", `хранятся ${FREE}`),
+        ),
+      `check-public: shared/i18n/texts.js: key consent_s3: ru: list Б «${FREE}»`,
+    ],
+    [
+      "the exact ru phrase in a key that is no consent key",
+      (root) => plantKey(root, { ru: "Ответ в течение 15 рабочих дней" }),
+      `check-public: shared/i18n/texts.js: key planted_x: ru: list Ц «${DAYS.ru}»`,
+    ],
+    [
+      "the exact en phrase in a key that is no consent key",
+      (root) => plantKey(root, { en: "Reply within 15 working days" }),
+      `check-public: shared/i18n/texts.js: key planted_x: en: list Ц «${DAYS.en}»`,
+    ],
+  ];
+  for (const [name, plant, line] of planted) {
+    const r = run(copies(t, plant));
+    assert.equal(r.status, 1, `${name}: ${r.stdout}`);
+    assert.ok(r.stdout.includes(line), `${name}: ${r.stdout}`);
+  }
+});
+
+test("FW-9 the exception does not reach a page: a consent sentence as text of the invite page, or a deletion term in any other page, is a finding; the real invite page holds the five sentences in no HTML text", (t) => {
+  const real = fs.readFileSync(path.join(APP, "public/invite.html"), "utf8");
+  // The consent elements are empty in the HTML (they are filled from the texts module), so no page text holds the term.
+  for (let i = 1; i <= 5; i += 1)
+    assert.match(
+      real,
+      new RegExp(`<p[^>]*id="consent-${i}"[^>]*></p>`),
+      `consent-${i}`,
+    );
+  for (const lang of /** @type {const} */ (["ru", "kk", "en"]))
+    assert.ok(
+      !real.includes(DELETION_TERM[lang]),
+      `no ${lang} term in the HTML`,
+    );
+  /** @type {Array<[string, string, string]>} the name, the page, the text planted before main */
+  const pages = [
+    [
+      "the ru fifth sentence as a paragraph of the invite page",
+      "invite.html",
+      `<p>${CONSENT.ru[4]}</p>`,
+    ],
+    [
+      "the ru fifth sentence as a data-t text of the invite page",
+      "invite.html",
+      `<p data-t="consent_s5">${CONSENT.ru[4]}</p>`,
+    ],
+    [
+      "the deletion term in another page",
+      "how.html",
+      `<p>${DELETION_TERM.ru}</p>`,
+    ],
+    [
+      "the deletion term in an account page",
+      "account.html",
+      `<p>${DELETION_TERM.ru}</p>`,
+    ],
+  ];
+  for (const [name, page, plant] of pages) {
+    const root = copies(t, (dir) => {
+      const file = path.join(dir, "public", page);
+      const src = fs.readFileSync(file, "utf8");
+      assert.ok(src.includes('<main id="main"'), `${page} has its main`);
+      fs.writeFileSync(
+        file,
+        src.replace('<main id="main"', () => `${plant}\n<main id="main"`),
+      );
+    });
+    const r = run(root);
+    assert.equal(r.status, 1, `${name}: ${r.stdout}`);
+    assert.ok(
+      r.stdout.includes(`check-public: ${page}: text: ru: list Ц «${DAYS.ru}»`),
+      `${name}: ${r.stdout}`,
+    );
+  }
 });

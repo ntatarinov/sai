@@ -6,8 +6,8 @@ import crypto from "node:crypto";
 
 /**
  * The closed labels of `mac`: session token, CSRF token hash, CSRF token, re-auth token, reset code, recovery
- * code, client address, rate-limit key, admin delay key and the login counter of an e-mail without an active
- * account (4.9.5).
+ * code, client address, rate-limit key, admin delay key, the login counter of an e-mail without an active
+ * account (4.9.5) and the invite code (the code design M2PROJ, C4).
  */
 export const MAC_LABELS = Object.freeze([
   "session",
@@ -20,6 +20,7 @@ export const MAC_LABELS = Object.freeze([
   "rl",
   "delay",
   "acct",
+  "invite",
 ]);
 
 const TOTP_INFO = "sai totp v1";

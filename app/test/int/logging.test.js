@@ -4,6 +4,7 @@ import http from "node:http";
 import { test } from "node:test";
 import { sha256Hex, totpCode } from "../fixtures/auth.js";
 import { request, startNode, waitFor } from "../fixtures/helpers.js";
+import { consentSha } from "../fixtures/m23.js";
 
 // REQ-108 criterion 10 (request id and logs); REQ-114 criterion 12 (LG-2: no personal data or secret of the
 // account routes in the server's output).
@@ -258,6 +259,157 @@ test("LG-2 after setup, a right and a wrong login, logout, a password change, re
     lines().some((l) => JSON.parse(l).actor_kind === "admin"),
     "a line of a signed-in request names its actor kind",
   );
+  const all = s.out() + s.err();
+  for (const m of planted) {
+    assert.ok(m && m.length >= 6, "a planted value");
+    assert.ok(
+      !all.includes(m),
+      `the output holds a planted value: ${m.slice(0, 6)}…`,
+    );
+  }
+  assert.ok(
+    !all.toLowerCase().includes("planted"),
+    "no part of a planted text",
+  );
+  s.child.kill("SIGKILL");
+});
+
+test("LG-3 after an invite is created, viewed and accepted, a refused accept, a deletion request and a deletion, each with planted values, the server's output holds no planted invite code, e-mail, name, password or client address, and every line keeps the keys of LG-1", async (t) => {
+  const setupToken = crypto.randomBytes(32).toString("base64url");
+  const s = startNode(t, {
+    PORT: "0",
+    SECRET_PEPPER: crypto.randomBytes(32).toString("base64url"),
+    SETUP_TOKEN_HASH: sha256Hex(setupToken),
+  });
+  const port = await s.ready;
+  const adminEmail = "Planted.Admin.Zk1@Example.test";
+  const adminPass = "planted-admin-pass-Z1";
+  const inviteeEmail = "Planted.Invitee.Zk8@Example.test";
+  const inviteeName = "Plantedclient Yr";
+  const inviteePass = "planted-client-pass-Z2";
+  const wrongEmail = "Planted.Wrong.Zk9@Example.test";
+  const planted = [
+    setupToken,
+    adminEmail,
+    adminEmail.toLowerCase(),
+    adminPass,
+    inviteeEmail,
+    inviteeEmail.toLowerCase(),
+    inviteeName,
+    inviteePass,
+    wrongEmail,
+    wrongEmail.toLowerCase(),
+    "127.0.0.5",
+  ];
+  const setup = await from5(port, "POST", "/api/auth/setup", {
+    body: {
+      token: setupToken,
+      email: adminEmail,
+      name: "Plantedadmin",
+      password: adminPass,
+    },
+  });
+  assert.equal(setup.status, 201);
+  const login = await from5(port, "POST", "/api/auth/login", {
+    body: { email: adminEmail, password: adminPass },
+  });
+  assert.equal(login.status, 200);
+  const cookie = login.setCookie[0].split(";")[0];
+  planted.push(cookie.split("=")[1]);
+  const csrf = (await from5(port, "GET", "/api/auth/me", { cookie })).json.csrf;
+  planted.push(csrf);
+  const admin = { cookie, csrf };
+  const reauth = async (/** @type {string} */ purpose) => {
+    const r = await from5(port, "POST", "/api/auth/reauth", {
+      ...admin,
+      body: { password: adminPass, purpose },
+    });
+    assert.equal(r.status, 200, JSON.stringify(r.json));
+    planted.push(r.json.token);
+    return r.json.token;
+  };
+  // Invite creation: the link carries the code once.
+  const made = await from5(port, "POST", "/api/admin/invites", {
+    ...admin,
+    reauth: await reauth("owner_identity"),
+    body: {
+      email: inviteeEmail,
+      role: "org_owner",
+      owner_identity: true,
+      org_name: "Plantedorg",
+    },
+  });
+  assert.equal(made.status, 201, JSON.stringify(made.json));
+  const code = made.json.link.split("#c=")[1];
+  assert.match(code, /^[A-Za-z0-9_-]{22}$/);
+  planted.push(code);
+  // A GET of the invite, a refused accept (another e-mail), a valid accept.
+  assert.equal((await from5(port, "GET", `/api/invites/${code}`)).status, 200);
+  const digest = consentSha("ru");
+  const body = {
+    name: inviteeName,
+    email: inviteeEmail,
+    password: inviteePass,
+    consent: true,
+    consent_sha256: digest,
+    consent_lang: "ru",
+  };
+  const refused = await from5(port, "POST", `/api/invites/${code}/accept`, {
+    body: { ...body, email: wrongEmail },
+  });
+  assert.equal(refused.status, 404, JSON.stringify(refused.json));
+  const accepted = await from5(port, "POST", `/api/invites/${code}/accept`, {
+    body,
+  });
+  assert.equal(accepted.status, 200, JSON.stringify(accepted.json));
+  const cookie2 = accepted.setCookie[0].split(";")[0];
+  planted.push(cookie2.split("=")[1]);
+  const me2 = await from5(port, "GET", "/api/auth/me", { cookie: cookie2 });
+  assert.equal(me2.status, 200);
+  planted.push(me2.json.csrf);
+  // The deletion request of the invited user and the admin's deletion.
+  const asked = await from5(port, "POST", "/api/account/deletion-request", {
+    cookie: cookie2,
+    csrf: me2.json.csrf,
+    body: { password: inviteePass },
+  });
+  assert.equal(asked.status, 200, JSON.stringify(asked.json));
+  const deleted = await from5(
+    port,
+    "POST",
+    `/api/admin/users/${me2.json.id}/delete`,
+    {
+      ...admin,
+      reauth: await reauth("user_delete"),
+      body: {},
+    },
+  );
+  assert.equal(deleted.status, 200, JSON.stringify(deleted.json));
+  const lines = () =>
+    s
+      .out()
+      .split("\n")
+      .filter((l) => l.startsWith("{"));
+  await waitFor(
+    () =>
+      lines().some(
+        (l) => JSON.parse(l).route === "/api/admin/users/:id/delete",
+      ),
+    5000,
+    "the last log line",
+  );
+  assert.equal(lines().length, 12, `${lines().length} lines: one per request`);
+  for (const l of lines())
+    for (const k of Object.keys(JSON.parse(l))) assert.ok(KEYS.includes(k), k);
+  const routes = lines().map((l) => JSON.parse(l).route);
+  for (const pattern of [
+    "/api/admin/invites",
+    "/api/invites/:code",
+    "/api/invites/:code/accept",
+    "/api/account/deletion-request",
+    "/api/admin/users/:id/delete",
+  ])
+    assert.ok(routes.includes(pattern), `a line names the route ${pattern}`);
   const all = s.out() + s.err();
   for (const m of planted) {
     assert.ok(m && m.length >= 6, "a planted value");

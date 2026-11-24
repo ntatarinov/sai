@@ -5,6 +5,12 @@ import { createApp } from "../../server/app.js";
 import { loadIntake } from "../../server/routes/demo.js";
 import { routeTable } from "../../server/routes/index.js";
 import { ADMIN, authHarness, totpCode } from "../fixtures/auth.js";
+import {
+  acceptBody,
+  addProject,
+  createInvite,
+  inviteBody,
+} from "../fixtures/m23.js";
 
 // REQ-114 criterion 4 (the code design M2AUTH, 4.7 steps 3-5, the metadata key `session`): every non-GET
 // route of the real route table whose `session` is true refuses a foreign or missing Origin (403), a body
@@ -191,6 +197,102 @@ const CASES = {
       ok: 200,
     };
   },
+  // M2.3 (guard row G9 of the code design M2PROJ): the seven new session routes.
+  "POST /api/invites/:code/accept": async (t) => {
+    const { h, as, other } = await adminBase(t);
+    const made = await createInvite(h, as);
+    assert.equal(made.status, 201, made.text);
+    return {
+      h,
+      as,
+      other,
+      path: `/api/invites/${made.code}/accept`,
+      body: acceptBody(),
+      ok: 200,
+    };
+  },
+  "POST /api/account/deletion-request": async (t) => {
+    const { h, as, other } = await base(t);
+    return {
+      h,
+      as,
+      other,
+      path: "/api/account/deletion-request",
+      body: { password: as.password },
+      ok: 200,
+    };
+  },
+  "POST /api/admin/invites": async (t) => {
+    const { h, as, other } = await adminBase(t);
+    return {
+      h,
+      as,
+      other,
+      path: "/api/admin/invites",
+      body: inviteBody(),
+      reauth: await h.reauthToken(as, "owner_identity"),
+      ok: 201,
+    };
+  },
+  "POST /api/admin/users/:id/delete": async (t) => {
+    const { h, as, other } = await adminBase(t);
+    return {
+      h,
+      as,
+      other,
+      path: `/api/admin/users/${other.id}/delete`,
+      body: {},
+      reauth: await h.reauthToken(as, "user_delete"),
+      ok: 200,
+    };
+  },
+  "POST /api/admin/projects/:id/idea": async (t) => {
+    const { h, as, other } = await adminBase(t);
+    const p = await addProject(h, {
+      orgId: /** @type {string} */ (other.orgId),
+      createdBy: other.id,
+    });
+    return {
+      h,
+      as,
+      other,
+      path: `/api/admin/projects/${p.id}/idea`,
+      body: { text: "A corrected idea", reason: "Because it was unclear" },
+      ok: 200,
+    };
+  },
+  "POST /api/projects": async (t) => {
+    const { h, as, other } = await base(t);
+    return {
+      h,
+      as,
+      other,
+      path: "/api/projects",
+      body: {
+        title: "A project",
+        idea: "An idea",
+        what: "shop",
+        whom: "team",
+        lang: "ru",
+      },
+      ok: 201,
+    };
+  },
+  "POST /api/projects/:id/idea": async (t) => {
+    const { h, as, other } = await base(t);
+    const p = await addProject(h, {
+      orgId: /** @type {string} */ (as.orgId),
+      createdBy: as.id,
+    });
+    return {
+      h,
+      as,
+      other,
+      path: `/api/projects/${p.id}/idea`,
+      body: { text: "A corrected idea", reason: "Because it was unclear" },
+      ok: 200,
+    };
+  },
 };
 
 /** Starts a TOTP enrolment of the admin; the base32 secret. @param {H} h @param {Actor} admin */
@@ -209,7 +311,7 @@ test("CS-1 every non-GET route with session true refuses a foreign or missing Or
     (r) => r.method !== "GET" && r.meta.session === true,
   );
   t.diagnostic(`CS-1 routes with cases: ${rows.length}`);
-  assert.ok(rows.length > 0);
+  assert.ok(rows.length >= 17, `${rows.length} session routes`);
   let refusals = 0;
   for (const row of rows) {
     const key = `${row.method} ${row.path}`;

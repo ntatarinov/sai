@@ -1,0 +1,120 @@
+{
+  "handoff_id": "step04-M2PROJ-20261124-01",
+  "run_id": "M2PROJ-20261124-01",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/M2PROJ-20261124-01/step-04-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-116",
+      "REQ-117"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "git diff base/M2PROJ-20261124-01 e656e6c (the code of M2.3)",
+      "docs/design/M2PROJ-invites-projects.md (commit ca342ce) and decisions/0138 with Addition 1, decisions/0137 Additions",
+      "handoffs/M2PROJ-20261124-01/step-02-backend-dev.json and step-02-frontend-dev-pages.json (what they proved; result.issues: their choices and divergences)",
+      "docs/requirements.yaml REQ-116, REQ-117; docs/workflows/WF-02-development.md steps 3 and 4; docs/quality-bar.md"
+    ],
+    "base_tag": "base/M2PROJ-20261124-01",
+    "parallel_work_now": [
+      "the other reviewer (read only)"
+    ],
+    "write_set": [
+      "handoffs/M2PROJ-20261124-01/step-04-reviewer.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 4 gate, REVIEWER (read only): the code does what the design says and nothing more (every changed file and section traced to the design; any line outside it is a finding); the developers' reported choices and divergences are inside the design or named (judge each: planCreate(ctx, req), the keysOf copies, security-invariants rows, the extra statement in /api/auth/me, the site.css form rules and the look difference from login/setup, the kk drafts); naming, errors, comments and structure as the neighbouring code; no dead code, no catch that swallows, no TODO; the import boundaries, the no-string-SQL rule and DBC-1 (run their finder logic over the tree with your own read-only script cut from the tests, not the test files); the CI/ci-workflow, word-list and check-public changes; prettier, eslint and tsc pass (you may run them: they only read); the expected-red list of the developers is complete (read the existing tests that the change touches; the design section 11 table). Check specially for a repeat of the past CI quoting bug (`$$` in SQL/shell text) in any workflow or script change. PASS or FAIL with findings by severity, each with file:line and the exact change wanted. result.status COMPLETED. Be economical but complete. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-24T17:41:28Z",
+  "started_at": "2026-11-24T17:41:43Z",
+  "completed_at": "2026-11-24T17:50:54Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Verdict PASS. No Critical, High or Medium finding; five Low findings and three notes for ORCH, none blocks. Scope: git diff base/M2PROJ-20261124-01 e656e6c, 56 files under app (no .github file changed) plus the design, decisions/0138 and docs/security-invariants.md.\nQ1 cause not symptom: PASS. A counted refusal of the accept route is returned (the rate count commits), every body-only refusal is thrown (rollback); the invite is spent by one conditional update after every check and after the password hash, and a 23505 on the e-mail after the claim is thrown, so the claim rolls back; no catch swallows (the one catch in services/orgs.js re-throws everything but the 23505).\nQ2 agrees with the design and decisions: PASS. Checked line by line: migration 0003 (4 tables, the invites columns and rule, the two widened checks, the users guard trigger, the insert-only idea_versions with the purge exception, forced RLS) and grants.sql (the table of 4.2.4, one to_regclass block per table, no grant in the migration); the step 9a plan hook (the entry is built from the session first, exactly the four keys action, targetKind, targetId, details are copied, any other or missing key is a TypeError before a statement, the append runs before switchToTenant, the handler gets pr.plan); the 14 route rows with the six meta keys and the order of 4.3; the eight codes and AUTH_CODES 31; the three limits and the subject keys; the closed actions and details keys; the label invite and the purpose user_delete; the consent digest on both sides through the one function consentText; the deletion order of 4.5.1; the purge only under platform settings; the audit page ordered by audit_log.id; the board with a per-stage row_number limit; the stage table with exactly 20 allowed pairs.\nQ3 extra work: PASS with remarks. Every changed file is in section 3 of the design. The reported choices are judged below (F1-F5). Nothing else outside the design was found.\nQ4 erosion: PASS. grep over the changed files for TODO, FIXME, .skip(, eslint-disable, ts-ignore, || true, continue-on-error, set +e and console. -> no match; no test, check command or workflow file is edited; no CR; no machine path, reference-product name or secret.\nQ5 idioms: PASS. Same style as the neighbouring M2.2 code: named store functions with constant statement texts, services never run a statement, errors thrown as HttpError, times as parameters from the injected clock.\nCI quoting repeat: checked. No workflow file is in the change; the only `$$` in the changed files stands in app/db/grants.sql (SQL file, the existing form of the earlier blocks, run by the migration runner, never through a shell); no shell or SQL text inside a JS script uses dollar quoting.\nOwn checks on a fresh clone of e656e6c (Node 22.23.4, npm ci in app): prettier --check . exit 0; eslint . --max-warnings 0 exit 0; tsc --noEmit -p jsconfig.json exit 0; node scripts/check-public.js (reads only) 'app/public is clean'. The finder logic cut from the tests (node:test import replaced by a no-op) over the whole tree: import-boundaries findings for server, api and the public js and shared files [], fileFindings [], stringSql over server and db-verify [], ciFindings [], ENV-1 [], DBC-1 callFindings [] and roleSetters []. The REQ greps: set_config('app.purge_org' only in db/project-store.js; registration_mode once (db/org-store.js); is_owner_identity only in db/auth-store.js and db/org-store.js; insert into users only in those two files; update projects set stage once; delete from idea_versions once; insert into audit_log only in db/audit-store.js. cd tools: npm run -s traces and handoffs-check run at the end (see self_check).\nOwn end-to-end probe (the fixture harness of M2.2 on PGlite, fast hasher, app.request in-process, no server, outside the project under <scratch>), 60 checks all as designed: the gate refusal, the invite for a new organisation, stale consent 400, no consent 400, a wrong e-mail 404 uniform, accept 200 with the cookie, a second use 404, me with name, kind and deletion_requested_at, a viewer invited into an existing organisation, create 201, a viewer create 403, edit with a reason (version 2), a foreign organisation's edit and read 404 (before the role), the viewer reads, the lists per organisation, the board counts, the card (one admin_read row per call, none for a miss), the admin's edit (actor admin, the project's organisation), the audit page (closed columns, no e-mail, no address code, no hash), verifyAudit ok after every step (18, 25, 27 rows), the audit actions with their actor kinds and organisations, the admin's own deletion request 403, a wrong password 401, a second request answering the first time with one row, the deletion list, the admin delete with a user_delete token (placeholders in the row, status deleted, projects kept while another member remains, the invite's e-mail scrubbed, login 401, the old session 401, the consent row kept), a second delete 404, deleting the platform admin 403, the purge of a sole member's organisation (0 projects, 0 versions, the purge setting empty afterwards), and an UPDATE of idea_versions refused as the owner.\nExpected-red list of the developers: complete by my reading of the existing tests and section 9 and 10 of the design (not proved by running, decision 0110). Backend I1 lists TX-11 (G5), MG-1 and MG-6 (G13), RLS-2, RLS-3 and RLS-5 (G12), RT-1 (G3), SS-9 (G10), CS-1 (G9), PM-1 and PM-2 (G8), IS-1, IS-4 and IS-5 (G6, G7), RA-5 (G2), RL-4 (G11), SI-1 (G19); frontend lists PP-1, PP-2, PB-6, PP-7, the CHANGED lists of the two build tests, TX-11 for the texts. That is the whole of the design's table; I looked for a test the table misses (MAC_LABELS, ACTIONS and PURPOSES literal lists, the texts rules over the 118 new keys, the demo and health tests, db-down, api-entry, the fixtures' TABLES list used only for counts) and found none that turns red beyond the table.\nFor TEST-DESIGNER: (1) the I3 divergence: SI-1's test-name rule refuses M2R-1 (a digit in the prefix), so row 15 names INV-6; keep it or extend the rule; (2) the consent keys list stands twice (public/shared/consent.js and scripts/word-lists.js), CON-5 must assert they are equal; (3) planCreate(ctx, req) is wrapped by the route, TP-1 and TP-2 read the statement sequence of a planted tenant route as designed; (4) the pg-only items stay for the pg job: the row lock of the version number (M2R-2), the invite claim race (M2R-1), the purge protocol and RLS on Postgres 17; (5) moveStage and isOption, formatDate and formatTime have no product caller: PRJ-11 and KZ-* must call them, otherwise they are dead code.",
+    "findings": [
+      {
+        "id": "F1",
+        "place": "app/server/services/orgs.js:87, app/server/services/projects.js:66 (a private keysOf each; app/server/http/auth-mw.js:109 holds the exported one); app/server/services/orgs.js:73 and app/server/services/audit.js:64 (the same ROLES list)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "The developer's I2: two services hold a three-line copy of keysOf because auth-mw.js imports PERSONAL_DATA_GATE from services/orgs.js, so an import back from the services would make a cycle. The reason is true, but the copies (three in all) and the twice-written role list are the result of the constant sitting in the wrong file, not of a need.",
+        "fix": "Optional, with the next edit of these files: move keysOf to auth/keys.js (e.g. export requireKeys(ctx)) or the constant PERSONAL_DATA_GATE to a file that imports nothing from http/, then import one keysOf everywhere; export ROLES once from services/audit.js. Accepted as it stands for this run; ORCH records it."
+      },
+      {
+        "id": "F2",
+        "place": "app/server/services/projects.js:79 planCreate(ctx, req) and app/server/routes/projects.js:89 ((req) => planCreate(ctx, req)); design 4.5.2",
+        "severity": "Low",
+        "blocking": false,
+        "what": "The design gives planCreate(req); the plan needs the HMAC of the context for the daily limit, so the signature carries ctx and the route wraps it. Inside the design's intent (the plan runs at step 9a with the pipeline's request), named by the developer (I2), and planIdeaEdit(req) is as designed.",
+        "fix": "Accept; DOC-UPDATER reads 4.5.2 as planCreate(ctx, req)."
+      },
+      {
+        "id": "F3",
+        "place": "app/public/css/site.css:2075 onward (.fld, .opts, .opt, .check and the .msg alignment rules)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Design 4.9.1 names the rules appended to site.css as the stage strip, the board columns, the tables and the version list; the developer also added form-control rules because the sheet styles no input. The pages 4.9.2 specify (tap groups, a consent checkbox line, text fields) need them, they use only the tokens (all of them exist in tokens.css) and add no colour literal, and every class used in the ten pages has a rule. The visible effect is that the new forms look different from the earlier four account forms (login, setup, reset, admin-totp), which keep the browser look.",
+        "fix": "Accept; ORCH records the divergence in decisions/0138 and the owner's look question (О9, G21) covers it. If the owner wants one look, a later small step gives the four earlier forms the same .fld class; no change now."
+      },
+      {
+        "id": "F4",
+        "place": "app/server/routes/admin.js:14 and app/server/routes/auth.js:23",
+        "severity": "Low",
+        "blocking": false,
+        "what": "admin.js has two import statements from the same module (the long list at line 3 and a new `import { iso } from \"../db/auth-store.js\"` at line 14); auth.js puts `iso` between insertAdmin and insertMember in the sorted import list. Prettier and eslint pass; it is only untidy.",
+        "fix": "Add iso to the existing auth-store import list (in its alphabetical place) and delete the extra line."
+      },
+      {
+        "id": "F5",
+        "place": "app/server/services/projects.js:384 (moveStage), app/public/shared/project/quick-facts.js:22 (isOption), app/public/shared/format/kz.js (formatDate, formatTime), app/server/services/orgs.js (INVITE_TTL_MS, DELETED_NAME, DELETED_HASH, deletedEmail)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Exports with no caller in the product code. All are in the design's interface (4.5.1, 4.5.2, 4.7: moveStage is called by PRJ-11 directly and no route of M2 moves a stage; the rest are read by tests), so this is not dead code by itself.",
+        "fix": "TEST-DESIGNER must call each of them in the named tests; any still uncalled after step 5 goes."
+      }
+    ],
+    "self_check": [
+      "A fresh clone of e656e6c under <scratch> (git clone -c core.autocrlf=false, npm ci in app, Node 22.23.4 first on PATH). No repository test suite, npm run check, node --test or e2e was run; the only process started was an in-process script (no server, no port, no browser).",
+      "cd app: npx prettier --check . -> all matched files use Prettier code style; npx eslint . --max-warnings 0 -> exit 0; npx tsc --noEmit -p jsconfig.json -> exit 0; node scripts/check-public.js -> 'check-public: app/public is clean'.",
+      "Finder script from the test files (node:test import replaced by a no-op): IB [] file []; SQL [] []; CI []; ENV []; DBC callFindings [] roleSetters [].",
+      "grep of the REQ-116 and REQ-117 lines over app/server, app/public, app/scripts: purge_org only in db/project-store.js (2 lines); registration_mode once; is_owner_identity in 2 files; insert into users in 2 files; update projects set stage once; delete from idea_versions once; insert into audit_log once.",
+      "Erosion grep over the changed files: grep -nE 'TODO|FIXME|XXX|.skip(|eslint-disable|ts-ignore|ts-nocheck|\\|\\| true|continue-on-error|set \\+e|console\\.(log|error)' -> no match; grep for a machine path, the reference product name, sk-ant-, ghp_ -> no match; CR count 0; the only dollar-quote text is in app/db/grants.sql (existing form).",
+      "Probe 1 under <scratch>: formatDateTime against the fields of Date shifted by five hours over 20 000 random moments from 1938 to 2128: 0 mismatches; 2026-10-27T13:53Z -> '27.10.2026, 18:53'; formatNumber(1250000) -> '1 250 000' with U+202F.",
+      "Probe 2 under <scratch>: the end-to-end flow listed in the summary (about 60 checks, all as designed), then the purge of a sole member's organisation (projects 0, versions 0, the purge setting empty), verifyAudit ok at 18, 25 and 27 rows.",
+      "Unused-export check by grep over server, api, scripts, public: only the exports of F5 and constants read by tests.",
+      "Every class used in the ten new pages has a rule in site.css, and every custom property of the new rules (--card, --btn, --onbtn, --acc2, --px, --ink, --ink2) is defined in tokens.css.",
+      "Read in full: migration 0003, grants.sql diff, plan.js, the auth-mw.js, schema.js, rate-limit.js, errors.js, keys.js, reauth.js, audit.js and auth-store.js diffs, services/orgs.js, services/projects.js, db/org-store.js, db/project-store.js, routes/invites.js, projects.js, admin-projects.js and the admin.js, auth.js, index.js diffs, the four shared modules, the api.js, login.js, check-public.js and word-lists.js diffs, invite.js, admin-invites.js, admin-deletions.js and the site.css diff; the other page scripts and the ten pages by grep for innerHTML, storage, .style, inline style, event attributes, external addresses, Math.random, toLocale, new Date (none); texts.js by check-public and the finders."
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "F1 and F3 are accepted-as-is items that need a line in decisions/0138 (a new Addition) so that the divergences are recorded: the copies of keysOf (reason: the gate constant lives in services/orgs.js, an import back is a cycle) and the form rules of site.css (functional forms, look question О9, G21)."
+      },
+      {
+        "kind": "NOTE",
+        "text": "The lazy cleanup of stale invites (auth-store.js cleanup) runs at step 12 of every pipeline request, so on a tenant route it runs under tenant settings and row-level security limits it to the caller's own invites (less, never more); the design (4.4, G11, N1 of the gate) says so and RL-5 reaches it through a platform route. A new-organisation invite (org_id null) is removed only by a platform request. No defect; named for the post-deploy record."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Developer I3: the invariants table has one test name per row, row 15 names INV-6 (not M2R-1) because the SI-1 name rule refuses a digit in the prefix; SI-1 is red until the six named tests exist. Accept; TEST-DESIGNER decides whether to widen the rule."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Accepted in decisions/0138 Addition 1 (N4): deleting an org_owner of a client organisation that keeps other members leaves it without an owner (my probe showed it: the viewer stays in an organisation whose owner was deleted). A LOW defect for M3, not a requirement change; nothing to do here."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Not proved here and left to the GitHub run: the row lock of the version number and the invite claim race under real concurrency (M2R-1..M2R-3), RLS, the three triggers and the purge on Postgres 17, the pg.js transaction paths with the new routes, the e2e of the ten pages."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

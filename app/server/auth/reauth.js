@@ -11,7 +11,8 @@ import { consumeReauth, insertReauth } from "../db/auth-store.js";
 
 /**
  * The closed table of purposes (REQ-114 «written as one table in the code design»): the first three are
- * consumed by routes of M2.2, the others by the routes of M2.4-M5 (ARCH §5).
+ * consumed by routes of M2.2, `owner_identity` and `user_delete` by the invite and the account deletion of M2.3, the
+ * others by the routes of M2.4-M5 (ARCH §5).
  */
 export const PURPOSES = Object.freeze([
   "reset_link",
@@ -25,6 +26,7 @@ export const PURPOSES = Object.freeze([
   "ai_allow",
   "codes",
   "owner_identity",
+  "user_delete",
 ]);
 
 export const REAUTH_TTL_MS = 5 * 60 * 1000;

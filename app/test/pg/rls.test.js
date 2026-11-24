@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { createDb, TX_DEADLINE_MS } from "../../server/db/index.js";
 import { createPgAdapter } from "../../server/db/pg.js";
 import { withPlatform, withTenant } from "../../server/db/tx.js";
+import { purgeOrgProjects } from "../../server/services/projects.js";
 import { APP, childEnv } from "../fixtures/helpers.js";
 import {
   admin,
@@ -17,6 +18,9 @@ import {
 // real Postgres of the job pg: row-level security enabled and forced with a policy for sai_app on every table
 // with org_id (orgs by its id), three organisations behind the tx.js helpers, 20 parallel tenant transactions
 // over a pool, the append-only audit log for sai_app and for the owner, and the grants of the app roles.
+// M2.3 (REQ-117 criterion 2, the code design M2PROJ, G12): the tables projects and idea_versions join the
+// tenant tables (read from the catalogue), the grants table gains the new blocks, and RLS-6 checks that the
+// idea versions are insert-only for every role, with the one exception of the purge setting.
 
 /**
  * A fresh database migrated by the runner with a password for sai_app_login.
@@ -87,9 +91,15 @@ test("RLS-1 every table with org_id has row security enabled and forced with a p
   try {
     const r = await rlsFindings(c);
     t.diagnostic(`RLS-1: ${r.count} tables with org_id, and orgs`);
-    assert.ok(r.count >= 3, `${r.count}`);
+    assert.ok(r.count >= 5, `${r.count}`);
     assert.deepEqual(r.findings, []);
-    for (const name of ["org_members", "invites", "audit_log"])
+    for (const name of [
+      "org_members",
+      "invites",
+      "audit_log",
+      "projects",
+      "idea_versions",
+    ])
       assert.ok((await tenantTables(c)).includes(name), name);
   } finally {
     await c.end();
@@ -137,12 +147,15 @@ const hex = (/** @type {string} */ ch) => ch.repeat(64);
 
 /**
  * Three organisations with rows in every tenant table (written as the owner, past row security): per
- * organisation a user with a membership, an invite and two audit rows; and one user without a membership.
+ * organisation a user with a membership, an invite, two audit rows, a project with two idea versions (the
+ * second with its reason); and one user without a membership.
  * @param {import("pg").Client} c
  */
 async function fixture(c) {
   /** @type {Record<string, string>} */
   const users = {};
+  /** @type {Record<string, string>} */
+  const projects = {};
   let n = 0;
   for (const org of ORGS) {
     n += 1;
@@ -170,6 +183,21 @@ async function fixture(c) {
         "insert into audit_log (id, org_id, actor_kind, action, prev_hash, hash, created_at) values (nextval('audit_log_id_seq'), $1, 'system', 'auth.login_failed', $2, $3, now())",
         [org, hex("0"), hex(String(n * 2 + k))],
       );
+    const [p] = (
+      await c.query(
+        "insert into projects (org_id, title, language, stage, created_by, created_at, updated_at) values ($1, $2, 'ru', 'draft', $3, now(), now()) returning id",
+        [org, `Project ${n}`, u.id],
+      )
+    ).rows;
+    projects[org] = p.id;
+    for (const [version, reason] of /** @type {const} */ ([
+      [1, null],
+      [2, "Clarified"],
+    ]))
+      await c.query(
+        "insert into idea_versions (org_id, project_id, version, text, quick_facts, reason, created_by, created_at) values ($1, $2, $3, $4, '{}'::jsonb, $5, $6, now())",
+        [org, p.id, version, `Idea ${n}.${version}`, reason, u.id],
+      );
   }
   const [free] = (
     await c.query(
@@ -177,7 +205,7 @@ async function fixture(c) {
       [HASH],
     )
   ).rows;
-  return { users, free: /** @type {string} */ (free.id) };
+  return { users, projects, free: /** @type {string} */ (free.id) };
 }
 
 /** The column that names a row's organisation. @param {string} table */
@@ -224,7 +252,7 @@ test("RLS-2 three organisations: under withTenant(A) every tenant table shows on
   const m = await migrated(t);
   const c = await client(m.db);
   t.after(() => c.end());
-  const { users, free } = await fixture(c);
+  const { users, projects, free } = await fixture(c);
   const tables = await tenantTables(c);
   // Every listed table has rows of each organisation (a table without its fixture rows fails here).
   for (const table of tables)
@@ -307,6 +335,28 @@ test("RLS-2 three organisations: under withTenant(A) every tenant table shows on
       ],
       ["update", "update invites set org_id = $1 where org_id = $2", [B, A]],
     ],
+    // M2.3: the two tenant tables of REQ-117. An idea version of B's project is refused by the policy before
+    // the foreign key looks at it; the update of idea_versions is refused by the missing UPDATE grant.
+    projects: [
+      [
+        "insert",
+        "insert into projects (org_id, title, language, created_by, created_at, updated_at) values ($1, 'Planted', 'ru', $2, now(), now())",
+        [B, users[A]],
+      ],
+      ["update", "update projects set org_id = $1 where org_id = $2", [B, A]],
+    ],
+    idea_versions: [
+      [
+        "insert",
+        "insert into idea_versions (org_id, project_id, version, text, quick_facts, reason, created_by, created_at) values ($1, $2, 3, 'Planted', '{}'::jsonb, 'Planted', $3, now())",
+        [B, projects[B], users[A]],
+      ],
+      [
+        "update",
+        "update idea_versions set org_id = $1 where org_id = $2",
+        [B, A],
+      ],
+    ],
   };
   for (const table of tables.filter((x) => x !== "audit_log"))
     assert.ok(writes[table], `no refused writes for the tenant table ${table}`);
@@ -325,7 +375,8 @@ test("RLS-2 three organisations: under withTenant(A) every tenant table shows on
   try {
     for (const [table, list] of Object.entries(writes))
       for (const [kind, text, params] of list) {
-        if (kind === "update" && table !== "invites") continue;
+        if (kind === "update" && !["invites", "projects"].includes(table))
+          continue;
         await s.query("begin");
         await s.query("set local role sai_app");
         await s.query(
@@ -453,19 +504,24 @@ test("RLS-4 audit_log: UPDATE, DELETE and TRUNCATE are refused for sai_app and f
 });
 
 // The least grants of 4.2.3 (written here from the design): table → privileges of sai_app.
+// M2.3 (4.2.4 of the code design M2PROJ): org_members and invites gain DELETE, and four tables are new.
 const GRANTS = {
   audit_log: ["INSERT", "SELECT"],
   auth_sessions: ["DELETE", "INSERT", "SELECT", "UPDATE"],
-  invites: ["INSERT", "SELECT", "UPDATE"],
+  deletion_requests: ["INSERT", "SELECT", "UPDATE"],
+  idea_versions: ["DELETE", "INSERT", "SELECT"],
+  invites: ["DELETE", "INSERT", "SELECT", "UPDATE"],
   login_delays: ["DELETE", "INSERT", "SELECT", "UPDATE"],
   login_failures: ["DELETE", "INSERT", "SELECT", "UPDATE"],
-  org_members: ["INSERT", "SELECT"],
+  org_members: ["DELETE", "INSERT", "SELECT"],
   orgs: ["INSERT", "SELECT"],
   password_resets: ["DELETE", "INSERT", "SELECT", "UPDATE"],
   platform_settings: ["INSERT", "SELECT"],
+  projects: ["DELETE", "INSERT", "SELECT", "UPDATE"],
   rate_limits: ["DELETE", "INSERT", "SELECT", "UPDATE"],
   reauth_tokens: ["DELETE", "INSERT", "SELECT", "UPDATE"],
   schema_migrations: ["SELECT"],
+  user_consents: ["INSERT", "SELECT"],
   users: ["INSERT", "SELECT", "UPDATE"],
 };
 
@@ -505,4 +561,105 @@ test("RLS-5 the grants of the app roles equal the table of the design: sai_app e
   } finally {
     await c.end();
   }
+});
+
+test("RLS-6 idea_versions is insert-only for every role, the owner included: UPDATE, DELETE and TRUNCATE are refused by the trigger; a DELETE passes only with app.purge_org set to the row's own organisation; an UPDATE is refused even then; the purge helper removes the versions and the projects of one organisation and leaves the setting empty", async (t) => {
+  const m = await migrated(t);
+  const c = await client(m.db);
+  t.after(() => c.end());
+  const { projects } = await fixture(c);
+  const total = async () =>
+    (await c.query("select count(*)::int as n from idea_versions")).rows[0].n;
+  const n = await total();
+  assert.equal(n, 6);
+  /**
+   * One statement of the owner in its own transaction (with the purge setting when `setting` is given), rolled
+   * back at the end so that the next case starts from the same rows; the SQLSTATE or "allowed".
+   * @param {string} text
+   * @param {unknown[]} params
+   * @param {string | null} setting
+   */
+  const asOwner = async (text, params, setting) => {
+    await c.query("begin");
+    try {
+      if (setting !== null)
+        await c.query("select set_config('app.purge_org', $1, true)", [
+          setting,
+        ]);
+      return await c.query(text, params).then(
+        () => "allowed",
+        (e) => e.code ?? String(e),
+      );
+    } finally {
+      await c.query("rollback");
+    }
+  };
+  const update = "update idea_versions set text = 'changed' where org_id = $1";
+  const remove = "delete from idea_versions where org_id = $1";
+  // The owner role: every UPDATE, every TRUNCATE and a DELETE without the exception meet the trigger.
+  assert.equal(await asOwner(update, [A], null), "P0001");
+  assert.equal(await asOwner(remove, [A], null), "P0001");
+  assert.equal(await asOwner("truncate idea_versions", [], null), "P0001");
+  // The setting of another organisation, an empty one and a text that is no organisation open nothing.
+  assert.equal(await asOwner(remove, [A], B), "P0001");
+  assert.equal(await asOwner(remove, [A], ""), "P0001");
+  assert.equal(await asOwner(remove, [A], "not-an-organisation"), "P0001");
+  // An UPDATE is refused also with the setting of the row's own organisation, and so is a TRUNCATE.
+  assert.equal(await asOwner(update, [A], A), "P0001");
+  assert.equal(await asOwner("truncate idea_versions", [], A), "P0001");
+  // A DELETE with the setting of the row's own organisation passes, and only for that organisation's rows.
+  assert.equal(await asOwner(remove, [A], A), "allowed");
+  assert.equal(
+    await asOwner("delete from idea_versions where org_id = $1", [B], A),
+    "P0001",
+  );
+  assert.equal(await total(), n);
+  // sai_app: no UPDATE grant (42501); a DELETE without the setting meets the trigger.
+  const db = appDb(t, m, 2);
+  assert.equal(
+    await sqlstateOf(withPlatform(db, (q) => q.query(update, [A]))),
+    "42501",
+  );
+  assert.equal(
+    await sqlstateOf(withPlatform(db, (q) => q.query(remove, [A]))),
+    "P0001",
+  );
+  assert.equal(
+    await sqlstateOf(withTenant(db, A, (q) => q.query(remove, [A]))),
+    "P0001",
+  );
+  assert.equal(await total(), n);
+  // The purge helper of the app (the one place): the versions of A, then its projects; B and C untouched, and
+  // the setting is empty after the transaction.
+  const purged = await withPlatform(db, (q) => purgeOrgProjects(q, A));
+  assert.deepEqual(purged, { versions: 2, projects: 1 });
+  const left = (
+    await c.query(
+      "select org_id::text as o, count(*)::int as n from idea_versions group by 1 order by 1",
+    )
+  ).rows;
+  assert.deepEqual(left, [
+    { o: B, n: 2 },
+    { o: C, n: 2 },
+  ]);
+  assert.equal(
+    (await c.query("select count(*)::int as n from projects")).rows[0].n,
+    2,
+  );
+  assert.equal(
+    (
+      await c.query("select count(*)::int as n from projects where id = $1", [
+        projects[A],
+      ])
+    ).rows[0].n,
+    0,
+  );
+  // The setting is transaction-local: the next transaction of the app finds it empty.
+  const setting = await withPlatform(
+    db,
+    async (q) =>
+      (await q.query("select current_setting('app.purge_org', true) as s"))
+        .rows[0].s,
+  );
+  assert.ok(setting === null || setting === "", `setting: ${setting}`);
 });

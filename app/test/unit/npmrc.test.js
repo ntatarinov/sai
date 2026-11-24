@@ -59,6 +59,12 @@ const INT_FILES = [
   "tx",
   "isolation",
   "permission-matrix",
+  // M2.3 (guard row G14 of the code design M2PROJ): the files of REQ-116 and REQ-117.
+  "invites",
+  "deletion",
+  "projects",
+  "admin-board",
+  "tenant-plan",
 ];
 const PG_FILES = [
   "migrate-pg",
@@ -67,13 +73,17 @@ const PG_FILES = [
   "audit-chain",
   "db-verify-pg",
   "auth-race-pg",
+  "owner-org",
+  "m2-race-pg",
 ];
-// The e2e test files of REQ-111 criterion 12 and REQ-112 criterion 6, with the 15 named tests of the code design
+// The e2e test files of REQ-111 criterion 12, REQ-112 criterion 6 and REQ-117 criterion 10, with the 17 named tests
+// of the code designs (the 15 of M1, ACC-1 and ACC-2 of M2.3)
 // 10 that they hold (the e2e step is not in the check chain; this guard is what makes an emptied folder red).
-const E2E_FILES = ["landing", "stage"];
+const E2E_FILES = ["landing", "stage", "accounts"];
 const E2E_TESTS = [
   ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `LD-${n}`),
   ...[1, 2, 3, 4, 5, 6].map((n) => `ST-${n}`),
+  ...[1, 2].map((n) => `ACC-${n}`),
 ];
 
 // The regular expression of the grep of REQ-108 criterion 2 and REQ-109 criterion 10, as written there: the
@@ -425,7 +435,7 @@ test("NPM-4 check-public stands after tsc and before npm run test:unit; moved af
   assert.ok(checkScriptFindings(moved).includes("check-public place"));
 });
 
-test("NPM-5 app/test/int holds its 26 named test files and app/test/pg its 6; a copy without one is red", (t) => {
+test("NPM-5 app/test/int holds its 31 named test files and app/test/pg its 8; a copy without one is red", (t) => {
   assert.deepEqual(
     missingTestFiles(path.join(APP, "test", "int"), INT_FILES),
     [],
@@ -463,13 +473,13 @@ function e2eTests(dir) {
   for (const name of E2E_FILES) {
     const text = fs.readFileSync(path.join(dir, `${name}.test.js`), "utf8");
     calls += (text.match(/^test\(/gm) ?? []).length;
-    for (const m of text.matchAll(/^test\(\s*["`']((?:LD|ST)-\d+) /gm))
+    for (const m of text.matchAll(/^test\(\s*["`']((?:LD|ST|ACC)-\d+) /gm))
       ids.push(m[1]);
   }
   return { ids: ids.sort(), calls };
 }
 
-test("NPM-7 app/test/e2e holds landing and stage with their 15 named tests; an emptied folder, a copy without a file and a copy with a test skipped, renamed or missing are red", (t) => {
+test("NPM-7 app/test/e2e holds landing, stage and accounts with their 17 named tests; an emptied folder, a copy without a file and a copy with a test skipped, renamed or missing are red", (t) => {
   const real = path.join(APP, "test", "e2e");
   assert.deepEqual(missingTestFiles(real, E2E_FILES), []);
   const want = [...E2E_TESTS].sort();

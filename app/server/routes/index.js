@@ -1,12 +1,16 @@
+import { adminProjectRoutes } from "./admin-projects.js";
 import { adminRoutes } from "./admin.js";
 import { authRoutes } from "./auth.js";
 import { demoRoutes } from "./demo.js";
 import { healthHandler } from "./health.js";
+import { inviteRoutes } from "./invites.js";
+import { projectRoutes } from "./projects.js";
 
 // The route table (ARCH §13; REQ-115 criterion 6; the code design M2AUTH, 4.4): method, path and metadata of
 // every /api route. The two demo routes of the public landing come first when the app is given the demo (the
-// code design of the public landing, 4.7), then the health route, then the auth and admin routes; without the
-// demo their paths answer the uniform 404. The routes whose `session` is true or whose `rateLimit` is not null
+// code design of the public landing, 4.7), then the health route, then the auth and admin routes, then the
+// invitation, admin project and tenant project routes of the code design M2PROJ (4.3: 29 rows in all); without
+// the demo their paths answer the uniform 404. The routes whose `session` is true or whose `rateLimit` is not null
 // take the request pipeline of server/http/auth-mw.js; the others the path of the app as before.
 
 /**
@@ -17,7 +21,7 @@ import { healthHandler } from "./health.js";
  * - worker: a worker route (lane B); false for every route of M2.2;
  * - session: the route uses the session cookie and falls under the CSRF rule of REQ-114 criterion 4;
  * - rateLimit: the limit of the route (server/http/rate-limit.js); "user" also needs a signed-in user.
- * @typedef {Readonly<{ tenant: boolean, admin: boolean, reauth: string | null, worker: boolean, session: boolean, rateLimit: "setup" | "login" | "reset" | "user" | null }>} RouteMeta
+ * @typedef {Readonly<{ tenant: boolean, admin: boolean, reauth: string | null, worker: boolean, session: boolean, rateLimit: "setup" | "login" | "reset" | "user" | "invite" | "invite_view" | null }>} RouteMeta
  */
 
 /**
@@ -68,5 +72,8 @@ export function routeTable(deps) {
     }),
     ...authRoutes(deps.auth),
     ...adminRoutes(deps.auth),
+    ...inviteRoutes(deps.auth),
+    ...adminProjectRoutes(deps.auth),
+    ...projectRoutes(deps.auth),
   ]);
 }

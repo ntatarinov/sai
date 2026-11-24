@@ -1562,7 +1562,10 @@ test("TX-10 the static source of how.html: the status block between the intro an
     );
 });
 
-/** The 23 codes of the code design M2AUTH, 4.8 (AUTH_CODES): every code that routes 4-15 can answer. */
+/**
+ * The 31 codes of the code designs M2AUTH 4.8 and M2PROJ 4.3.4 (AUTH_CODES): every code that a route can answer
+ * (the 23 of M2AUTH and the eight of REQ-116 and REQ-117; guard row G5).
+ */
 const AUTH_CODES_OF_THE_DESIGN = [
   "not_found",
   "body_too_large",
@@ -1587,16 +1590,32 @@ const AUTH_CODES_OF_THE_DESIGN = [
   "reauth_locked",
   "rate_limited",
   "db_unavailable",
+  "personal_data_gate",
+  "registration_closed",
+  "forbidden",
+  "owner_identity_required",
+  "consent_required",
+  "consent_stale",
+  "account_exists",
+  "bad_request",
 ];
 
-test("TX-11 AUTH_CODES of errors.js equals the 23 codes of the code design (body_too_large and site_closed among them), and each code has an auth_err_<code> key with ru, kk and en values", async () => {
+test("TX-11 AUTH_CODES of errors.js and of api.js equal the 31 codes of the code designs (body_too_large and site_closed among them), and each code has an auth_err_<code> key with ru, kk and en values", async () => {
   const { AUTH_CODES, ERROR_STATUS } = await import(
     url(path.join(APP, "server", "http", "errors.js"))
   );
-  assert.equal(AUTH_CODES_OF_THE_DESIGN.length, 23);
+  const pageCodes = (
+    await import(url(path.join(APP, "public", "js", "api.js")))
+  ).AUTH_CODES;
+  assert.equal(AUTH_CODES_OF_THE_DESIGN.length, 31);
   assert.deepEqual(
     [...AUTH_CODES].sort(),
     [...AUTH_CODES_OF_THE_DESIGN].sort(),
+  );
+  assert.deepEqual(
+    [...pageCodes].sort(),
+    [...AUTH_CODES_OF_THE_DESIGN].sort(),
+    "the page's list equals the server's",
   );
   assert.equal(new Set(AUTH_CODES).size, AUTH_CODES.length, "no code twice");
   for (const code of AUTH_CODES_OF_THE_DESIGN) {
@@ -1620,4 +1639,47 @@ test("TX-11 AUTH_CODES of errors.js equals the 23 codes of the code design (body
     .map((k) => k.slice("auth_err_".length))
     .filter((c) => !AUTH_CODES_OF_THE_DESIGN.includes(c));
   assert.deepEqual(extra, []);
+});
+
+test("TX-12 the eight codes of REQ-116 and REQ-117 (the table of the code design M2PROJ, 4.3.4) are in AUTH_CODES of errors.js and of api.js with a status, and each has an auth_err_<code> text in ru, kk and en that names no duration, price or day", async () => {
+  /** @type {Record<string, number>} the code and its status, the table of 4.3.4 */
+  const TABLE = {
+    personal_data_gate: 403,
+    registration_closed: 403,
+    forbidden: 403,
+    owner_identity_required: 400,
+    consent_required: 400,
+    consent_stale: 400,
+    account_exists: 409,
+    bad_request: 400,
+  };
+  const { AUTH_CODES, ERROR_STATUS } = await import(
+    url(path.join(APP, "server", "http", "errors.js"))
+  );
+  const pageCodes = (
+    await import(url(path.join(APP, "public", "js", "api.js")))
+  ).AUTH_CODES;
+  assert.equal(Object.keys(TABLE).length, 8);
+  for (const [code, status] of Object.entries(TABLE)) {
+    assert.ok(AUTH_CODES.includes(code), `${code} in the server's list`);
+    assert.ok(pageCodes.includes(code), `${code} in the page's list`);
+    assert.equal(ERROR_STATUS[code], status, `${code} status`);
+    const entry = texts.TEXTS[`auth_err_${code}`];
+    assert.ok(entry, `auth_err_${code}`);
+    for (const lang of ["ru", "kk", "en"]) {
+      assert.equal(typeof entry[lang], "string", `auth_err_${code} ${lang}`);
+      assert.ok(entry[lang].trim().length > 0, `auth_err_${code} ${lang}`);
+      assert.equal(textProblem(entry[lang]), null, `auth_err_${code} ${lang}`);
+      // No forbidden form of any list in the text (the lint of the public pages applies to these keys too).
+      assert.deepEqual(
+        lintText(entry[lang], /** @type {"ru" | "kk" | "en"} */ (lang)),
+        [],
+        `auth_err_${code} ${lang}`,
+      );
+      assert.doesNotMatch(entry[lang], /\d/, `auth_err_${code} ${lang}`);
+    }
+  }
+  // The two lists hold exactly the same codes and no code twice.
+  assert.equal(new Set(AUTH_CODES).size, AUTH_CODES.length);
+  assert.equal(new Set(pageCodes).size, pageCodes.length);
 });

@@ -1,0 +1,141 @@
+{
+  "handoff_id": "step01-M2PROJ-20261124-01",
+  "run_id": "M2PROJ-20261124-01",
+  "workflow_id": "WF-02",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/M2PROJ-20261124-01/step-01-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-116",
+      "REQ-117"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/requirements.yaml blocks REQ-116 and REQ-117 (READ THEM WHOLE; REQ-116 and REQ-117 are released together; the guard-row sentences were amended by decisions/0136 О16 and the grants rework)",
+      "docs/design/M2AUTH-accounts-tenancy-backup.md (the design of M2.2 whose code is on main: the route table and its metadata keys, withTenant/withPlatform/switchToTenant, the audit writer (appendAudit only under platform settings), the auth store, AUTH_CODES, the pages pattern, grants.sql, the rehearsal seeds, the guard tests)",
+      "decisions/0133-0137 (0137 Additions 1-7; О11: the audit rows of tenant actions must commit with the action but a tenant transaction cannot read the previous hash: THIS design must settle it — the audit append runs on the platform part of the one request transaction BEFORE switchToTenant, or another named way; the REQ-116 test of the common-password rule at invite acceptance (validator N-3); the ASVS residuals stay as decided)",
+      "handoffs/M2AUTH-20261123-01/step-03d-security-reviewer.json and step-09b-release-validator.json (what the validators checked and the open LOW defects ISS-0147..0149)",
+      "docs/program/public-v1/PLAN.md §5 M2 (R2.2, R2.4, AC2.5-AC2.10), §3 G7, ARCHITECTURE §4, §5, §6.1, §13, §14, §17",
+      "docs/audits/SAI-ARCHITECTURE-AUDIT.md chapter 10 stage 2 (invitation and consent criteria)",
+      "docs/workflows/WF-02-development.md step 1; .claude/agents/code-designer.md",
+      "app/ at main 60b10b7 (read it: the code is the fact)"
+    ],
+    "base_tag": "base/M2PROJ-20261124-01",
+    "write_set": [
+      "docs/design/M2PROJ-invites-projects.md (new: one design for REQ-116 and REQ-117, built together as task M2.3)",
+      "handoffs/M2PROJ-20261124-01/step-01-code-designer.json (result only)"
+    ],
+    "route": "ORCH 0 (tag base/M2PROJ-20261124-01 on main 60b10b7) -> CODE-DESIGNER 01 -> ORCH 1a (decision record) -> CODE-DESIGN-VALIDATOR 1b -> BACKEND-DEV + FRONTEND-DEV 2 -> SECURITY-REVIEWER 3 + REVIEWER 4 -> TEST-DESIGNER 5 -> 5b -> TEST-RUNNER 6 (GitHub) -> UAT-RUNNER 8 -> RELEASE-VALIDATOR 9 -> DOC-UPDATER 10 -> ORCH pushes main after green checks",
+    "parallel_work_now": [
+      "none"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 1, CODE-DESIGNER, task M2.3 (run M2PROJ-20261124-01): write docs/design/M2PROJ-invites-projects.md, the one design for REQ-116 (organisations, members, owner identities, invitations with the registration gate G7 as a constant in source, the consent sentence with its draft wording and the narrow word-list exception, the deletion request) and REQ-117 (projects, versioned ideas with a reason, quick facts, stages, the admin request board and card, the audit page, KZ formats, the e2e path from invite to edited project, the real tenant routes for the isolation suite, migration 0003_projects.sql and its rehearsal seed, grants in grants.sql), with everything WF-02 step 1 lists: interfaces and data shapes (tables, columns, constraints, RLS policies; the route table rows with their metadata; every route with request, answer and error codes; the invite token and acceptance flow; the roles of decisions/0127 И and 0135 О8 on each route), every failure path, protection in the same operation as the action (the audit append, the invite one-time use, the idea version number under concurrency), the table criterion → test for EVERY criterion of both blocks, the bar section (Q1-Q14, R1-R3), the replacement table of earlier guard tests (search app/test and tools/test), the build sub-steps in small parts with the tests each turns red, the list of mutants (at least one per criterion; at least 30), checked facts about the current system (command, output, date), a trial sketch outside the project (result.prototype), what becomes outdated for DOC-UPDATER, and open questions О1… with recommendations. Settle О11 of decisions/0137. Keep new dependencies at zero. No implementation code. Verify traces 0, handoffs-check 0. Be thorough but economical: the gate fails a design with gaps. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-24T16:20:57Z",
+  "started_at": "2026-11-24T16:21:28Z",
+  "completed_at": "2026-11-24T16:57:05Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "One code design for REQ-116 and REQ-117 (task M2.3) in docs/design/M2PROJ-invites-projects.md. It settles O11 of decisions/0137: a tenant route that writes has a plan (http/plan.js, a function stored beside the row like withBody, so a row keeps its four keys); the pipeline runs it on the platform part of the one request transaction before switchToTenant, appends the audit row it returns (organisation, actor and address from the session and the request, never from the plan), then switches and runs the handler under row-level security: one transaction, one connection, no way back from tenant to platform (measured: the audit row, the project and the version commit together and roll back together). It specifies migration 0003_projects.sql (projects and idea_versions with composite organisation keys, forced RLS and an insert-only trigger whose one exception is the purge setting app.purge_org; user_consents; deletion_requests; invites.owner_identity and org_name with a check; widened audit action and re-auth purpose checks; a users guard trigger), the grants.sql blocks, the 0003 rehearsal seed, 14 new routes (N1-N14: 2 public invite, 1 account, 7 admin, 4 tenant) with metadata, request, answer, error codes and the roles on each route, 8 new error codes (AUTH_CODES 31), the invite flow (128-bit code, HMAC, 7 days, one conditional UPDATE claim after every check and the password hash, returned vs thrown refusals, the G7 constant owner_only, registration modes, the e-mail binding, the consent digest of the exact sentence shown), the five consent sentences with the kk draft and the narrow word-list exception (CONSENT_KEYS, DELETION_TERM, stripDeletionTerm), the deletion request and the admin deletion (placeholders, removals, scrub of the used invite's e-mail, the purge helper for an organisation left without members), project creation with three quick facts and the 20 per day limit, versioned ideas with a reason (version number under the project row lock), the stage module (11 stages, 20 allowed pairs), the board, the card (one admin_read row per call), the audit page, the KZ formats module, the footer of every M2 page, ten pages with an element-id contract, and the e2e path. Zero new dependencies; no implementation code. 22 of 22 criteria mapped to tests; 79 new tests (73 in 12 new files, 6 in existing); 74 mutants plus a group; replacement table G1-G26; 17 build sub-steps; 10 questions for ORCH with recommendations; checked facts F1-F22.",
+    "changes": [
+      "docs/design/M2PROJ-invites-projects.md (new, the only file written besides this result): section 0 summary and the settlement of O11; section 1 checked facts F1-F22 (command, output, date); section 2 choices C1-C20",
+      "section 3 files, owners (BACKEND-DEV, FRONTEND-DEV, TEST-DESIGNER) and order; section 4 interfaces: 4.2 migration 0003 (changes of 0002 objects, four new tables, RLS, the insert-only trigger and the purge protocol, grants.sql blocks, the rehearsal seed), 4.3 the 14 routes with metadata, request, answer, error codes, the roles table and the changed me answer, 4.4 the plan hook and the pipeline step 9a, 4.5 the two services, 4.6 the statements of the two stores, 4.7 the four shared pure modules, 4.8 consent sentences, the word-list exception and the footer, 4.9 ten pages and their element ids, 4.10 security-invariants rows, 4.11 configuration (none)",
+      "section 5 failure paths; section 6 protection in the same operation; section 7 criterion -> test for all 22 criteria (7.1 REQ-116, 7.2 REQ-117), 7.3 the new tests by file, 7.4 the count of the final check (unit 178, int 170, pg 28, e2e 17), 7.5 the contracts of the isolation, mask and canonical-request edits",
+      "section 8 quality bar Q1-Q14, R1-R3; section 9 replacement table G1-G26 of earlier guard tests (file, line, was -> became, what it counts); section 10 build sub-steps B1-B7, F1-F4, T1-T5 with the red tests; section 11 mutants M1-M74 and a group; section 12 post-deploy record and what becomes outdated; section 13 questions O1-O10 with recommendations and the proposed decisions record; section 14 the sketch; section 15 counts"
+    ],
+    "self_check": [
+      "git rev-parse base/M2PROJ-20261124-01 -> 60b10b72dc95ba78a142efe0de0da66c9bbe1055; git diff --stat 6078bfb 60b10b7 -- app .github -> empty (2026-11-24); git diff --stat 60b10b7 -- app on the working tree -> empty",
+      "gh run list --workflow app.yml --limit 6 and gh run view 45325040037 --log (read-only): main 6078bfb success; check job unit 152 and int 126, pg job 21, e2e job 15, each '# fail 0', '# skipped 0', '# todo 0'; jobs check, pg, docker, migration-rehearsal, e2e all success (2026-11-24)",
+      "node sketch/t1.mjs on the trial clone (2026-11-24T16:35Z): migrate applied 0001, 0002, 0003; 'inside after switch' {u: sai_app, r: tenant, o: <A>}; 'committed' {a:1,p:1,v:1, verify ok}; 'failing action' E_DB_QUERY/23514 then 'after failing' {a:1,p:1,v:1}; tenant B sees 0; tenant B foreign insert 42501; composite fk 23503; version 1 with a reason 23514; version 2 without a reason 23514; update refused 42501 (no grant); delete refused P0001; delete with the setting of another org P0001; purge {versions:1, projects:1}; setting after the transaction ''; flip owner identity of an owner-org member P0001; owner org insert of a non owner identity P0001; invite new org without a name 23514, existing org with a name 23514, new org with a name no error; audit new action no error; an action outside the list 23514; reauth purpose user_delete no error; five org_id tables with rls true and frc true",
+      "node sketch/t2.mjs (2026-11-24, about 16:38Z): as the migration role UPDATE, DELETE and TRUNCATE of idea_versions -> P0001; DELETE with the purge setting of the row's organisation -> no error",
+      "node sketch/t3.mjs (2026-11-24T16:36Z): the seven date rows of REQ-117 criterion 7 reproduced by an own days-from-civil arithmetic, numbers 0, 999, 1 000, 1 250 000, 5 000 seeded moments equal to Date fields (0 differ); consent sentences: phrases [5,5,5], words ru [12,13,6,12,13], kk [11,15,6,9,13], en [17,15,9,18,15], text rules null, lint without the exception finds one list-Ц form per language (дней, күні, days) and none after the phrase is taken out once, the six kk tokens present",
+      "node sketch/t4.mjs: five parallel edits of one project under the project row lock -> versions [2,3,4,5,6], stored [1..6]; node sketch/t5.mjs: a JSON boolean in a body -> bad_body; routes 15, AUTH_CODES 23, MAC_LABELS 10, PURPOSES 11; node sketch/t6.mjs (2026-11-24T16:53Z): insert … on conflict (user_id) where closed_at is null do nothing returns a row the first time and none the second, a row again after the request is closed; the stale-invite delete runs under sai_app with the invites DELETE grant",
+      "No app check, test, node --test or e2e was run on this PC (decisions/0110, 0129); no server was started, no port bound (the sketch used PGlite in process only)",
+      "grep for the reference product's name, for paths of this computer and for the scratch path in docs/design/M2PROJ-invites-projects.md -> no match; the file has no CR (grep -c $'\\r' -> 0)",
+      "cd tools && npm run -s traces (Node 22 first on PATH) -> exit 0, «traces: файлов проверено 3114, следов 0, пропущено 67»; cd tools && npm run -s handoffs-check -> exit 0, «handoffs-check: файлов проверено 1660, нарушений 0, исключений использовано 110 из 110» (2026-11-24T16:56:05Z, with the design and this result in the tree)"
+    ],
+    "issues": [
+      {
+        "id": "О11",
+        "kind": "SETTLED",
+        "text": "decisions/0137 O11 (how the audit row of a tenant action commits with the action) is settled in the design as C1 and 4.4: the plan hook, run on the platform part of the request transaction before switchToTenant; measured in F5. Proposal for a decisions record: decisions/0138-m2proj-code-design-conventions.md with the section «Основание», holding C1-C20 and the answers to O1-O10."
+      },
+      {
+        "id": "О1",
+        "kind": "DISCREPANCY",
+        "text": "REQ-117 criteria 3 and 9 print `update projects` and `delete from idea_versions` as lines of app/server/services/projects.js only, while DBC-1 of REQ-115 (released, db-calls.test.js) forbids any database call outside app/server/db/ and M2AUTH 4.5.4 puts every statement in a store (F16). Recommended: the statements stand in app/server/db/project-store.js and REQ-117 criteria 3 and 9 are micro-amended by REQ-ANALYST and REQ-VALIDATOR (the greps name project-store.js; the meaning is unchanged) before step 2. The design's tests STG-4 and DEL-8 name the file of this answer."
+      },
+      {
+        "id": "О2",
+        "kind": "QUESTION",
+        "text": "Re-auth purposes. (a) POST /api/admin/invites consumes the purpose owner_identity on every invite (meta.reauth cannot depend on the body; REQ-116 asks the token for an owner identity only, but under G7 owner_only every invite is for one). (b) POST /api/admin/users/:id/delete needs a token and the REQ names no purpose: a new purpose user_delete (the closed table of M2AUTH 4.9.4, the 0003 check, two test literals, ARCH §5). Recommended: yes to both."
+      },
+      {
+        "id": "О3",
+        "kind": "QUESTION",
+        "text": "REQ-116 names no source for the name of a new customer organisation, and IS-4 refuses a body key org_id or orgId on every route (F17). Recommended: the owner types the name on the invite (org_name, 1-120, a column of invites with a check against organisation); an existing organisation is named by the body key `organisation`; the invited person never names an organisation (so no personal name lands in orgs.name, which stays after a deletion)."
+      },
+      {
+        "id": "О4",
+        "kind": "QUESTION",
+        "text": "REQ-117 asks for «the allowed transitions» without a table. Recommended: the minimal forward table of design 4.7 (20 of the 121 pairs: draft->interview->spec->approved->dev_requested->in_development->built->delivered, delivered->accepted, delivered->returned, returned->in_development, and archived from every other stage); M3-M5 extend it by a «was -> became» row. A decisions record."
+      },
+      {
+        "id": "О5",
+        "kind": "QUESTION",
+        "text": "Consent language: the server accepts a consent only in a language whose five sentences its served texts hold (the open build drops kk values, F14), so on production ru and en; the kk draft (FOR_NATIVE_SPEAKER) is refused with consent_stale and not listed by GET /api/invites/:code. Recommended: yes."
+      },
+      {
+        "id": "О6",
+        "kind": "QUESTION",
+        "text": "ARCH §14.5 lists «admin read of tenant data»; REQ-117 criterion 5 audits the card only. Recommended: audit the card (one admin_read row per call), not the board list (titles, organisation names, times)."
+      },
+      {
+        "id": "О7",
+        "kind": "QUESTION",
+        "text": "Personal data in invites (the invited e-mail): (a) the lazy cleanup removes unused invites expired more than 30 days ago (ARCH §4 retention; invites gets the DELETE grant); (b) the deletion replaces the e-mail of the invites that user used by the placeholder. Recommended: yes to both (decisions/0100 items 1 and 5)."
+      },
+      {
+        "id": "О8",
+        "kind": "QUESTION",
+        "text": "A deletion request by the platform admin is refused with 403 forbidden (his account cannot be deleted; a request that can never be carried out is not stored). Recommended: yes."
+      },
+      {
+        "id": "О9",
+        "kind": "QUESTION",
+        "text": "decisions/0137 O6 says G21 comes with the client-facing pages of REQ-116 and REQ-117, but the route of this run has no GUI-DESIGN-ANALYST step (WF-04) before step 2. The design builds functional pages on the existing styles with a closed element-id contract. ORCH decides: insert a WF-04 look description of the invite, project list, new project and project pages before step 2, or build as designed and ask G21 on the UAT screens (a look change then reworks sub-step F4 only)."
+      },
+      {
+        "id": "О10",
+        "kind": "QUESTION",
+        "text": "A client-side idea edit form on project.html: the route POST /api/projects/:id/idea is required by criterion 2, the form is not. Recommended: include the small form for members and above (the client's only way to correct his own idea on the goal path); a viewer sees none."
+      },
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Facts of the task checked: the base tag is 60b10b7 and app/.github equal main 6078bfb (F1); the route table has 15 rows, AUTH_CODES 23, PURPOSES 11 (F2). The REQ-116 criteria's `grep -rnwl is_owner_identity` is met by the design's list of two files (db/auth-store.js, db/org-store.js): the column of invites is named owner_identity so the whole-word grep does not match it."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Not measurable on this PC (no Postgres): the row lock of the version number and of the invite claim under real concurrency; the design names M2R-1, M2R-2 and M2R-3 (pg job) as their proof. PGlite serialises transactions, so the int tests INV-6 and the PGlite run of the version race prove the logic only (F11)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Proposed anti-patterns for DOC-UPDATER (Q13): a hook that appends an audit row after the switch to tenant settings is refused by the writer; a guard suite that sends an empty body to every object route hides a 404 behind a 400; a legitimate body key named org_id turns the key-refusal suite red; an exact-path list of routes that change the session misses a route with a path parameter."
+      }
+    ],
+    "prototype": "Outside the project: <scratch>/m2proj-01/sai, a fresh clone of the tag base/M2PROJ-20261124-01 (git clone -c core.autocrlf=false, then checkout of 60b10b7), npm ci in its app/, and app/sketch/ of that clone: mig/ (0001 and 0002 copied and a trial 0003_projects.sql), grants3.sql (the grants file with the new blocks), t1.mjs (facts F5-F10), t2.mjs (F8, the owner-role triggers), t3.mjs (F12, F13), t4.mjs (F11), t5.mjs (F2, F3), t6.mjs (F22). The clone's own app/server/services/audit.js got the seven new action names so the sketch could run the real writer. No server was started and no port bound; no port 4780, 4781, 4782 or 4790 was touched.",
+    "artifacts_out": [
+      "docs/design/M2PROJ-invites-projects.md"
+    ]
+  }
+}

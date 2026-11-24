@@ -18,10 +18,12 @@ export const ORIGIN = "http://127.0.0.1:1";
 export const HTTPS_ORIGIN = "https://sai.example";
 export const PREVIEW = "http://localhost:1";
 
-/** Every table of 0001 and 0002, in name order. */
+/** Every table of 0001, 0002 and 0003, in name order (guard row G21 of the code design M2PROJ). */
 export const TABLES = Object.freeze([
   "audit_log",
   "auth_sessions",
+  "deletion_requests",
+  "idea_versions",
   "invites",
   "login_delays",
   "login_failures",
@@ -29,9 +31,11 @@ export const TABLES = Object.freeze([
   "orgs",
   "password_resets",
   "platform_settings",
+  "projects",
   "rate_limits",
   "reauth_tokens",
   "schema_migrations",
+  "user_consents",
   "users",
 ]);
 
@@ -254,9 +258,10 @@ export function sameText(status, text, headers) {
  * The app on a migrated PGlite with injected accounts. Options: `origin` (the app origin), `hasher`,
  * `setupTokenHash` (default the hash of `h.setupToken`; null leaves it unset), `pepper`, `clock` start (ms),
  * `random` (the cleanup source; default never), `txDeadlineMs`, `wrap(raw)` (the adapter the app is given,
- * built around the PGlite adapter), `routeTable`, `demo`.
+ * built around the PGlite adapter), `routeTable`, `demo`, `auth` (more of deps.auth: the G7 gate
+ * `personalDataGate` and the planted `consentTexts`, REQ-116).
  * @param {import("node:test").TestContext} t
- * @param {{ origin?: string, hasher?: ReturnType<typeof fastHasher>, setupTokenHash?: string | null, pepper?: Buffer, clock?: number, random?: () => number, txDeadlineMs?: number, wrap?: (raw: any) => any, routeTable?: any, demo?: any }} [o]
+ * @param {{ origin?: string, hasher?: ReturnType<typeof fastHasher>, setupTokenHash?: string | null, pepper?: Buffer, clock?: number, random?: () => number, txDeadlineMs?: number, wrap?: (raw: any) => any, routeTable?: any, demo?: any, auth?: { personalDataGate?: "owner_only" | "invited", consentTexts?: Record<string, Record<string, string>> } }} [o]
  */
 export async function authHarness(t, o = {}) {
   const db = await authDb();
@@ -299,6 +304,7 @@ export async function authHarness(t, o = {}) {
       random: o.random ?? (() => 1),
       passwords: hasher,
       txDeadlineMs: o.txDeadlineMs,
+      ...o.auth,
     },
   });
 

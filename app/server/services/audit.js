@@ -9,6 +9,7 @@ import {
 } from "../db/audit-store.js";
 import { UUID } from "../db/tx.js";
 import { PURPOSES } from "../auth/reauth.js";
+import { isStage } from "../../public/shared/project/stages.js";
 
 // The one audit writer (ARCH §14.5; REQ-115 criterion 10; the code design M2AUTH, 4.11): one row per event, in
 // the caller's platform transaction, so the action and its row commit together. Under the advisory lock of
@@ -33,6 +34,16 @@ export const ACTIONS = Object.freeze([
   "auth.totp_confirm",
   "auth.totp_recovery_used",
   "auth.totp_off",
+  // Invitations, deletion and projects (the code design M2PROJ, C16); `admin_read` is the REQ's literal name of
+  // the card read.
+  "invite.create",
+  "invite.accept",
+  "account.deletion_request",
+  "account.delete",
+  "project.create",
+  "project.idea_version",
+  "project.stage",
+  "admin_read",
 ]);
 
 const ACTOR_KINDS = Object.freeze(["user", "admin", "worker", "system"]);
@@ -50,6 +61,8 @@ const REASONS = Object.freeze([
 
 const METHODS = Object.freeze(["password", "totp", "recovery"]);
 
+const ROLES = Object.freeze(["org_owner", "org_admin", "member", "viewer"]);
+
 /** @type {Readonly<Record<string, (v: unknown) => boolean>>} */
 const DETAILS = Object.freeze({
   purpose: (v) => typeof v === "string" && PURPOSES.includes(v), // the re-auth table, 4.9.4
@@ -58,6 +71,10 @@ const DETAILS = Object.freeze({
   remaining: (v) => Number.isInteger(v) && Number(v) >= 0 && Number(v) <= 10,
   reauth_id: (v) => typeof v === "string" && UUID.test(v),
   session_id: (v) => typeof v === "string" && UUID.test(v),
+  version: (v) => Number.isInteger(v) && Number(v) >= 1,
+  role: (v) => typeof v === "string" && ROLES.includes(v),
+  owner_identity: (v) => typeof v === "boolean",
+  stage: (v) => typeof v === "string" && isStage(v),
 });
 
 export const ZERO_HASH = "0".repeat(64);

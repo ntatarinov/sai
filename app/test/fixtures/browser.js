@@ -1,11 +1,12 @@
 /* global document */
+import crypto from "node:crypto";
 import fs from "node:fs";
 import { createServer } from "node:http";
 import path from "node:path";
 import { getRequestListener } from "@hono/node-server";
 import { chromium, errors } from "playwright-core";
 import { PUBLIC_LANGS } from "../../public/shared/i18n/lang.js";
-import { lintText } from "../../scripts/word-lists.js";
+import { lintText, stripDeletionTerm } from "../../scripts/word-lists.js";
 import { runBuild } from "../../scripts/vercel-build.js";
 import { createApp } from "../../server/app.js";
 import { originsFor } from "../../server/http/origin.js";
@@ -179,6 +180,27 @@ export async function serveLocal(t) {
 }
 
 /**
+ * The server of the accounts path (REQ-117 criterion 10, M2PROJ 7.2 and F18): `node server/node-main.js` on port 0
+ * with a fresh in-memory PGlite (no DATABASE_URL), a SECRET_PEPPER and the sha256 of a setup token that this
+ * function makes and gives back, so the test can run the first setup in the browser. Stopped in `t.after`.
+ * @param {import("node:test").TestContext} t
+ * @returns {Promise<{ port: number, origin: string, setupToken: string }>}
+ */
+export async function serveAccounts(t) {
+  const setupToken = crypto.randomBytes(32).toString("base64url");
+  const s = startNode(t, {
+    PORT: "0",
+    SECRET_PEPPER: crypto.randomBytes(32).toString("base64url"),
+    SETUP_TOKEN_HASH: crypto
+      .createHash("sha256")
+      .update(setupToken, "utf8")
+      .digest("hex"),
+  });
+  const port = await s.ready;
+  return { port, origin: `http://127.0.0.1:${port}`, setupToken };
+}
+
+/**
  * The server of the public set: the open build (no database, check-public and the migration injected as
  * steps that pass) of the real `app/public` into a temporary folder, served by `createApp` with
  * `loadStaticSite(<output>)` and the public languages on `127.0.0.1:0`. Closed in `t.after`.
@@ -236,7 +258,10 @@ export async function servePublicSet(t) {
  * code design 10): the `innerText` of the body (the visually hidden live line and text list included), the
  * title of the document, and the values of `alt`, `title` and `aria-label` of every element, each through the
  * lists Г, Б, В, П, Ц, С of `scripts/word-lists.js` and through the word ban and the three phrases of
- * REQ-109 criterion 7. A text that a page script writes is read here after the state that shows it.
+ * REQ-109 criterion 7. A text that a page script writes is read here after the state that shows it. The five
+ * consent elements of the invitation page (`#consent-1` … `#consent-5`, in the language of `#consent-text`) are read
+ * through the narrow exception of the word lists (`stripDeletionTerm`: the deletion term of the fifth sentence is
+ * taken out once) and the lists are applied to everything else (REQ-111 criterion 3 as amended; M2PROJ 4.8).
  * @param {import("playwright-core").Page} page
  * @param {string} lang
  * @returns {Promise<string[]>} one line per finding, `<where>: <item>`; empty when the page shows nothing forbidden
@@ -244,10 +269,27 @@ export async function servePublicSet(t) {
 export async function shownTextFindings(page, lang) {
   /** @type {Array<[string, string]>} */
   const shown = await page.evaluate(() => {
+    // The consent sentences are linted apart (through the exception); the rest of the text without them.
+    let body = document.body.innerText;
+    /** @type {Array<[string, string]>} */
+    const consent = [];
+    const consentLang = document.getElementById("consent-text")?.lang ?? "";
+    const flat = (/** @type {string} */ s) => s.replace(/\s+/g, " ").trim();
+    for (let n = 1; n <= 5; n++) {
+      const sentence = flat(
+        document.getElementById(`consent-${n}`)?.textContent ?? "",
+      );
+      if (sentence === "") continue;
+      consent.push([`consent sentence ${n} (${consentLang})`, sentence]);
+      // The page's text has the sentences in it; they are read apart, so they are taken out here (the white
+      // space of the rest is read as one space, which no list rule depends on).
+      body = flat(body).replace(sentence, "");
+    }
     /** @type {Array<[string, string]>} */
     const out = [
-      ["text", document.body.innerText],
+      ["text", body],
       ["document title", document.title],
+      ...consent,
     ];
     for (const el of document.querySelectorAll("[alt], [title], [aria-label]"))
       for (const name of ["alt", "title", "aria-label"]) {
@@ -258,7 +300,12 @@ export async function shownTextFindings(page, lang) {
   });
   /** @type {string[]} */
   const out = [];
-  for (const [where, text] of shown) {
+  for (const [where, shownText] of shown) {
+    // A consent sentence goes through the exception, in the language it is shown in.
+    const sentence = /^consent sentence \d \((ru|kk|en)\)$/.exec(where);
+    const text = sentence
+      ? stripDeletionTerm(shownText, sentence[1])
+      : shownText;
     const items = lintText(text, lang).map((f) => `list ${f.list} «${f.form}»`);
     for (const r of [...PHRASE_RULES, ...WORD_RULES])
       if (r.re.test(text)) items.push(r.item);

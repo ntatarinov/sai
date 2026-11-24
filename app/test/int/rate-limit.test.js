@@ -6,6 +6,7 @@ import { createFunctionApp } from "../../server/app.js";
 import { readConfig } from "../../server/config.js";
 import { ADMIN, authDb, authHarness } from "../fixtures/auth.js";
 import { request, startNode } from "../fixtures/helpers.js";
+import { acceptBody, acceptInvite, plantInvite } from "../fixtures/m23.js";
 
 // REQ-114 criterion 9 (the code design M2AUTH, 4.10, decisions/0137 Addition 4 SEC F2): the keys of the limits
 // and the stored address are HMAC(SECRET_PEPPER, …) and no column or log line holds the address; the Node
@@ -19,6 +20,11 @@ const WINDOWS = {
   login: 15 * MIN,
   reset: 15 * MIN,
   user: 10 * MIN,
+  // The limits of REQ-116 and REQ-117 (guard row G11): accepting an invite 10 per hour and viewing one 60 per
+  // hour per address, creating a project 20 per user in one fixed 24-hour window.
+  invite: 60 * MIN,
+  invite_view: 60 * MIN,
+  project: 24 * 60 * MIN,
 };
 
 /** @param {Buffer} pepper @param {string} label @param {string} text */
@@ -229,7 +235,7 @@ test("RL-3 the Vercel entry reads only x-forwarded-for: a planted x-real-ip chan
   ]);
 });
 
-test("RL-4 the first call over each limit (setup 5 per hour, login and reset 10 per 15 minutes per address, 600 per 10 minutes per session) answers 429 with Retry-After and the count stays at the limit", async (t) => {
+test("RL-4 the first call over each limit (setup 5 per hour, login and reset 10 per 15 minutes per address, accepting an invite 10 and viewing one 60 per hour per address, 20 projects per user in 24 hours, 600 per 10 minutes per session) answers 429 with Retry-After and the count stays at the limit", async (t) => {
   const h = await authHarness(t);
   h.setNow(Date.UTC(2026, 10, 24, 9, 3, 17, 250));
   // A session by the login alone: GET /api/auth/me of signIn would be the first count of the user window.
@@ -240,6 +246,10 @@ test("RL-4 the first call over each limit (setup 5 per hour, login and reset 10 
       body: { email: u.email, password: u.password },
     })
   ).cookie;
+  const member = await h.signIn(
+    await h.addUser({ email: "quota.member@example.test" }),
+    { ip: "192.0.2.251" },
+  );
   let n = 0;
   /** @type {Array<[keyof typeof WINDOWS, number, () => Promise<import("../fixtures/auth.js").Answer>, string]>} */
   const limits = [
@@ -282,6 +292,35 @@ test("RL-4 the first call over each limit (setup 5 per hour, login and reset 10 
       "192.0.2.3",
     ],
     [
+      "invite",
+      10,
+      () => acceptInvite(h, "C".repeat(22), acceptBody(), { ip: "192.0.2.4" }),
+      "192.0.2.4",
+    ],
+    [
+      "invite_view",
+      60,
+      () =>
+        h.call("GET", `/api/invites/${"D".repeat(22)}`, { ip: "192.0.2.5" }),
+      "192.0.2.5",
+    ],
+    [
+      "project",
+      20,
+      () =>
+        h.call("POST", "/api/projects", {
+          as: member,
+          body: {
+            title: `Quota ${++n}`,
+            idea: "An idea",
+            what: "shop",
+            whom: "team",
+            lang: "ru",
+          },
+        }),
+      "",
+    ],
+    [
       "user",
       600,
       () => h.call("GET", "/api/auth/me", { as: u, origin: null }),
@@ -309,7 +348,7 @@ test("RL-4 the first call over each limit (setup 5 per hour, login and reset 10 
   const counts = (
     await h.sql("select count from rate_limits order by count")
   ).map((r) => r.count);
-  for (const max of [5, 10, 10, 600])
+  for (const max of [5, 10, 10, 60, 20, 600])
     assert.ok(counts.includes(max), `a window at its limit ${max}: ${counts}`);
   assert.ok(!counts.some((c) => c > 600));
 });
@@ -389,6 +428,34 @@ test("RL-5 the lazy cleanup (injected random below 0.01) removes rate_limits, lo
   assert.equal(await n("reauth_tokens"), 0);
   assert.equal(await n("password_resets"), 0);
   assert.ok(before.s > 1 && before.r > 0 && before.p > 0);
+  // An unused invite that expired more than 30 days ago is removed; a used one, a younger one and one that
+  // has not expired stay (the cleanup is reached through a platform route: an auth route).
+  const day = 24 * 3600 * 1000;
+  const plant = (
+    /** @type {string} */ code,
+    /** @type {number} */ expiresAt,
+    usedAt = null,
+  ) =>
+    plantInvite(h, {
+      code: code.repeat(22).slice(0, 22),
+      email: `${code.toLowerCase()}@example.test`,
+      createdBy: admin.id,
+      expiresAt,
+      usedAt,
+    });
+  const gone = await plant("A", h.now() - 30 * day - 1000);
+  const youngest = await plant("B", h.now() - 30 * day + 1000);
+  const used = await plant("C", h.now() - 40 * day, h.now() - 41 * day);
+  const live = await plant("D", h.now() + day);
+  assert.equal(await n("invites"), 4);
+  random = 0.5;
+  await h.call("GET", "/api/auth/me", { as: late, origin: null });
+  assert.equal(await n("invites"), 4, "random 0.5 runs no cleanup");
+  random = 0.001;
+  await h.call("GET", "/api/auth/me", { as: late, origin: null });
+  const left = (await h.sql("select id from invites")).map((r) => r.id).sort();
+  assert.deepEqual(left, [youngest.id, used.id, live.id].sort());
+  assert.ok(!left.includes(gone.id));
 });
 
 test("RL-6 two IPv6 addresses of one /64 share one login window and one admin delay row; an address of another /64 does not", async (t) => {

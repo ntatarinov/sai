@@ -11,16 +11,23 @@ import {
   msOf,
   setTotpPending,
 } from "../db/auth-store.js";
+import { iso } from "../db/auth-store.js";
 import { UUID } from "../db/tx.js";
 import { keysOf } from "../http/auth-mw.js";
 import { HttpError } from "../http/errors.js";
 import { withBody } from "../http/schema.js";
 import { verifyAudit } from "../services/audit.js";
+import {
+  createInvite,
+  deleteAccount,
+  listDeletions,
+} from "../services/orgs.js";
 import { audit, auditRecovery, refusal, secondFactor } from "./auth.js";
 
 // The admin routes (REQ-114 criteria 7 and 8, REQ-115 criterion 10; the code design M2AUTH, 4.4 rows 11-15):
 // the reset link, the TOTP enrolment, confirmation and switch-off, and the audit verify. Only the platform
-// admin reaches them: everyone else gets the uniform 404 before any other check (meta.admin).
+// admin reaches them: everyone else gets the uniform 404 before any other check (meta.admin). The invitation
+// and deletion rows N4-N6 of the code design M2PROJ (REQ-116) are here too.
 
 /** @typedef {import("../http/auth-mw.js").AuthContext} AuthContext */
 /** @typedef {import("../http/auth-mw.js").PipelineRequest} PipelineRequest */
@@ -178,6 +185,56 @@ export function adminRoutes(ctx) {
     };
   }
 
+  /** POST /api/admin/invites (N4, REQ-116 criterion 1). @param {PipelineRequest} req */
+  async function invite(req) {
+    const session = /** @type {Session} */ (req.session);
+    const r = await createInvite(req.q, ctx, {
+      adminId: session.userId,
+      reauthId: /** @type {string} */ (req.reauthId),
+      email: req.body.email,
+      role: req.body.role,
+      organisation: req.body.organisation ?? null,
+      orgName: req.body.org_name ?? null,
+      ownerIdentity: req.body.owner_identity,
+      now: req.now,
+      ip: req.clientIp,
+    });
+    return {
+      status: 201,
+      body: { link: r.link, expires_at: iso(r.expiresAt) },
+    };
+  }
+
+  /** GET /api/admin/deletion-requests (N5). @param {PipelineRequest} req */
+  async function deletions(req) {
+    const rows = await listDeletions(req.q);
+    return {
+      status: 200,
+      body: {
+        requests: rows.map((r) => ({
+          id: r.id,
+          user_id: r.user_id,
+          name: r.name,
+          email: r.email,
+          requested_at: iso(r.requested_at),
+        })),
+      },
+    };
+  }
+
+  /** POST /api/admin/users/:id/delete (N6). @param {PipelineRequest} req */
+  async function deleteUser(req) {
+    const session = /** @type {Session} */ (req.session);
+    await deleteAccount(req.q, ctx, {
+      adminId: session.userId,
+      targetId: req.params.id ?? "",
+      reauthId: /** @type {string} */ (req.reauthId),
+      now: req.now,
+      ip: req.clientIp,
+    });
+    return { status: 200, body: { ok: true } };
+  }
+
   const row = (
     /** @type {string} */ method,
     /** @type {string} */ path,
@@ -200,5 +257,17 @@ export function adminRoutes(ctx) {
       code: { kind: "form", re: /^(?:[0-9]{6}|[A-Za-z2-7]{16})$/ },
     }),
     row("GET", "/api/admin/audit/verify", null, verify, {}),
+    row("POST", "/api/admin/invites", "owner_identity", invite, {
+      email: { kind: "email" },
+      role: {
+        kind: "enum",
+        values: ["org_owner", "org_admin", "member", "viewer"],
+      },
+      owner_identity: { kind: "bool" },
+      organisation: { kind: "form", re: UUID, optional: true },
+      org_name: { kind: "text", min: 1, max: 120, optional: true },
+    }),
+    row("GET", "/api/admin/deletion-requests", null, deletions, {}),
+    row("POST", "/api/admin/users/:id/delete", "user_delete", deleteUser, {}),
   ];
 }

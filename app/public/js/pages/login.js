@@ -38,6 +38,8 @@ function start(doc) {
     form.hidden = true;
     session.hidden = false;
     toTotp.hidden = body.platform_admin !== true;
+    /** @type {HTMLElement} */ (doc.getElementById("to-admin")).hidden =
+      body.platform_admin !== true;
     frame.say(who, "auth_signed_in", { name: String(body.name) });
     frame.clear(info);
     frame.clear(err);

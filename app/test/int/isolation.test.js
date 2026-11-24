@@ -24,6 +24,7 @@ import {
 } from "../fixtures/auth.js";
 import { MIGRATIONS, migrationList } from "../fixtures/db.js";
 import { APP } from "../fixtures/helpers.js";
+import { consentSha } from "../fixtures/m23.js";
 
 // REQ-115 criteria 7 and 8 (AC2.1, the code design M2AUTH, 4.12, 4.13 and C12): the route-level isolation suite
 // over the route table read at test time (IS-1, IS-2) and over a planted pair of test-only tenant routes
@@ -32,7 +33,8 @@ import { APP } from "../fixtures/helpers.js";
 
 // The generated fields of the answers that the comparison of IS-5 masks (the code design M2AUTH, 4.13, C12),
 // mirrored here from the design: each with its kind and the shape its value must have before it is masked.
-// Every other route masks nothing. The kinds id and time have no row in M2.2.
+// Every other route masks nothing. The kind id has its first use in M2.3 (the id of a created project); time has
+// none (times derive from the shared clock).
 const KINDS = ["id", "code", "token", "time"];
 const RE_ORIGIN = ORIGIN.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 /** @type {Record<string, Array<{ field: string, kind: string, shape: RegExp, count?: number }>>} */
@@ -62,6 +64,21 @@ const MASKED = {
       kind: "code",
       shape: /^[A-Z2-7]{16}$/,
       count: 10,
+    },
+  ],
+  // M2.3 (guard row G7): the one-time invite link and the id of a created project.
+  "POST /api/admin/invites": [
+    {
+      field: "link",
+      kind: "code",
+      shape: new RegExp(`^${RE_ORIGIN}/invite\\.html#c=[A-Za-z0-9_-]{22}$`),
+    },
+  ],
+  "POST /api/projects": [
+    {
+      field: "id",
+      kind: "id",
+      shape: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
     },
   ],
 };
@@ -407,6 +424,73 @@ async function cloneOf(t, w) {
 }
 
 /**
+ * A project of an organisation inserted by SQL (the test's own path, as sai_app under platform settings) with
+ * its version 1; returns the project's id.
+ * @param {World} w
+ * @param {string} orgId
+ * @param {string} createdBy a user id
+ * @param {string} title
+ */
+async function plantProject(w, orgId, createdBy, title) {
+  const at = new Date(w.shared.clock.now).toISOString();
+  const [p] = await w.sql(
+    "insert into projects (org_id, title, language, stage, created_by, created_at, updated_at) values ($1, $2, 'ru', 'draft', $3, $4::timestamptz, $4::timestamptz) returning id",
+    [orgId, title, createdBy, at],
+  );
+  await w.sql(
+    "insert into idea_versions (org_id, project_id, version, text, quick_facts, reason, created_by, created_at) values ($1, $2, 1, $3, $4::jsonb, null, $5, $6::timestamptz)",
+    [
+      orgId,
+      p.id,
+      `idea of ${title}`,
+      JSON.stringify({ what: "shop", whom: "team", lang: "ru" }),
+      createdBy,
+      at,
+    ],
+  );
+  return /** @type {string} */ (p.id);
+}
+
+/** A valid body of `POST /api/projects`. @param {string} title */
+const projectBody = (title) => ({
+  title,
+  idea: `idea of ${title}`,
+  what: "shop",
+  whom: "team",
+  lang: "ru",
+});
+
+/** A valid body of the idea edit routes. */
+const ideaBody = () => ({
+  text: "A corrected idea",
+  reason: "Because it was unclear",
+});
+
+/**
+ * A fresh invite for a throwaway e-mail of a new organisation, made by the admin through the route with an
+ * `owner_identity` token on `w`; returns its code.
+ * @param {Awaited<ReturnType<typeof freshWorld>>} base
+ * @param {World} w
+ * @param {string} email
+ */
+async function freshInvite(base, w, email) {
+  const r = await w.call("POST", "/api/admin/invites", {
+    as: base.admin,
+    reauth: await w.reauthToken(base.admin, "owner_identity"),
+    body: {
+      email,
+      role: "org_owner",
+      owner_identity: true,
+      org_name: "Canonical Co",
+    },
+  });
+  assert.equal(r.status, 201, r.text);
+  return /** @type {string} */ (
+    /#c=([A-Za-z0-9_-]{22})$/.exec(r.json.link)?.[1]
+  );
+}
+
+/**
  * The canonical request of a route for the actor that the route serves (the code design M2AUTH, 4.12), made
  * ready on `w`: its re-auth token, the TOTP state, a fresh reset code, a throwaway account. The request itself
  * is not sent.
@@ -517,6 +601,77 @@ async function canonical(base, w, route) {
     case "GET /api/admin/audit/verify":
       r.as = admin;
       break;
+    // M2.3 (code design M2PROJ, 7.5): the canonical requests of rows N1-N14.
+    case "GET /api/invites/:code":
+      r.path = template.replace(
+        ":code",
+        await freshInvite(base, w, "canon-view@example.test"),
+      );
+      break;
+    case "POST /api/invites/:code/accept":
+      r.path = template.replace(
+        ":code",
+        await freshInvite(base, w, "canon-accept@example.test"),
+      );
+      r.body = {
+        name: "Canonical Person",
+        email: "canon-accept@example.test",
+        password: "canonical-pass-4Wq8",
+        consent: true,
+        consent_sha256: consentSha("ru"),
+        consent_lang: "ru",
+      };
+      break;
+    case "POST /api/account/deletion-request":
+      r.body = { password: member.password };
+      r.as = member;
+      break;
+    case "POST /api/admin/invites":
+      r.body = {
+        email: "canon-new@example.test",
+        role: "org_owner",
+        owner_identity: true,
+        org_name: "Canonical New Co",
+      };
+      r.as = admin;
+      r.reauth = await w.reauthToken(admin, "owner_identity");
+      break;
+    case "GET /api/admin/deletion-requests":
+    case "GET /api/admin/requests":
+    case "GET /api/admin/audit":
+      r.as = admin;
+      break;
+    case "POST /api/admin/users/:id/delete":
+      r.path = template.replace(":id", (await w.addUser(null, null)).id);
+      r.body = {};
+      r.as = admin;
+      r.reauth = await w.reauthToken(admin, "user_delete");
+      break;
+    case "GET /api/admin/projects/:id":
+    case "POST /api/admin/projects/:id/idea":
+      r.path = template.replace(
+        ":id",
+        await plantProject(w, base.orgB, member.id, "canonical admin project"),
+      );
+      r.as = admin;
+      if (method === "POST") r.body = ideaBody();
+      break;
+    case "GET /api/projects":
+      r.as = member;
+      break;
+    case "POST /api/projects":
+      r.body = projectBody("canonical new project");
+      r.as = member;
+      break;
+    case "GET /api/projects/:id":
+    case "POST /api/projects/:id/idea":
+      r.path = template.replace(
+        ":id",
+        await plantProject(w, base.orgB, member.id, "canonical own project"),
+      );
+      r.as = member;
+      if (method === "POST") r.body = ideaBody();
+      break;
     default:
       throw new Error(`no canonical request for ${route}`);
   }
@@ -548,9 +703,12 @@ const realRoutes = (w) => {
 // a foreign object, and a row it creates carries the caller's organisation.
 
 /**
- * @typedef {{ kind: "object", make: (orgId: string) => Promise<string> }
- *   | { kind: "list", make: (orgId: string) => Promise<string>, secrets: (orgId: string) => string[] }
- *   | { kind: "create", created: () => Promise<string | null>, secrets: (orgId: string) => string[] }} Case
+ * `body` is the valid body an object route of a non-GET method needs (a strict body answers 400 before the 404
+ * the suite expects, F17 of the code design M2PROJ); `make`, `secrets` and `created` also get the world, for
+ * the cases that plant or read rows by SQL.
+ * @typedef {{ kind: "object", make: (orgId: string, w: World) => Promise<string>, body?: Record<string, unknown> }
+ *   | { kind: "list", make: (orgId: string, w: World) => Promise<string>, secrets: (orgId: string, w: World) => string[] | Promise<string[]> }
+ *   | { kind: "create", created: (w: World) => Promise<string | null>, secrets: (orgId: string, w: World) => string[] | Promise<string[]>, body?: Record<string, unknown> }} Case
  */
 
 /**
@@ -574,11 +732,11 @@ async function isolationSuite(w, table, cases) {
     const get = row.method === "GET";
     const opt = (/** @type {Actor | null} */ as) => ({
       as,
-      ...(get ? { origin: null } : { body: {} }),
+      ...(get ? { origin: null } : { body: c.body ?? {} }),
     });
     if (c.kind === "object") {
       if (!row.path.includes(":id")) findings.push(`${route}: no :id`);
-      const foreign = await c.make(w.orgA);
+      const foreign = await c.make(w.orgA, w);
       const a1 = await w.call(
         row.method,
         row.path.replace(":id", foreign),
@@ -605,14 +763,14 @@ async function isolationSuite(w, table, cases) {
       if (anon.status !== 401)
         findings.push(`${route}: anonymous ${anon.status}`);
     } else {
-      if (c.kind === "list") await c.make(w.orgA);
+      if (c.kind === "list") await c.make(w.orgA, w);
       const a = await w.call(row.method, row.path, opt(memberB));
       if (a.status < 200 || a.status > 299)
         findings.push(`${route}: answers ${a.status}`);
-      for (const s of c.secrets(w.orgA))
+      for (const s of await c.secrets(w.orgA, w))
         if (a.text.includes(s)) findings.push(`${route}: shows ${s}`);
       if (c.kind === "create") {
-        const org = await c.created();
+        const org = await c.created(w);
         if (org !== w.orgB) findings.push(`${route}: created in ${org}`);
       }
       const anon = await w.call(row.method, row.path, opt(null));
@@ -623,15 +781,56 @@ async function isolationSuite(w, table, cases) {
   return { count, findings };
 }
 
-// The cases of the tenant routes of the real table, by `<METHOD> <path>`: none in M2.2 (REQ-117 brings the
-// tenant routes and their cases; a tenant route without a case here fails IS-1).
+// The cases of the tenant routes of the real table, by `<METHOD> <path>`: the four routes of REQ-117 (a tenant
+// route without a case here fails IS-1; guard row G6 of the code design M2PROJ, 7.5). The projects of the
+// organisation A are planted by SQL; the secrets of the list and create cases are A's project ids and titles.
+/** @param {World} w */
+const projectsOfA = async (w) =>
+  (
+    await w.sql(
+      "select id, title from projects where org_id = (select id from orgs where name = 'Organisation A')",
+    )
+  ).flatMap((r) => [
+    /** @type {string} */ (r.id),
+    /** @type {string} */ (r.title),
+  ]);
+
+/** @param {World} w */
+const memberAOf = (w) => /** @type {any} */ (w).memberA.id;
+
 /** @type {Record<string, Case>} */
-const CASES = {};
+const CASES = {
+  "GET /api/projects/:id": {
+    kind: "object",
+    make: (orgId, w) => plantProject(w, orgId, memberAOf(w), "secret-get"),
+  },
+  "POST /api/projects/:id/idea": {
+    kind: "object",
+    body: ideaBody(),
+    make: (orgId, w) => plantProject(w, orgId, memberAOf(w), "secret-edit"),
+  },
+  "GET /api/projects": {
+    kind: "list",
+    make: (orgId, w) => plantProject(w, orgId, memberAOf(w), "secret-list"),
+    secrets: (_orgId, w) => projectsOfA(w),
+  },
+  "POST /api/projects": {
+    kind: "create",
+    body: projectBody("iso-created"),
+    secrets: (_orgId, w) => projectsOfA(w),
+    created: async (w) =>
+      (
+        await w.sql(
+          "select org_id from projects where title = 'iso-created' order by created_at desc limit 1",
+        )
+      )[0]?.org_id ?? null,
+  },
+};
 
 test("IS-1 every tenant route of the real table that takes an object id answers a foreign object byte-equal to a missing one (404) and an anonymous caller 401; a tenant route without a case fails", async (t) => {
   const w = await freshWorld(t);
   const table = realRoutes(w);
-  assert.ok(table.length >= 15, `${table.length} routes`);
+  assert.ok(table.length >= 29, `${table.length} routes`);
   const r = await isolationSuite(
     w,
     table.filter((x) => x.path.includes(":id")),
@@ -639,14 +838,17 @@ test("IS-1 every tenant route of the real table that takes an object id answers 
   );
   t.diagnostic(`isolation IS-1: ${r.count} object-id tenant routes`);
   assert.deepEqual(r.findings, []);
-  // A tenant route that the cases do not name is a finding (the rule that makes REQ-117 enter its cases).
+  // The real object-id tenant routes of REQ-117 are both in the suite (the count is read, not assumed).
+  assert.equal(r.count, 2);
+  // A tenant route that the cases do not name is a finding (the rule that makes a route enter its cases); the
+  // planted row has a path that no case names, since the real /api/projects/:id has its case now.
   const planted = {
     ...table[0],
-    path: "/api/projects/:id",
+    path: "/api/planted/:id",
     meta: { ...table[0].meta, tenant: true },
   };
   assert.deepEqual((await isolationSuite(w, [planted], CASES)).findings, [
-    `${planted.method} /api/projects/:id: a tenant route without a case`,
+    `${planted.method} /api/planted/:id: a tenant route without a case`,
   ]);
 });
 
@@ -656,6 +858,8 @@ test("IS-2 every tenant list or create route of the real table shows no id or na
   const r = await isolationSuite(w, table, CASES);
   t.diagnostic(`isolation IS-2: ${r.count} list or create tenant routes`);
   assert.deepEqual(r.findings, []);
+  // The list and the create route of REQ-117 are both in the suite.
+  assert.equal(r.count, 2);
 });
 
 test("IS-3 the suite on a planted pair of tenant routes on the request's one transaction: green on the routes that read with the session's organisation, red on those that read by id alone", async (t) => {
@@ -795,7 +999,7 @@ test("IS-4 every route of the real table that takes a JSON body refuses an added
     .filter((r) => r.method !== "GET")
     .map((r) => `${r.method} ${r.path}`);
   t.diagnostic(`isolation IS-4: ${routes.length} routes with a body`);
-  assert.ok(routes.length >= 11, routes.join(", "));
+  assert.ok(routes.length >= 18, routes.join(", "));
   /** @type {string[]} */
   const wrong = [];
   for (const route of routes) {

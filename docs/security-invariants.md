@@ -2,8 +2,8 @@
 
 The invariants of accounts and tenancy that a change must keep (REQ-115 criterion 11; the audit
 docs/audits/SAI-ARCHITECTURE-AUDIT.md, chapter 10, stage 2; the code design
-`docs/design/M2AUTH-accounts-tenancy-backup.md`, 4.14). Each row names the test file and the test that proves it: that
-pair is the row's check command (the CI jobs of `.github/workflows/app.yml` run the file; the name is the test).
+`docs/design/M2AUTH-accounts-tenancy-backup.md`, 4.14; rows 14-19: `docs/design/M2PROJ-invites-projects.md`, 4.10). Each row names the test file and the test
+that proves it: that pair is the row's check command (the CI jobs of `.github/workflows/app.yml` run the file; the name is the test).
 
 | # | Invariant | Test file | Test name |
 | --- | --- | --- | --- |
@@ -20,3 +20,9 @@ pair is the row's check command (the CI jobs of `.github/workflows/app.yml` run 
 | 11 | Admin routes answer the uniform 404 to everyone but the platform admin | app/test/unit/route-table.test.js | RT-3 |
 | 12 | Database calls stand only under app/server/db/ | app/test/unit/db-calls.test.js | DBC-1 |
 | 13 | The app roles have exactly the least grants of the code design | app/test/pg/rls.test.js | RLS-5 |
+| 14 | The audit row of a tenant action is written before the switch to tenant settings and commits with the action | app/test/int/tenant-plan.test.js | TP-1 |
+| 15 | An invite is spent once: two accepts of one code give one account | app/test/int/invites.test.js | INV-6 |
+| 16 | The idea versions are insert-only; only the purge helper deletes them | app/test/pg/rls.test.js | RLS-6 |
+| 17 | The consent record holds the digest of the exact sentence shown | app/test/int/invites.test.js | INV-11 |
+| 18 | A member of the owner organisation is an owner identity, on both sides of the rule | app/test/pg/owner-org.test.js | OO-1 |
+| 19 | The admin read of a project is audited once per call | app/test/int/admin-board.test.js | BRD-3 |

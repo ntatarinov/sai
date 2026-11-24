@@ -1,6 +1,6 @@
 // Stable error codes of the JSON API (ARCH §13): the body is always {"error": "<code>"}.
 
-/** @typedef {"not_found" | "bad_request" | "body_too_large" | "bad_encoding" | "site_closed" | "server_error" | "server_config" | "bad_json" | "bad_body" | "bad_answers" | "unknown_question" | "unknown_option" | "wrong_kind" | "demo_unavailable" | "auth_required" | "invalid_credentials" | "totp_required" | "totp_invalid" | "origin_refused" | "csrf_refused" | "reauth_required" | "unsupported_type" | "password_rules" | "unknown_purpose" | "reset_invalid" | "totp_state" | "locked" | "reauth_locked" | "rate_limited" | "db_unavailable"} ErrorCode */
+/** @typedef {"not_found" | "bad_request" | "body_too_large" | "bad_encoding" | "site_closed" | "server_error" | "server_config" | "bad_json" | "bad_body" | "bad_answers" | "unknown_question" | "unknown_option" | "wrong_kind" | "demo_unavailable" | "auth_required" | "invalid_credentials" | "totp_required" | "totp_invalid" | "origin_refused" | "csrf_refused" | "reauth_required" | "unsupported_type" | "password_rules" | "unknown_purpose" | "reset_invalid" | "totp_state" | "locked" | "reauth_locked" | "rate_limited" | "db_unavailable" | "personal_data_gate" | "registration_closed" | "forbidden" | "owner_identity_required" | "consent_required" | "consent_stale" | "account_exists"} ErrorCode */
 
 /** @type {Readonly<Record<ErrorCode, number>>} */
 export const ERROR_STATUS = Object.freeze({
@@ -38,10 +38,18 @@ export const ERROR_STATUS = Object.freeze({
   reauth_locked: 429,
   rate_limited: 429,
   db_unavailable: 503,
+  // Invitations, consent and projects (the code design M2PROJ, 4.3.4).
+  personal_data_gate: 403,
+  registration_closed: 403,
+  forbidden: 403,
+  owner_identity_required: 400,
+  consent_required: 400,
+  consent_stale: 400,
+  account_exists: 409,
 });
 
 /**
- * Every code that the auth and admin routes (rows 4-15 of the route table) can answer, including the codes
+ * Every code that the auth, admin, invitation and project routes (rows 4-29 of the route table) can answer, including the codes
  * the app answers before any route (the body limit, the site gate); the pages map each to
  * `auth_err_<code>` (the code design M2AUTH, 4.8).
  * @type {ReadonlyArray<ErrorCode>}
@@ -70,6 +78,15 @@ export const AUTH_CODES = Object.freeze([
   "reauth_locked",
   "rate_limited",
   "db_unavailable",
+  // The eight codes of the invitation, consent, deletion and project routes (the code design M2PROJ, 4.3.4).
+  "personal_data_gate",
+  "registration_closed",
+  "forbidden",
+  "owner_identity_required",
+  "consent_required",
+  "consent_stale",
+  "account_exists",
+  "bad_request",
 ]);
 
 export class HttpError extends Error {

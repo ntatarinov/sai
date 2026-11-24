@@ -1,0 +1,95 @@
+{
+  "handoff_id": "step02b-M2PROJ-20261124-01",
+  "run_id": "M2PROJ-20261124-01",
+  "workflow_id": "WF-02",
+  "step": "02b",
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/M2PROJ-20261124-01/step-02b-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-116",
+      "REQ-117"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M2PROJ-20261124-01/step-03-security-reviewer.json (PASS; F1-F4)",
+      "handoffs/M2PROJ-20261124-01/step-04-reviewer.json (PASS; lows)",
+      "decisions/0138 Addition 2 (what to fix)"
+    ],
+    "base_tag": "base/M2PROJ-20261124-01",
+    "rework_of": "handoffs/M2PROJ-20261124-01/step-02-backend-dev.json",
+    "write_set": [
+      "app/server/db/org-store.js",
+      "app/server/services/orgs.js",
+      "app/server/db/project-store.js and app/server/services/projects.js and app/server/routes/projects.js (only the N13 author mark)",
+      "docs/design/M2PROJ-invites-projects.md (one line per fix in a new «Rework 02b» table; the planCreate(ctx, req) signature text)",
+      "handoffs/M2PROJ-20261124-01/step-02b-backend-dev.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 2 rework 02b, BACKEND-DEV: fix SEC F1 (deleteAccount and the acceptance remove the e-mail's other unused invites), SEC F2 (N13: a mark instead of the platform admin's id and name), SEC F4 (purge refuses an organisation of kind owner) exactly as decisions/0138 Addition 2 says; nothing else. If the frontend shows the N13 author, say which page script reads it (do not edit app/public: report to ORCH). Prove each on your copy under <scratch> (the second unused invite is gone after a deletion and after an acceptance; N13 holds no admin id or name; purge of the owner organisation refused; the earlier probes of step 02 touching these lines still pass). prettier, eslint, tsc on the changed files. traces 0, handoffs-check 0. result.status COMPLETED. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-24T17:54:51Z",
+  "started_at": "2026-11-24T17:54:52Z",
+  "completed_at": "2026-11-24T17:57:17Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework 02b of M2.3: SEC F1, F2 and F4 fixed exactly as decisions/0138 Addition 2 says, nothing else. F1: deleteAccount now deletes every unused invite of the deleted user's e-mail (email_norm read from the locked users row) and acceptInvite deletes the e-mail's other unused invites after the claim (new store function deleteUnusedInvitesOf). F2: N13 answers the platform admin as author with the mark {id: null, name: null, platform: true}; an ordinary author keeps {id, name}; the admin card N8 is unchanged. F4: purgeOrg reads the organisation's kind and throws a TypeError for kind owner before any delete. The design got a «Rework 02b» section 16 (one row per fix) and the planCreate(ctx, req) signature text.",
+    "changes": [
+      {
+        "file": "app/server/db/org-store.js",
+        "section": "SEC F1",
+        "text": "lockUserForDelete also selects email_norm; new deleteUnusedInvitesOf(q, emailNorm, exceptId) (one constant delete with bound parameters)."
+      },
+      {
+        "file": "app/server/services/orgs.js",
+        "section": "SEC F1",
+        "text": "acceptInvite calls deleteUnusedInvitesOf(norm, inviteId) after setInviteUsedBy; deleteAccount calls it with the target's email_norm and no exception, after the scrub of used invites."
+      },
+      {
+        "file": "app/server/services/projects.js",
+        "section": "SEC F2",
+        "text": "readProjectForOrg: an author with is_platform_admin is {id: null, name: null, platform: true}."
+      },
+      {
+        "file": "app/server/db/project-store.js",
+        "section": "SEC F4",
+        "text": "purgeOrg reads orgs.kind after the platform-settings guard and throws TypeError «the owner organisation is never purged» for owner, before any set_config or delete."
+      },
+      {
+        "file": "docs/design/M2PROJ-invites-projects.md",
+        "section": "16, 4.5.2",
+        "text": "new section 16 Rework 02b (three rows with the test that catches each); planCreate(ctx, req) text in 4.5.2."
+      }
+    ],
+    "self_check": [
+      "On a copy under <scratch>: npx prettier --write on my four files (unchanged), npx eslint server --max-warnings 0 -> exit 0, npx tsc --noEmit -p jsconfig.json -> exit 0.",
+      "p6-02b (PGlite, app.request): 12 ok, «P6 ALL OK»: two unused invites for one e-mail, an accept leaves 0 unused and the old code answers 404; an unused invite planted for a user's e-mail is gone after the deletion and no row of invites holds his old address; N13 with an admin-written version holds author {id: null, name: null, platform: true} and neither the admin id nor his name anywhere in the body, an ordinary author keeps id and name, N8 still shows author.admin true with the name; purge of the owner organisation throws TypeError and projects and idea_versions counts are unchanged; a customer organisation still purges (2 versions, 1 project).",
+      "The earlier probes after the change: p2-p4 «P2a ALL OK (189)», p5 «P5 ALL OK (26)», p1 «P1 ALL OK». No repository test suite, npm run check, node --test or e2e was run.",
+      "cd tools && npm run -s traces -> «traces: файлов проверено 3159, следов 0, пропущено 67», exit 0; cd tools && npm run -s handoffs-check -> exit 0 (run after this result was written)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "For ORCH, frontend: the N13 author is read by app/public/js/pages/project.js (line 81: String(v.author.name)). With the mark it would show «null» for a version the platform admin wrote; the page must show a text for author.platform === true (a texts key, e.g. «Платформа»). I did not edit app/public. admin-request.js reads N8, which is unchanged."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Tests to adjust at step 5: DEL-5 should check that no unused invite and no clear address is left in invites; INV-4 that the e-mail's other unused invite is gone; PRJ-10 that N13 has no admin id or name; DEL-7 that purging the owner organisation is refused. Existing tests expected red because of this rework: none."
+      }
+    ],
+    "artifacts_out": [
+      "app/server/db/org-store.js",
+      "app/server/services/orgs.js",
+      "app/server/services/projects.js",
+      "app/server/db/project-store.js",
+      "docs/design/M2PROJ-invites-projects.md"
+    ]
+  }
+}

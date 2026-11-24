@@ -7,6 +7,12 @@ import { loadIntake } from "../../server/routes/demo.js";
 import { routeTable } from "../../server/routes/index.js";
 import { authHarness, totpCode } from "../fixtures/auth.js";
 import { APP } from "../fixtures/helpers.js";
+import {
+  acceptBody,
+  addProject,
+  createInvite,
+  inviteBody,
+} from "../fixtures/m23.js";
 
 // REQ-115 criterion 9 (audit chapter 10, stage 2; the code design M2AUTH, 4.12): every route of the real route
 // table is called by every actor with its canonical request, and the class of each answer equals the row of
@@ -118,6 +124,8 @@ async function callAsEveryActor(t, route) {
       "POST /api/admin/users/:id/reset-link": "reset_link",
       "POST /api/admin/totp/enrol": "totp_enrol",
       "POST /api/admin/totp/off": "totp_off",
+      "POST /api/admin/invites": "owner_identity",
+      "POST /api/admin/users/:id/delete": "user_delete",
     }[route];
     switch (route) {
       case "GET /api/demo/questionnaire":
@@ -205,6 +213,61 @@ async function callAsEveryActor(t, route) {
           body = { code: totpCode(e.json.secret, h.now()) };
         }
         break;
+      // M2.3 (code design M2PROJ, 4.3.2 and 7.5): the canonical requests of rows N1-N14. Each actor's call
+      // has its own fresh invite, throwaway user or project, so no earlier call decides it.
+      case "GET /api/invites/:code":
+      case "POST /api/invites/:code/accept": {
+        const email = `canon${n}@example.test`;
+        const made = await createInvite(
+          h,
+          all.admin,
+          inviteBody({ email, org_name: `Canonical Co ${n}` }),
+        );
+        assert.equal(made.status, 201, made.text);
+        p = template.replace(":code", String(made.code));
+        if (method === "POST") body = acceptBody({ email });
+        break;
+      }
+      case "POST /api/account/deletion-request":
+        body = { password: a?.password ?? "some-pass-4Xq9" };
+        break;
+      case "POST /api/admin/invites":
+        body = inviteBody({ email: `canon-new${n}@example.test` });
+        break;
+      case "POST /api/admin/users/:id/delete":
+        p = template.replace(":id", (await h.addUser({ role: null })).id);
+        break;
+      case "GET /api/admin/projects/:id":
+      case "POST /api/admin/projects/:id/idea": {
+        const proj = await addProject(h, {
+          orgId: /** @type {string} */ (all.member.orgId),
+          createdBy: all.member.id,
+        });
+        p = template.replace(":id", proj.id);
+        if (method === "POST")
+          body = { text: "A corrected idea", reason: "Because it was unclear" };
+        break;
+      }
+      case "POST /api/projects":
+        body = {
+          title: "A project",
+          idea: "An idea",
+          what: "shop",
+          whom: "team",
+          lang: "ru",
+        };
+        break;
+      case "GET /api/projects/:id":
+      case "POST /api/projects/:id/idea": {
+        // A project of the actor's own organisation (an anonymous caller gets any id).
+        const proj = a?.orgId
+          ? await addProject(h, { orgId: a.orgId, createdBy: all.member.id })
+          : { id: "00000000-0000-4000-8000-000000000000" };
+        p = template.replace(":id", proj.id);
+        if (method === "POST")
+          body = { text: "A corrected idea", reason: "Because it was unclear" };
+        break;
+      }
       default:
         break;
     }
@@ -227,6 +290,7 @@ test("PM-1 every route called as every actor answers the class of its row in the
   const routes = await realRoutes(t);
   const rows = golden();
   assert.deepEqual(matrixFindings(rows, routes, ACTORS), []);
+  assert.ok(routes.length >= 29, `${routes.length} routes`);
   t.diagnostic(
     `permission matrix: ${routes.length} routes × ${ACTORS.length} actors`,
   );

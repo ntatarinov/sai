@@ -25,17 +25,43 @@ const CLOSED_TEST = "Sai — закрытое тестирование";
 // The sha256 of the gate page of REQ-108, which REQ-111 leaves unchanged.
 const GATE_SHA256 =
   "ac889bc15c7c6346acb45b932d021b2a70186d2fe5c286b86b7749792b1a065d";
+// The twenty pages: the ten of M2.2 and the ten of M2.3 (guard row G15 of the code design M2PROJ).
 const PAGES = [
   "404.html",
+  "account.html",
+  "admin-audit.html",
+  "admin-deletions.html",
+  "admin-invites.html",
+  "admin-request.html",
   "admin-totp.html",
+  "admin.html",
   "demo.html",
   "examples.html",
   "gate.html",
   "how.html",
   "index.html",
+  "invite.html",
   "login.html",
+  "project-new.html",
+  "project.html",
+  "projects.html",
   "reset.html",
   "setup.html",
+];
+// The five client pages of M2.3 load a module of js/pages, the five admin pages one of js/admin.
+const CLIENT_PAGES = [
+  "account.html",
+  "invite.html",
+  "project-new.html",
+  "project.html",
+  "projects.html",
+];
+const ADMIN_PAGES = [
+  "admin-audit.html",
+  "admin-deletions.html",
+  "admin-invites.html",
+  "admin-request.html",
+  "admin.html",
 ];
 
 // ---------------------------------------------------------------------------------------------------------
@@ -342,7 +368,7 @@ function swap(text, from, to) {
 
 // ---------------------------------------------------------------------------------------------------------
 
-test("PP-1 the .html files of app/public are exactly the ten; gate.html keeps its sha256", () => {
+test("PP-1 the .html files of app/public are exactly the twenty; gate.html keeps its sha256", () => {
   assert.deepEqual(
     filesOf(PUBLIC).filter((f) => f.toLowerCase().endsWith(".html")),
     PAGES,
@@ -376,16 +402,24 @@ test("PP-2 every page but gate: doctype, html lang ru, charset, viewport, color-
     const scripts = doc.tags.filter((e) => e.name === "script");
     assert.equal(scripts.length, 1, f);
     assert.equal(scripts[0].attrs.get("type"), "module", f);
-    // The demo page and each account page load their own page module (the code design M2AUTH, 5.1); the
-    // others the landing module.
+    // The demo page and each account page load their own page module (the code design M2AUTH, 5.1), the five
+    // client pages of M2.3 one of js/pages and its five admin pages one of js/admin (M2PROJ, 4.9); the others
+    // the landing module.
+    const own = f.replace(/\.html$/, "");
     assert.equal(
       scripts[0].attrs.get("src"),
-      f === "demo.html" ||
-        ["admin-totp.html", "login.html", "reset.html", "setup.html"].includes(
-          f,
-        )
-        ? `/js/pages/${f.replace(/\.html$/, "")}.js`
-        : "/js/pages/landing.js",
+      ADMIN_PAGES.includes(f)
+        ? `/js/admin/${own}.js`
+        : f === "demo.html" ||
+            CLIENT_PAGES.includes(f) ||
+            [
+              "admin-totp.html",
+              "login.html",
+              "reset.html",
+              "setup.html",
+            ].includes(f)
+          ? `/js/pages/${own}.js`
+          : "/js/pages/landing.js",
       f,
     );
   }
@@ -827,17 +861,7 @@ async function builtFindings(dir) {
   /** @type {string[]} */
   const out = [];
   const pages = [...site.files].filter((f) => f.endsWith(".html")).sort();
-  const want = [
-    "404.html",
-    "admin-totp.html",
-    "demo.html",
-    "gate.html",
-    "how.html",
-    "index.html",
-    "login.html",
-    "reset.html",
-    "setup.html",
-  ];
+  const want = PAGES.filter((p) => p !== "examples.html");
   if (JSON.stringify(pages) !== JSON.stringify(want))
     out.push(`pages: ${pages.join(", ")}`);
   for (const f of pages)

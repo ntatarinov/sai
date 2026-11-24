@@ -45,6 +45,14 @@ export const AUTH_CODES = Object.freeze([
   "reauth_locked",
   "rate_limited",
   "db_unavailable",
+  "personal_data_gate",
+  "registration_closed",
+  "forbidden",
+  "owner_identity_required",
+  "consent_required",
+  "consent_stale",
+  "account_exists",
+  "bad_request",
 ]);
 
 /** The paths after which the session is another one, so the cached CSRF token is dropped. */
@@ -55,6 +63,19 @@ const SESSION_CHANGERS = Object.freeze([
   "/api/auth/reset",
   "/api/auth/password",
 ]);
+
+/** The accept path of an invitation: «/api/invites/», the 22 characters of the code and «/accept». */
+const ACCEPT_PATH = /^\/api\/invites\/[A-Za-z0-9_-]{22}\/accept$/;
+
+/**
+ * Whether the session is another one after a successful call of this path: the five paths of the account
+ * routes and the accept of an invitation (which ends the old session and opens a new one).
+ * @param {string} path
+ * @returns {boolean}
+ */
+export function sessionChanges(path) {
+  return SESSION_CHANGERS.includes(path) || ACCEPT_PATH.test(path);
+}
 
 /**
  * @typedef {{ ok: true, status: number, body: any }} CallOk
@@ -119,7 +140,7 @@ async function send(method, path, body, reauth) {
   /** @type {any} */
   const parsed = await res.json().catch(() => null);
   if (res.ok) {
-    if (SESSION_CHANGERS.includes(path)) csrf = null;
+    if (sessionChanges(path)) csrf = null;
     return { ok: true, status: res.status, body: parsed ?? {} };
   }
   /** @type {CallFail} */
@@ -156,6 +177,29 @@ export async function call(method, path, body, options = {}) {
   const again = await me();
   if (!again.ok) return first;
   return send(method, path, body, reauth);
+}
+
+/**
+ * A re-auth token for an action: POST /api/auth/reauth with the password and the purpose as given (and
+ * the second-factor code when the account has one). A refusal answers its code, so a page can ask for the
+ * code on totp_required and send the same call again.
+ * @param {string} password
+ * @param {string} purpose
+ * @param {string} [code] the code from the app or a backup code
+ * @returns {Promise<{ ok: true, token: string } | { ok: false, code: string, retryAfter?: number }>}
+ */
+export async function reauthToken(password, purpose, code) {
+  /** @type {{ password: string, purpose: string, code?: string }} */
+  const body = { password, purpose };
+  if (code !== undefined && code !== "") body.code = code;
+  const result = await call("POST", "/api/auth/reauth", body);
+  if (!result.ok) {
+    /** @type {{ ok: false, code: string, retryAfter?: number }} */
+    const fail = { ok: false, code: result.code };
+    if (result.retryAfter !== undefined) fail.retryAfter = result.retryAfter;
+    return fail;
+  }
+  return { ok: true, token: String(result.body.token) };
 }
 
 /**

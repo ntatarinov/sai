@@ -22,6 +22,13 @@ function scannedFiles() {
     ...http,
     "server/routes/auth.js",
     "server/routes/admin.js",
+    // M2.3 (REQ-116, REQ-117): the new route files, and the two services whose rules throw or return the
+    // refusals that a route answers (the routes themselves only call them).
+    "server/routes/invites.js",
+    "server/routes/projects.js",
+    "server/routes/admin-projects.js",
+    "server/services/orgs.js",
+    "server/services/projects.js",
   ];
 }
 
@@ -49,6 +56,8 @@ const FORMS = [
   /\berror:\s*"([a-z_]+)"/g,
   /\brefusal\(\s*"([a-z_]+)"/g,
   /\berrorBody\(\s*"([a-z_]+)"/g,
+  // The returned refusal of services/orgs.js (the counters commit, M2AUTH C4): `returned("<code>", <status>)`.
+  /\breturned\(\s*"([a-z_]+)"/g,
 ];
 
 /**
@@ -106,7 +115,7 @@ function answeredCodes(texts, all) {
 const read = (/** @type {string} */ rel) =>
   fs.readFileSync(path.join(APP, rel), "utf8");
 
-test("RT-6 every code literal of new HttpError(…), { error: … }, refusal(…) and errorBody(…) in app.js, http/*.js and routes/{auth,admin}.js is in AUTH_CODES; a planted bad_request in a copy of routes/auth.js is red", () => {
+test("RT-6 every code literal of new HttpError(…), { error: … }, refusal(…) and errorBody(…) in app.js, http/*.js, the route files and services/{orgs,projects}.js is in AUTH_CODES; a planted code outside AUTH_CODES in a copy of routes/auth.js is red (bad_request is a code since M2.3)", () => {
   const files = scannedFiles();
   assert.ok(
     files.includes("server/http/auth-mw.js") && files.length >= 8,
@@ -134,11 +143,17 @@ test("RT-6 every code literal of new HttpError(…), { error: … }, refusal(…
     "site_closed",
     "body_too_large",
     "server_error",
+    // M2.3 (guard row G4): the codes of the invitation, consent and project code.
+    "forbidden",
+    "personal_data_gate",
+    "registration_closed",
+    "account_exists",
+    "consent_stale",
   ])
     assert.ok(codes.has(c), `the scan finds ${c}`);
   // The planted copies: each form with a code outside AUTH_CODES is found.
   for (const plant of [
-    'throw new HttpError("bad_request");',
+    'throw new HttpError("bad_unplanned");',
     'return { status: 400, body: { error: "bad_answers" } };',
     'return refusal("unknown_option", 400);',
     'return errorBody("wrong_kind");',
@@ -159,7 +174,7 @@ test("RT-6 every code literal of new HttpError(…), { error: … }, refusal(…
   // A comment that names a code is not an answer.
   const commented = {
     ...texts,
-    "server/routes/auth.js": `// new HttpError("bad_request")\n${texts["server/routes/auth.js"]}`,
+    "server/routes/auth.js": `// new HttpError("bad_unplanned")\n${texts["server/routes/auth.js"]}`,
   };
   assert.deepEqual(
     [...answeredCodes(commented, all)].filter(
@@ -203,7 +218,15 @@ const META_KEYS = [
   "tenant",
   "worker",
 ];
-const RATE_LIMITS = ["setup", "login", "reset", "user", null];
+const RATE_LIMITS = [
+  "setup",
+  "login",
+  "reset",
+  "user",
+  "invite",
+  "invite_view",
+  null,
+];
 // The re-auth purposes of the closed table of 4.9.4, written here.
 const PURPOSES = [
   "reset_link",
@@ -217,6 +240,7 @@ const PURPOSES = [
   "ai_allow",
   "codes",
   "owner_identity",
+  "user_delete",
 ];
 
 /**
@@ -278,9 +302,10 @@ async function realTable(t) {
 
 test("RT-1 every route of the real table has a frozen meta object with exactly the six keys, each of its type", async (t) => {
   const rows = await realTable(t);
-  assert.ok(rows.length >= 15, `${rows.length} routes`);
+  assert.ok(rows.length >= 29, `${rows.length} routes`);
   assert.deepEqual(metaFindings(rows), []);
-  // The design's values of the admin routes: admin, a user rate limit, the session, and their purposes.
+  // The design's values of the admin routes: admin, a user rate limit, the session, and their purposes (the
+  // five of M2.2 and the seven of M2.3, rows N4-N10 of the code design M2PROJ, 4.3).
   /** @type {Record<string, string | null>} */
   const admin = {
     "POST /api/admin/users/:id/reset-link": "reset_link",
@@ -288,14 +313,33 @@ test("RT-1 every route of the real table has a frozen meta object with exactly t
     "POST /api/admin/totp/confirm": null,
     "POST /api/admin/totp/off": "totp_off",
     "GET /api/admin/audit/verify": null,
+    "POST /api/admin/invites": "owner_identity",
+    "GET /api/admin/deletion-requests": null,
+    "POST /api/admin/users/:id/delete": "user_delete",
+    "GET /api/admin/requests": null,
+    "GET /api/admin/projects/:id": null,
+    "POST /api/admin/projects/:id/idea": null,
+    "GET /api/admin/audit": null,
   };
+  // The four real tenant routes (rows N11-N14): the only rows whose tenant is true.
+  const tenant = [
+    "GET /api/projects",
+    "POST /api/projects",
+    "GET /api/projects/:id",
+    "POST /api/projects/:id/idea",
+  ];
+  for (const k of [...Object.keys(admin), ...tenant])
+    assert.ok(
+      rows.some((r) => `${r.method} ${r.path}` === k),
+      `the table has ${k}`,
+    );
   for (const r of rows) {
     const key = `${r.method} ${r.path}`;
     assert.equal(r.meta.admin, key in admin, key);
     if (key in admin) assert.equal(r.meta.reauth, admin[key], key);
     else assert.equal(r.meta.reauth, null, key);
     assert.equal(r.meta.worker, false, key);
-    assert.equal(r.meta.tenant, false, key);
+    assert.equal(r.meta.tenant, tenant.includes(key), key);
   }
 });
 
@@ -440,4 +484,43 @@ test("RT-5 session is false for the demo routes, the health route and the worker
     if (off.includes(key) || worker) assert.equal(r.meta.session, false, key);
     else if (r.method !== "GET") assert.equal(r.meta.session, true, key);
   }
+});
+
+test("RT-7 a plan belongs to a tenant row, and withPlan refuses any other row, the real rows with a plan are exactly the two tenant writes, and every row keeps exactly the four keys", async (t) => {
+  const { planOf, withPlan } = await import("../../server/http/plan.js");
+  const rows = await realTable(t);
+  // The rows keep exactly method, path, meta and handler (the plan stands beside the row, not in it).
+  assert.deepEqual(metaFindings(rows), []);
+  const planned = rows
+    .filter((r) => planOf(r) !== undefined)
+    .map((r) => `${r.method} ${r.path}`)
+    .sort();
+  assert.deepEqual(planned, [
+    "POST /api/projects",
+    "POST /api/projects/:id/idea",
+  ]);
+  for (const r of rows)
+    if (planOf(r) !== undefined)
+      assert.equal(r.meta.tenant, true, `${r.method} ${r.path}`);
+  // A plan on a row with tenant false is refused at table build, with a TypeError and no row kept.
+  const plan = async () => ({ audit: null, state: null });
+  for (const over of [{ tenant: false }, { tenant: false, admin: true }]) {
+    const row = plantedRow(over);
+    assert.throws(() => withPlan(row, plan), TypeError);
+    assert.equal(planOf(row), undefined);
+  }
+  const tenantRow = plantedRow({ tenant: true });
+  assert.equal(withPlan(tenantRow, plan), tenantRow);
+  assert.equal(planOf(tenantRow), plan);
+  assert.deepEqual(Object.keys(tenantRow).sort(), [
+    "handler",
+    "meta",
+    "method",
+    "path",
+  ]);
+  // A plan that is not a function is refused too.
+  assert.throws(
+    () => withPlan(plantedRow({ tenant: true }), /** @type {any} */ ("plan")),
+    TypeError,
+  );
 });

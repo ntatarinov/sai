@@ -20,6 +20,7 @@ import {
   deleteUserSessions,
   findAccount,
   insertAdmin,
+  iso,
   insertMember,
   insertOwnerOrg,
   listMemberships,
@@ -44,6 +45,8 @@ import { addressKey } from "../http/rate-limit.js";
 import { HttpError } from "../http/errors.js";
 import { emailNorm, withBody } from "../http/schema.js";
 import { appendAudit } from "../services/audit.js";
+import { readOpenDeletion } from "../db/org-store.js";
+import { requestDeletion } from "../services/orgs.js";
 
 // The auth routes (REQ-114; the code design M2AUTH, 4.4 rows 4-10): setup, login, logout, me, password,
 // re-auth and reset. Each handler runs inside the request transaction of the pipeline (http/auth-mw.js) with
@@ -498,6 +501,7 @@ export function authRoutes(ctx) {
     const profile = await readProfile(req.q, session.userId);
     if (!profile) throw new HttpError("auth_required");
     const memberships = await listMemberships(req.q, session.userId);
+    const deletion = msOf(await readOpenDeletion(req.q, session.userId));
     return {
       status: 200,
       body: {
@@ -507,8 +511,11 @@ export function authRoutes(ctx) {
         platform_admin: profile.is_platform_admin === true,
         memberships: memberships.map((m) => ({
           org_id: m.org_id,
+          name: m.name,
+          kind: m.kind,
           role: m.role,
         })),
+        deletion_requested_at: deletion === null ? null : iso(deletion),
         csrf: session.csrf,
       },
     };
@@ -609,6 +616,41 @@ export function authRoutes(ctx) {
     };
   }
 
+  /** POST /api/account/deletion-request (N3, REQ-116 criterion 6). @param {PipelineRequest} req */
+  async function deletionRequest(req) {
+    const session = /** @type {import("../auth/sessions.js").Session} */ (
+      req.session
+    );
+    // The platform admin's account cannot be deleted, so a request that can never be carried out is not stored.
+    if (session.isAdmin) throw new HttpError("forbidden");
+    const own = await ownRow(req, null);
+    if ("answer" in own) return own.answer;
+    const row = own.row;
+    if (!(await ctx.passwords.verify(req.body.password, row.password_hash)))
+      return reauthFailure(
+        req,
+        row,
+        "wrong_password",
+        "invalid_credentials",
+        null,
+      );
+    await setReauthCounter(req.q, row.id, {
+      fails: 0,
+      since: null,
+      lockedUntil: null,
+    });
+    const r = await requestDeletion(req.q, ctx, {
+      userId: row.id,
+      orgId: session.orgId,
+      now: req.now,
+      ip: req.clientIp,
+    });
+    return {
+      status: 200,
+      body: { ok: true, requested_at: iso(r.requestedAt) },
+    };
+  }
+
   /** POST /api/auth/reset (4.4 row 10, 4.9.8). @param {PipelineRequest} req */
   async function reset(req) {
     if (rules(req.body.password) !== "ok")
@@ -678,6 +720,9 @@ export function authRoutes(ctx) {
     row("POST", "/api/auth/reset", "reset", reset, {
       code: { kind: "text", max: 64 },
       password: NEW_PASSWORD,
+    }),
+    row("POST", "/api/account/deletion-request", "user", deletionRequest, {
+      password: PASSWORD,
     }),
   ];
 }

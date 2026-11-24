@@ -1,0 +1,241 @@
+{
+  "handoff_id": "step02-M2PROJ-20261124-01",
+  "run_id": "M2PROJ-20261124-01",
+  "workflow_id": "WF-02",
+  "step": "02",
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/M2PROJ-20261124-01/step-02-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-116",
+      "REQ-117"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/M2PROJ-invites-projects.md (commit ca342ce; THE design: build exactly it; section 3 is your file list and the order; section 12 the sub-steps B1-B* and F*; section 4 interfaces; sections 5-8 failure paths and protection)",
+      "decisions/0138 with Addition 1 and decisions/0137 with Additions 1-7 (ORCH's answers; the plan-before-switchToTenant audit rule C1)",
+      "docs/requirements.yaml REQ-116 and REQ-117 (the criteria your code must meet)",
+      "the gate handoffs step-01b and step-01d of handoffs/M2PROJ-20261124-01/",
+      "docs/workflows/WF-02-development.md step 2",
+      ".claude/agents/backend-dev.md",
+      "the code of M2.2 on main (60b10b7): app/server, app/db, app/test: the neighbouring style and the helpers to reuse"
+    ],
+    "base_tag": "base/M2PROJ-20261124-01",
+    "write_set": [
+      "every file with owner B in section 3 of the design, and only those",
+      "handoffs/M2PROJ-20261124-01/step-02-backend-dev.json (result only)"
+    ],
+    "parallel_work_now": [
+      "FRONTEND-DEV step 02 pages (app/public/** and texts.js only; reads your errors.js and the API table)"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 2, BACKEND-DEV, task M2.3: write the server, database, scripts and word-list files of the design (owner B in section 3), in the order of section 3 (errors.js codes and the route row shape/plan.js first, because FRONTEND-DEV reads them) and the sub-steps B1…B5c of section 12. No test file (TEST-DESIGNER writes them at step 5): name in result, per sub-step, the existing tests you expect to turn red and why (section 11 is the table; a red test not in the table is a stop: report it). Prove what you can on this PC with your own scripts under <scratch> on a copy of your tree (npm ci in app/; PGlite: migration 0003, grants, RLS, the triggers, the purge protocol; the routes answering through app.fetch in-process: invitations, acceptance, deletion, the tenant routes with plans, the board, the audit page, the plan-audit transaction rolling back together): never the repository test suites, npm run check or e2e (decision 0110). prettier --check and eslint over your files from app/; tsc. Verify traces 0, handoffs-check 0, no machine path, no secret, LF. In result: artifacts_out, per sub-step what was done and proved, expected red tests, must_be_proved_on_github, any divergence from the design (a needed one goes to ORCH first). result.status COMPLETED. Be thorough: invitations and consent are the first personal-data path. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-24T17:19:14Z",
+  "started_at": "2026-11-24T17:19:33Z",
+  "completed_at": "2026-11-24T17:41:08Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "WF-02 step 2, task M2.3: every owner-B file of section 3 of docs/design/M2PROJ-invites-projects.md is written in the order of section 3 (errors.js, the route shapes and plan.js first, because FRONTEND-DEV reads them) and the sub-steps B1-B7 of section 10. No test file was written. The pipeline has the plan hook at step 9a (plan on the platform settings, audit entry built from the session first and exactly four keys copied from the plan, then switchToTenant, then the handler); migration 0003 with its grants and rehearsal seed; the two stores, the two services, the 14 new route rows (29 with the demo rows), the eight codes, the three limits, the label invite, the purpose user_delete, the closed audit actions and details keys, the bool body kind, the consent exception of the word lists and the six invariant rows. Proved on this PC only with own probe scripts on a copy of the tree under <scratch> (npm ci there; PGlite in-process; app.request in-process; no server was started, no port was bound): 33 database checks (migration 0003 on a seeded 0001+0002 database, grants table, RLS, the three triggers, the purge protocol, the seed), 189 route checks (invitations, acceptance incl. the 5-way parallel race and the eleventh-accept limit, consent record, deletion request and deletion with the purge, the tenant project routes with their plans, the daily quota, the board, the card with one admin_read row per call, the audit page paging, the matrix of 4.3.2, CSRF and Origin, IS-4 keys, LG-3 on the captured log lines) and 26 plan checks (TP-1..TP-5 with a planted tenant table, a failing and a silent database, the stale-invite cleanup through a platform route, the gate pin). The probes found and I fixed one defect of my own: the audit page ordered by the text output column id (a string sort); it now orders by audit_log.id. No repository test suite, npm run check, node --test or e2e was run (decision 0110). Departures of detail and notes for TEST-DESIGNER are in issues (none changes a requirement or a decisions record).",
+    "changes": [
+      {
+        "file": "app/server/http/errors.js",
+        "section": "4.3.4, B1",
+        "text": "seven new entries of ERROR_STATUS (personal_data_gate 403, registration_closed 403, forbidden 403, owner_identity_required 400, consent_required 400, consent_stale 400, account_exists 409; bad_request was there); AUTH_CODES is the 23 of M2AUTH plus these seven and bad_request (31); the ErrorCode typedef follows."
+      },
+      {
+        "file": "app/server/http/plan.js (new)",
+        "section": "4.4, C1, B1",
+        "text": "withPlan(row, plan) keeps the plan beside the row in a WeakMap and throws a TypeError unless row.meta.tenant is true; planOf(row); PLANNED_AUDIT_KEYS (action, targetKind, targetId, details) and the PlannedAudit and Plan typedefs."
+      },
+      {
+        "file": "app/server/http/schema.js",
+        "section": "4.1, C15, B1",
+        "text": "field kind bool (a JSON true or false and nothing else); parseBody returns Record<string, any>."
+      },
+      {
+        "file": "app/server/http/auth-mw.js",
+        "section": "4.4 step 9a and 10, B1",
+        "text": "pr is built after step 9 on the platform q (plan: null); for a tenant route the session's orgId must be set (404), then the route's plan runs, its audit is checked for exactly the four keys (TypeError otherwise, before any statement), the entry is built from the session (orgId, actorKind by isAdmin, actorId, ip) with the four values copied in, appendAudit, pr.plan = state, then switchToTenant (9b) and the handler. AuthContext gains gate (deps.auth.personalDataGate or PERSONAL_DATA_GATE) and consent (sha256 of the five consent sentences per language, null where the texts lack one; deps.auth.consentTexts or the texts module); the typedefs allow rateLimit invite and invite_view; PipelineRequest.body is Record<string, any> and gains plan. Routes without a plan run the statements they ran before."
+      },
+      {
+        "file": "app/server/http/rate-limit.js",
+        "section": "C14, B1",
+        "text": "LIMITS gains invite (1 h, 10), invite_view (1 h, 60), project (24 h, 20); countRequest keys user and project by their subject text, the others by addressKey(ip); LimitName typedef."
+      },
+      {
+        "file": "app/server/auth/keys.js, app/server/auth/reauth.js",
+        "section": "C4, C12, B1",
+        "text": "MAC_LABELS gains invite (11); PURPOSES gains user_delete (12)."
+      },
+      {
+        "file": "app/db/migrations/0003_projects.sql (new)",
+        "section": "4.2.1-4.2.3, B2",
+        "text": "invites + owner_identity, org_name, invites_org_name_rule; audit_log_action_check and reauth_tokens_purpose_check dropped and added again (22 actions incl. project.stage, 12 purposes); users_owner_identity_guard; tables user_consents, deletion_requests (+ one open request per user), projects (+ unique (org_id, id), two indexes), idea_versions (+ composite key, unique (project_id, version), the (version = 1) = (reason is null) check, insert-only row and truncate triggers with the app.purge_org exception); row-level security enabled and forced with one policy each. No grant, no now() default."
+      },
+      {
+        "file": "app/db/grants.sql",
+        "section": "4.2.4, C13, B2",
+        "text": "org_members + delete, invites + delete; four new blocks (projects select/insert/update/delete, idea_versions select/insert/delete, deletion_requests select/insert/update, user_consents select/insert), each guarded by to_regclass."
+      },
+      {
+        "file": "app/test/fixtures/rehearsal/0003_projects.sql (new)",
+        "section": "4.2.5, B2",
+        "text": "fixed test values in the four new tables only (user_consents 1, deletion_requests 1 open, projects 2, idea_versions 3); no e-mail, no 0002 table touched."
+      },
+      {
+        "file": "app/server/services/audit.js",
+        "section": "C16, B3",
+        "text": "ACTIONS gains the eight actions; DETAILS gains version (integer >= 1), role (the four roles), owner_identity (boolean), stage (a stage of stages.js)."
+      },
+      {
+        "file": "app/server/db/auth-store.js",
+        "section": "4.6, B3",
+        "text": "listMemberships joins the organisation's name and kind; cleanup also deletes unused invites expired more than 30 days."
+      },
+      {
+        "file": "app/server/db/org-store.js (new)",
+        "section": "4.6, B3",
+        "text": "the statements of the registration mode, organisations, invites (insert, find, claim, set used_by, scrub the e-mail), the invited user, the customer organisation, the consent record, the deletion request (on conflict do nothing), the open-request reads, the lock and anonymisation of a user, the removals of his tokens, resets and membership, closing requests. Every text is a constant with bound parameters."
+      },
+      {
+        "file": "app/server/db/project-store.js (new)",
+        "section": "4.6, 4.2.3, О1, B3",
+        "text": "the statements of projects, idea versions (lockProject for update with an optional organisation filter, nextVersion, touchProject, setStage, latestQuickFacts), the lists, the versions with their authors, the board counts and rows (one window-function statement), the card row, the audit page (closed columns, order by audit_log.id) and purgeOrg (refuses unless app.role is platform, sets app.purge_org transaction-locally, deletes the organisation's versions, clears the setting, deletes its projects). update projects, delete from idea_versions and purge_org stand in this file only."
+      },
+      {
+        "file": "app/server/services/orgs.js (new)",
+        "section": "4.5.1, B4",
+        "text": "PERSONAL_DATA_GATE = owner_only, INVITE_TTL_MS, DELETED_NAME, DELETED_HASH, deletedEmail; createInvite (cross-field rules, organisation read, owner-organisation rule before the gate, account_exists, 16-byte code, HMAC only, audit invite.create with role, owner_identity, reauth_id); viewInvite; acceptInvite in the 14 steps of the design (thrown body refusals, returned state refusals, hash before the single conditional claim, 23505 on the e-mail mapped to a thrown account_exists, user, consent, membership or customer organisation, used_by, audit, old session ended, new session and cookie); requestDeletion, listDeletions, deleteAccount (lock, 404/403, anonymise, removals, scrub, close, purge of an organisation left with no member, audit)."
+      },
+      {
+        "file": "app/server/services/projects.js (new)",
+        "section": "4.5.2, B4",
+        "text": "WRITE_ROLES, canWrite, BOARD_LIMIT 200, AUDIT_PAGE 50; planCreate (role, daily limit, id, audit project.create) and runCreate; planIdeaEdit (lock by id and session organisation: 404 before the role; role; next version) and runIdeaEdit; adminIdeaEdit; listProjects, readProjectForOrg, board, card, auditPage; moveStage (canMove, setStage, audit project.stage); purgeOrgProjects."
+      },
+      {
+        "file": "app/server/routes/invites.js (new)",
+        "section": "4.3 N1, N2, B5a",
+        "text": "GET /api/invites/:code (rateLimit invite_view) and POST /api/invites/:code/accept (rateLimit invite, body name, email, password, consent bool, consent_sha256, consent_lang); session true, tenant false."
+      },
+      {
+        "file": "app/server/routes/admin.js",
+        "section": "4.3 N4-N6, B5a",
+        "text": "POST /api/admin/invites (reauth owner_identity; body email, role, owner_identity bool, optional organisation uuid, optional org_name), GET /api/admin/deletion-requests, POST /api/admin/users/:id/delete (reauth user_delete)."
+      },
+      {
+        "file": "app/server/routes/auth.js",
+        "section": "4.3 N3 and 4.3.3, B5a",
+        "text": "POST /api/account/deletion-request (the platform admin is refused 403 before the password; the wrong password counts a re-auth failure; the first request stores one row and one audit row); GET /api/auth/me lists {org_id, name, kind, role} and adds deletion_requested_at."
+      },
+      {
+        "file": "app/server/routes/projects.js (new)",
+        "section": "4.3 N11-N14, B5b",
+        "text": "the four tenant routes of the session's organisation; N12 and N14 have their plans (withPlan); the quick-fact enums are built from OPTIONS of public/shared/project/quick-facts.js."
+      },
+      {
+        "file": "app/server/routes/admin-projects.js (new)",
+        "section": "4.3 N7-N10, B5c",
+        "text": "GET /api/admin/requests, GET /api/admin/projects/:id (one admin_read audit row per successful call, none for a miss), POST /api/admin/projects/:id/idea, GET /api/admin/audit."
+      },
+      {
+        "file": "app/server/routes/index.js",
+        "section": "4.3, B5a-B5c",
+        "text": "the table concatenates demo rows, health, authRoutes, adminRoutes, inviteRoutes, adminProjectRoutes, projectRoutes (27 rows, 29 with the demo); RouteMeta allows invite and invite_view."
+      },
+      {
+        "file": "app/scripts/word-lists.js, app/scripts/check-public.js",
+        "section": "4.8, B6",
+        "text": "CONSENT_KEYS, DELETION_TERM (ru, kk, en) and stripDeletionTerm (the first occurrence of the language's phrase taken out once); check-public lints a value of a CONSENT_KEYS key with the phrase taken out and every other value whole."
+      },
+      {
+        "file": "docs/security-invariants.md",
+        "section": "4.10, B7",
+        "text": "six rows (14-19), one test name each: TP-1, INV-6, RLS-6, INV-11, OO-1, BRD-3; the intro names the design."
+      }
+    ],
+    "self_check": [
+      "All on a copy of the tree under <scratch> (cp, npm ci in app; Node v22.23.4); no repository test suite, no npm run check, no node --test, no e2e.",
+      "npx prettier --check server scripts (copy, after prettier --write on my own five files) -> All matched files use Prettier code style!; npx eslint server scripts --max-warnings 0 -> exit 0, no output; npx tsc --noEmit -p jsconfig.json -> exit 0, no output (public pages included).",
+      "node scripts/check-public.js (copy, with FRONTEND-DEV's files as they stood) -> «check-public: app/public is clean»; stripDeletionTerm on the three consent_s5 values: lintText finds [дней], [күні], [days] before and [] after; a value without the phrase is unchanged; a value with the phrase twice loses the first one only.",
+      "cd tools && npm run -s traces -> «traces: файлов проверено 3156, следов 0, пропущено 67», exit 0; cd tools && npm run -s handoffs-check -> exit 0 (run after this result was written).",
+      "p1-db (PGlite): 33 ok, «P1 ALL OK»: 0001+0002 migrated and seeded, then 0003 migrated and its seed applied as the owner: users 2, invites 1, audit_log 2 unchanged, 17 tables, every table has a row, schema_migrations holds 0003; owner UPDATE, DELETE and TRUNCATE of idea_versions P0001, flipping is_owner_identity of an owner-organisation member P0001, invite rule 23514 both ways and an accepted named new-organisation invite, project.stage and user_delete accepted and an unknown action 23514, version rules 23514, a cross-organisation version 23503, the purge setting passes only for its own organisation; as sai_app: grants exactly INSERT,SELECT,UPDATE / DELETE,INSERT,SELECT / DELETE,INSERT,SELECT,UPDATE / DELETE,INSERT,SELECT / INSERT,SELECT / DELETE,INSERT,SELECT,UPDATE / INSERT,SELECT for deletion_requests, idea_versions, invites, org_members, orgs, projects, user_consents; tenant B sees 0 of A's projects, a foreign insert 42501, no organisation sees 0, UPDATE 42501, DELETE without the setting P0001, purgeOrg under tenant settings refused with no statement, purgeOrg removes organisation B's 2 versions and 1 project only and the setting is empty after, the stale-invite delete and the on-conflict deletion request statement run under sai_app.",
+      "p2-p4 (app.request on PGlite, one authHarness, a fake test context, no node --test): 189 ok, «P2a ALL OK (189)». It covers INV-1 to INV-7, INV-9, INV-11, INV-13 and the me part of INV-12 (not run: INV-8, the flag of every user after every route, and INV-10, the user count after every route; the greps below cover their command parts; INV-12's search of every answer for another organisation's name was not run), the consent digests equal to the design's F12 values (ru 8da00909…34e1, kk 47fc3d17…7a85, en cc354b3b…8cb3), DEL-1..DEL-7, PRJ-1..PRJ-11, BRD-1..BRD-4, ADT-1, ADT-2, IS-1/IS-4 style checks, PM rows of 4.3.2 for N3 and N11-N14, CS checks, LG-3 on the captured log lines.",
+      "p5-plan (planted tenant table through deps.routeTable, wrapped adapter): 26 ok, «P5 ALL OK (26)»: TP-1 statement order (first set_config, insert audit_log, second set_config, handler insert); TP-2 a handler that throws after the plan leaves audit_log and every table byte-equal; TP-3 a throwing plan writes nothing; TP-4 withPlan on tenant false throws, real rows keep exactly method, path, meta, handler, plans only on N12 and N14, tenant true exactly on N11-N14, 29 rows with the demo, six meta keys; TP-5 plans with an extra orgId, actorKind, actorId or ip key or without details: 500 before any audit row, nothing written, no row of the other organisation; a null audit runs the handler with no row; a handler writing another organisation's row is refused by RLS and rolls back with its audit row; the chain verifies; a failing database: accept and create 503 db_unavailable at once with no cookie, a silent database 503 within the deadline, nothing written; RL-5 style cleanup through GET /api/auth/me removes only the unused invite expired 31 days ago.",
+      "Greps on app/server (command: output): grep -rnwl is_owner_identity server -> server/db/auth-store.js, server/db/org-store.js; grep -rn \"insert into users\" server -> the same two files; grep -rnE registration_mode server -> one line, the select of readRegistrationMode in org-store.js; grep -rniE 'update[[:space:]]+projects' server, grep -rniE 'delete[[:space:]]+from[[:space:]]+idea_versions' server, grep -rn purge_org server -> server/db/project-store.js only; the .query(, .exec( and .transaction( forms outside server/db/ -> only a regular-expression exec in config.js (as before); set_config('app.role' -> server/db/tx.js only.",
+      "Secret, machine path, product name and CR search over the 25 changed files of my write set: no match; every file ends with a newline; LF only."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "EXPECTED_RED",
+        "text": "Existing tests I expect red after this work, by sub-step (the rows of section 10; read from their assertions, not run). B1: TX-11 (G5: AUTH_CODES is now 31 and the literal holds 23; also needs F2's eight auth_err texts). B2: MG-1 (G13, the table list 13 -> 17), MG-6 APP_GRANTS (G13), RLS-5 (G12), RLS-2 and RLS-3 (G12: tenantTables read from information_schema, the fixture() of rls.test.js has no projects and idea_versions rows); SEED-1 is green with the seed. B3, B4, B6: none (RL-5 stays green: its cleanup case has no stale invite). B5a: RT-1 (G3, and the allowed rateLimit list G1), SS-9 (G10), CS-1 (G9), PM-1 and PM-2 (G8), IS-4 and IS-5 (G6, G7), RA-5 (G2), RL-4 (G11). B5b: IS-1 and the other object-route cases (G6: the four tenant routes have no CASES yet). B5c: none new. B7: SI-1 (G19: the six rows name test files that do not exist yet). F-owned and later: PP-1, PP-2, PB-6, PP-7, the two CHANGED lists (G15, G16), FW-7 (green now on the files as they stand). I found no red test outside these rows. TXH-5 and the other tests with a planted tenant route stay green: a route without a plan runs the statements it ran before."
+      },
+      {
+        "id": "I2",
+        "kind": "DISCREPANCY",
+        "text": "Signature of the plans. Design 4.5.2 gives planCreate(req); the plan needs the HMAC of keys.js for the project limit, which only the AuthContext holds, so planCreate is planCreate(ctx, req) and routes/projects.js wraps it as (req) => planCreate(ctx, req). planIdeaEdit(req) is as designed. Same reason, same file: services/orgs.js and services/projects.js hold a three-line keysOf of their own instead of importing it from http/auth-mw.js, because auth-mw.js imports PERSONAL_DATA_GATE from services/orgs.js (the design puts the constant there) and an import back would be a cycle."
+      },
+      {
+        "id": "I3",
+        "kind": "DISCREPANCY",
+        "text": "docs/security-invariants.md: 4.10 and G19 say six rows (13 -> 19), each with one test name, and name eleven tests. I wrote six rows with one name each (TP-1, INV-6, RLS-6, INV-11, OO-1, BRD-3). The test-name rule of SI-1 (security-invariants.test.js: ^[A-Z]+(-[A-Z]+)*-\\d+[a-z]?$) refuses M2R-1 (a digit in the prefix), so row 15 names INV-6 and not M2R-1; if TEST-DESIGNER wants M2R-1..M2R-3 in the table the rule needs a digit in the prefix. SI-1 is red until the six named tests exist."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Found by my own probe and fixed before this result: readAuditRows ordered by the bare name id, which in `select id::text as id … order by id` is the text output column (a string sort: ids 10-99 came before 9). It orders by audit_log.id now, as audit-store.js does. ADT-1 (rows in id order, paging reaches every row) is the test that catches it."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Small choices inside the design. readOpenDeletion stands in org-store.js and routes/auth.js imports it for `me` (4.6 names it in both stores): GET /api/auth/me now runs one more statement. The accepted name is stored as typed, as setup stores it. A new organisation's first member always gets org_owner (the creation refuses another role, and the accept does not read the invite's role for it). N1 answers its 404 as a returned refusal so the rate count commits. The lazy cleanup of stale invites also runs under tenant settings on a tenant route, where row-level security limits it to the caller's own organisation's invites (less, never more); RL-5 reaches it through a platform route as G11 says. The accept of an invite uses the same fixed-form 404 body as the other refusals: `{\"error\":\"not_found\"}`."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "For TEST-DESIGNER. The invite code of N2 and N1 is the path parameter code (22 characters of base64url); a signed-in caller's cookie and CSRF token are checked on N2 (a stale token is csrf_refused), an anonymous one is not. N14 and N9 take {text, reason} strictly, so IS-1's body {} must be replaced by a valid body (F17). consent_langs is [ru, kk, en] on the test app and the consent digest per language comes from deps.auth.consentTexts when a test plants it (a missing kk value gives consent_stale). The tests can read the probes' expectations in <scratch>/m2proj-02b (p1-db.mjs, p2-routes.mjs, p3-more.mjs, p4-more.mjs, p5-plan.mjs)."
+      }
+    ],
+    "must_be_proved_on_github": [
+      "pg job (Postgres 17): migration 0003 through the real runner and the grants step on a database built from the 0002 prefix and from nothing; the trigger idea_versions_insert_only on Postgres (the BEFORE DELETE row trigger returning old, the TRUNCATE statement trigger whose function names old only inside a DELETE branch); RLS-1..RLS-6 on a real pool; the owner-organisation guard on both sides (OO-1..OO-3).",
+      "M2R-1 (10 parallel accepts of one code over a pool: one 200), M2R-2 (10 parallel edits of one project: the lock for update and max(version) + 1 give 2..11 with no gap), M2R-3 (25 parallel creations by one user: exactly 20 succeed): PGlite serialises transactions, so the row locks are proved only there.",
+      "migration-rehearsal: db-verify A and B in both modes with the 0003 seed (A has the 0001+0002 seeds; B is migrated to 0003 and seeded as the superuser), «every table of B has a row» with 17 tables, the app started on B with the selfcheck and the smoke script.",
+      "The unit, int, pg and e2e counts of 7.4 after TEST-DESIGNER (unit 178, int 170, pg 28, e2e 17), npm run check on the work line, app.yml and check.yml green on one sha; the browser path ACC-1 and ACC-2 need the pages of FRONTEND-DEV.",
+      "A real Postgres run of the plan hook on a pooled Neon connection: set_config is transaction-local, so the order plan, audit, switch, handler holds on one connection; the pg job's M2R tests and the route tests on the pool show it."
+    ],
+    "prototype": "<scratch>/m2proj-02b: a copy of app/ (cp, npm ci there, a sync script that copies server, db, scripts, public and test/fixtures from the working tree) and the probe scripts p1-db.mjs, p2-routes.mjs, p3-more.mjs, p4-more.mjs (p2-p4 run as one script), p5-plan.mjs, outside the project. No server was started and no port was bound; the designer's and the validator's sketches were read only.",
+    "artifacts_out": [
+      "app/db/migrations/0003_projects.sql",
+      "app/db/grants.sql",
+      "app/test/fixtures/rehearsal/0003_projects.sql",
+      "app/server/http/plan.js",
+      "app/server/http/auth-mw.js",
+      "app/server/http/schema.js",
+      "app/server/http/rate-limit.js",
+      "app/server/http/errors.js",
+      "app/server/auth/keys.js",
+      "app/server/auth/reauth.js",
+      "app/server/db/org-store.js",
+      "app/server/db/project-store.js",
+      "app/server/db/auth-store.js",
+      "app/server/services/orgs.js",
+      "app/server/services/projects.js",
+      "app/server/services/audit.js",
+      "app/server/routes/invites.js",
+      "app/server/routes/projects.js",
+      "app/server/routes/admin-projects.js",
+      "app/server/routes/admin.js",
+      "app/server/routes/auth.js",
+      "app/server/routes/index.js",
+      "app/scripts/word-lists.js",
+      "app/scripts/check-public.js",
+      "docs/security-invariants.md"
+    ]
+  }
+}
