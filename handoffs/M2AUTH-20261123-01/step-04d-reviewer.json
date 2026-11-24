@@ -1,0 +1,58 @@
+{
+  "handoff_id": "step04d-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "04d",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/M2AUTH-20261123-01/step-04d-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "git diff 5f229ba 0358107 -- app/public (rework 02d)",
+      "handoffs/M2AUTH-20261123-01/step-02d-frontend-dev-pages.json",
+      "decisions/0137 Addition 6"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "rework_of": "handoffs/M2AUTH-20261123-01/step-04c-reviewer.json",
+    "write_set": [
+      "handoffs/M2AUTH-20261123-01/step-04d-reviewer.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "Narrow pass 4 of your gate over rework 02d (app/public only): the one CSS rule and the classes it needs, the login prompt change; nothing else changed; the extra class on #secret-text is justified; no text value changed; prettier and eslint pass. PASS or FAIL. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-24T03:25:52Z",
+  "started_at": "2026-11-24T03:26:07Z",
+  "completed_at": "2026-11-24T03:27:41Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Verdict PASS. Narrow pass 4 over git diff 5f229ba 0358107 -- app: exactly four files change (css/site.css, admin-totp.html, login.html, js/pages/login.js, 20 insertions, 6 deletions); nothing else in app. No Critical, High or Medium finding; one Low note.\nThe CSS rule: one class .wrap-any { overflow-wrap: anywhere; } with a comment, at the end of the message rules of site.css. It is a new class, so no existing element changes; the property is the one site.css already uses for .team li > b and span, and it holds no colour or size, so the theme and token rules are not touched. site.css joins the write set for this one rule by decisions/0137 Addition 6; the diff holds nothing else in that file.\nThe classes it needs: admin-totp.html gains wrap-any on exactly three elements, the enrolment note, #secret-text and #otpauth-text. The extra class on #secret-text is justified: the key is 32 base32 characters with no space, so it cannot wrap at a break opportunity and only overflow-wrap: anywhere breaks it inside the panel (the note and the otpauth address are the other two cut texts of the acceptance finding F-1). No other element or page got the class.\nThe login prompt: login.html adds one empty <p class=\"msg-text\" id=\"prompt\" role=\"status\"> inside the already hidden #row-code, with no data-t. login.js reads it, clears it at every submit, and on totp_required shows the same text key through frame.say(prompt, ...), un-hides the code row, focuses the code field and returns, so a right password followed by a missing code is no longer shown under the error label; every other code still goes to err as before; totp_invalid still shows err and focuses the code field; the password is still emptied on the other refusals and kept on totp_required and totp_invalid as before. say() keeps the key on the element, so a language switch re-renders the prompt; clear() removes it. The id exists in the html, so the page-script rule 'every id a script uses exists' holds.\nNo text value changed: app/public/shared (texts.js) is not in the diff; the prompt reuses auth_err_totp_required in ru, kk and en.\nOwn checks on a checkout of 0358107 (my clone under <scratch>): prettier --check . exit 0; eslint . --max-warnings 0 exit 0; tsc --noEmit -p jsconfig.json exit 0; node scripts/check-public.js (reads only): 'app/public is clean'. grep: .wrap-any appears once in the css and three times in admin-totp.html; no inline style, no innerHTML added. cd tools && npm run -s traces: 0 traces; handoffs-check: 0 violations.\nNot proved here (no browser run, by the rules of one browser and the acceptance re-check that ORCH already plans at 390 and 320 px in ru and en): that the three texts now wrap on the screen. By reading, the rule is the standard fix for an unbroken string in a block element.",
+    "findings": [
+      {
+        "id": "P4-1",
+        "place": "app/public/login.html:94 (the empty #prompt paragraph)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "After a totp_invalid answer the prompt is cleared but its empty paragraph stays inside the shown code row, so it may add one line of margin above the code label if .msg-text has a vertical margin. Cosmetic; I did not look at it in a browser.",
+        "fix": "Look at it in the UAT re-check at 390 px; if there is a gap, set hidden on #prompt when it is empty (frame.clear could do it) or accept it."
+      }
+    ],
+    "self_check": [
+      "A checkout of 0358107 in my own clone under <scratch>; no repository test suite, npm run check, node --test, e2e or browser was run.",
+      "git diff --stat 5f229ba HEAD -- app: admin-totp.html, css/site.css, js/pages/login.js, login.html only.",
+      "cd app: npx prettier --check . -> all matched files use Prettier code style; npx eslint . --max-warnings 0 -> exit 0; npx tsc --noEmit -p jsconfig.json -> exit 0; node scripts/check-public.js -> 'check-public: app/public is clean'.",
+      "grep -n 'wrap-any|overflow-wrap' on css and the pages: one rule, three uses, in admin-totp.html only.",
+      "cd tools && npm run -s traces -> 0 traces; npm run -s handoffs-check -> 0 violations."
+    ],
+    "issues": [],
+    "artifacts_out": []
+  }
+}
