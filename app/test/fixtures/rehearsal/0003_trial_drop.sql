@@ -1,0 +1,1 @@
+-- trial of REQ-120 c3: no rows for the dropped column
