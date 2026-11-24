@@ -1,0 +1,69 @@
+{
+  "handoff_id": "step02c-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "02c",
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/M2AUTH-20261123-01/step-02c-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "decisions/0137 Addition 5",
+      "handoffs/M2AUTH-20261123-01/step-05-test-designer-auth.json (result.issues I1: the defect, the probe that turned ADD-4 green; the test app/test/int/auth-db-down.test.js ADD-4)"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "rework_of": "handoffs/M2AUTH-20261123-01/step-02b-backend-dev.json",
+    "write_set": [
+      "app/server/db/pg.js",
+      "app/server/db/index.js (only if the failed-transaction path needs it)",
+      "docs/design/M2AUTH-accounts-tenancy-backup.md (one line in section 19 and section 7)",
+      "handoffs/M2AUTH-20261123-01/step-02c-backend-dev.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 2 rework 02c, BACKEND-DEV: fix the defect of decisions/0137 Addition 5 in app/server/db/pg.js — an `error` listener on every checked-out client for the whole time it is held (removed on release), the transaction then fails through the existing 503 path, and the broken client is released with an error so the pool drops it; no swallowed error beyond that (the error is logged once by the existing logger without the message text if it may hold a secret). Prove on your copy under <scratch>: the ADD-4 logic (cut into a plain script, not node --test) is red before and green after; the other pg.js paths unchanged. prettier, eslint, tsc. Verify traces 0, handoffs-check 0. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-24T02:13:25Z",
+  "started_at": "2026-11-24T02:13:26Z",
+  "completed_at": "2026-11-24T02:16:14Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework 02c (decisions/0137 Addition 5) on bddef13: app/server/db/pg.js transaction() now attaches an `error` listener to the client it checks out, for the whole time it is held. After the event every further statement fails as DbError E_DB_DOWN, which the pipeline answers 503 db_unavailable and logs with the code only. The client is released as broken (release(true)), so the pool drops it. A client returned to the pool normally loses the listener (the pool's idle listener takes over); a dropped client keeps it while it ends. index.js is unchanged. The design has one row in section 7 and one line in section 19. No test file was edited.",
+    "changes": [
+      {
+        "file": "app/server/db/pg.js",
+        "remark": "Addition 5 / ADD-4",
+        "text": "transaction(): `broken` flag and a client `error` listener added after pool.connect(); run() throws DbError E_DB_DOWN once broken; release(drop) calls client.release(drop || broken) and removes the listener only when the client goes back to the pool; the catch path (the ROLLBACK, not awaited) and the commit path use release(); DbError imported."
+      },
+      {
+        "file": "docs/design/M2AUTH-accounts-tenancy-backup.md",
+        "remark": "Addition 5",
+        "text": "section 7: one row «A database connection drops while a request transaction holds it»; section 19: table «Rework 02c» with one line (the change and the ADD-4 test line)."
+      }
+    ],
+    "self_check": [
+      "probe p9-drop on the copy under <scratch> (a plain script, not node --test). The ADD-4 logic uses the fixture pgStandIn (stalls after the start) and a TCP relay cut while the transaction's statement is held, two rounds. Before the fix: each round answered DbError E_DB_DOWN but raised an uncaught «Error: Connection terminated unexpectedly» (2 in all). After the fix: each round DbError E_DB_DOWN at 173-175 ms with no uncaught error.",
+      "Other paths, same probe, against an answering stand-in: the commit path commits (begin, select 1, commit); a throw of fn rejects with the same error object and sends rollback; a plain query afterwards answers; no uncaught error at the end.",
+      "npx prettier --check, npx eslint --max-warnings 0 and npx tsc --noEmit -p jsconfig.json on app/server/db/pg.js → exit 0 each.",
+      "cd tools && npm run -s traces → 0 traces; cd tools && npm run -s handoffs-check → exit 0 (after this result)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Only an E_DB_DOWN reaches the caller: the pg error message (it may name the host and port) is never kept, as before (toDbError), so the log line of the request holds the code db_unavailable only. No other pg.js path changed; the pool-level listener for idle clients (pool.on(\"error\")) stays as it was."
+      }
+    ],
+    "artifacts_out": [
+      "app/server/db/pg.js",
+      "docs/design/M2AUTH-accounts-tenancy-backup.md"
+    ]
+  }
+}

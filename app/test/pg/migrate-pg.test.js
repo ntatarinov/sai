@@ -15,7 +15,9 @@ import {
 } from "../fixtures/pg-env.js";
 
 // REQ-108 criterion 8 on real Postgres (the job pg). N4: the statement log is taken from an in-process run
-// of migrate() with a recording adapter; the process run is checked for its printed lines.
+// of migrate() with a recording adapter; the process run is checked for its printed lines. REQ-115 guard rows
+// (1) and (2) (the code design M2AUTH, A14, A15): MP-1 holds the RLS rule of every org_id table instead of «no
+// org_id», and MP-2 the names of every migration file, read at test time.
 
 const MIGRATIONS = path.join(APP, "db", "migrations");
 
@@ -51,7 +53,7 @@ const roles = async (/** @type {any} */ c) =>
     )
   ).rows;
 
-test("MP-1 roles, the login with APP_DB_PASSWORD, no table owned, no org_id, the value nowhere but bound parameters", async (t) => {
+test("MP-1 roles, the login with APP_DB_PASSWORD, no table owned, RLS on every org_id table, the value nowhere but bound parameters", async (t) => {
   const db = await freshDatabase(t);
   const pw = newPassword();
   const r = /** @type {any} */ (
@@ -100,14 +102,16 @@ test("MP-1 roles, the login with APP_DB_PASSWORD, no table owned, no org_id, the
     )
   ).rows[0].n;
   assert.equal(owned, 0);
-  assert.equal(
-    (
-      await c.query(
-        "select count(*)::int as n from information_schema.columns where table_schema = 'public' and column_name = 'org_id'",
-      )
-    ).rows[0].n,
-    0,
-  );
+  // Every table with an org_id column has row-level security enabled and forced and a policy for sai_app
+  // (the rule of RLS-1; REQ-115 criterion 1).
+  const tenant = (
+    await c.query(
+      "select c.relname as t, c.relrowsecurity as rls, c.relforcerowsecurity as forced, (select count(*)::int from pg_policies p where p.schemaname = 'public' and p.tablename = c.relname and ('sai_app' = any (p.roles) or 'public' = any (p.roles))) as policies from information_schema.columns k join pg_class c on c.relname = k.table_name join pg_namespace n on n.oid = c.relnamespace and n.nspname = k.table_schema where k.table_schema = 'public' and k.column_name = 'org_id' and c.relkind in ('r', 'p') order by 1",
+    )
+  ).rows;
+  assert.ok(tenant.length >= 3, JSON.stringify(tenant));
+  for (const row of tenant)
+    assert.ok(row.rls && row.forced && row.policies > 0, JSON.stringify(row));
   assert.ok(
     !JSON.stringify(
       (await c.query("select * from schema_migrations")).rows,
@@ -169,9 +173,14 @@ test("MP-2 two migrate processes at once both end with 0 and one row per file", 
   );
   assert.deepEqual([a.code, b.code], [0, 0], a.out + b.out);
   const c = await client(db);
-  assert.deepEqual((await c.query("select name from schema_migrations")).rows, [
-    { name: "0001_init.sql" },
-  ]);
+  assert.deepEqual(
+    (await c.query("select name from schema_migrations order by name")).rows,
+    fs
+      .readdirSync(MIGRATIONS)
+      .filter((n) => n.endsWith(".sql"))
+      .sort()
+      .map((name) => ({ name })),
+  );
   await c.end();
 });
 

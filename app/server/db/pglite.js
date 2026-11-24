@@ -29,6 +29,35 @@ export async function openPglite(dir) {
         throw toDbError(err);
       }
     },
+    // PGlite's own transaction(), never a manual BEGIN through exec: PGlite serialises transaction(), so
+    // no statement of another request runs inside this one (the code design M2AUTH, C7, F9). A transaction
+    // is never opened inside another (F25). The throw of `fn` goes on unchanged; a failure of BEGIN or
+    // COMMIT is a DbError.
+    async transaction(fn) {
+      let fromFn = false;
+      try {
+        return await db.transaction(async (tx) => {
+          try {
+            return await fn({
+              async query(text, params) {
+                try {
+                  const r = await tx.query(text, params);
+                  return { rows: r.rows };
+                } catch (err) {
+                  throw toDbError(err);
+                }
+              },
+            });
+          } catch (err) {
+            fromFn = true;
+            throw err;
+          }
+        });
+      } catch (err) {
+        if (fromFn) throw err;
+        throw toDbError(err);
+      }
+    },
     async close() {
       await db.close();
     },

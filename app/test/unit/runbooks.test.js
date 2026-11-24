@@ -661,3 +661,166 @@ test("RB-2 each damaged form is red with the finding of its rule", () => {
   for (const [label, found] of cases)
     assert.ok(found.includes(label), `${label}: ${JSON.stringify(found)}`);
 });
+
+// REQ-120 criterion 4 (the code design M2AUTH, 6.4): the runbook docs/runbooks/backup-restore.md.
+const BACKUP_HEADINGS = [
+  "## Before a deploy that carries a migration",
+  "## Restore point in Neon",
+  "## Logical dump",
+  "## Restore and verify",
+  "## Delete the copy",
+  "## Rehearsal in CI",
+];
+
+/**
+ * The long options of every `pg_dump` or `pg_restore` command of a text, without the two that name the
+ * database and the file (`--dbname`, `--file`): one sorted list per command. A mention without an option
+ * (such as «`pg_dump` stops») is no command.
+ * @param {string} text
+ * @param {"pg_dump" | "pg_restore"} tool
+ * @returns {string[]}
+ */
+export function toolFlags(text, tool) {
+  const out = [];
+  for (const m of text.matchAll(new RegExp(`\\b${tool}\\b([^\`'\\n]*)`, "g"))) {
+    const words = m[1].split(/\s+/).filter((w) => w.startsWith("-"));
+    if (words.length === 0) continue;
+    out.push(
+      words
+        .filter((w) => w.startsWith("--"))
+        .map((w) => w.replace(/=.*$/, ""))
+        .filter((w) => w !== "--dbname" && w !== "--file")
+        .sort()
+        .join(" "),
+    );
+  }
+  return out;
+}
+
+/**
+ * The findings of the backup runbook against the job migration-rehearsal of app.yml.
+ * @param {string} runbook
+ * @param {string} workflow
+ * @returns {string[]}
+ */
+export function backupFindings(runbook, workflow) {
+  const out = [];
+  const lines = runbook.split("\n");
+  const headings = lines.filter((l) => l.startsWith("## "));
+  if (JSON.stringify(headings) !== JSON.stringify(BACKUP_HEADINGS))
+    out.push("headings");
+  // The flags of each tool equal those of the job, in every command of the runbook (at least one each).
+  const at = workflow.indexOf("\n  migration-rehearsal:\n");
+  const job =
+    at < 0 ? "" : workflow.slice(at, workflow.indexOf("\n  e2e:\n", at));
+  for (const tool of /** @type {const} */ (["pg_dump", "pg_restore"])) {
+    const want = toolFlags(job, tool);
+    const got = toolFlags(runbook, tool);
+    if (want.length !== 1 || got.length === 0 || got.some((f) => f !== want[0]))
+      out.push(`${tool} flags`);
+  }
+  // The Neon section names the day it was read and an https address of the vendor's page.
+  const neon = runbook.slice(
+    runbook.indexOf("## Restore point in Neon"),
+    runbook.indexOf("## Logical dump"),
+  );
+  if (!/\b20\d\d-\d\d-\d\d\b/.test(neon)) out.push("neon date");
+  if (!/https:\/\/(?:[a-z0-9-]+\.)*neon\.(?:com|tech)\/\S+/.test(neon))
+    out.push("neon address");
+  // No database address with a password, no key shape of ARCH §14.4, no path of a computer.
+  if (/postgres(?:ql)?:\/\/[^\s:@/]+:[^\s@/]+@/.test(runbook))
+    out.push("an address with a password");
+  const shapes = [
+    ["sk", "ant-"].join("-"),
+    ["ghp", ""].join("_"),
+    ["github", "pat", ""].join("_"),
+    ["AK", "IA"].join(""),
+    ["PRIVATE", "KEY"].join(" "),
+  ];
+  if (shapes.some((s) => runbook.includes(s))) out.push("a key shape");
+  if (
+    [["", "Users", ""].join("/"), ["", "home", ""].join("/")].some((s) =>
+      runbook.includes(s),
+    ) ||
+    /[A-Za-z]:\\/.test(runbook)
+  )
+    out.push("a path of a computer");
+  // A Vercel command, if the runbook names one, keeps the forms of RB-1 (REQ-120 guard row (2)).
+  if (/(^|[^\w.@/-])vercel(@|\s)/.test(runbook))
+    out.push(...commandFindings([runbook]));
+  return out;
+}
+
+test("RB-3 the backup runbook: the six headings, the dump and restore flags of the rehearsal job, the Neon date and address, no address with a password, key shape or path", () => {
+  const runbook = readRoot("docs/runbooks/backup-restore.md");
+  const workflow = readRoot(".github/workflows/app.yml");
+  assert.deepEqual(backupFindings(runbook, workflow), []);
+  assert.ok(toolFlags(runbook, "pg_dump").length >= 2);
+  assert.ok(toolFlags(runbook, "pg_restore").length >= 2);
+  const swap = (/** @type {string} */ a, /** @type {string} */ b) =>
+    change(change(runbook, a, "\u0000"), b, a).replace("\u0000", b);
+  /** @type {Array<[string, string, string]>} */
+  const cases = [
+    ["headings", change(runbook, "## Delete the copy", "## Delete"), workflow],
+    ["headings", swap("## Logical dump", "## Restore and verify"), workflow],
+    [
+      "pg_dump flags",
+      change(
+        runbook,
+        "pg_dump --format=custom --no-owner --no-acl --dbname",
+        "pg_dump --format=custom --no-owner --dbname",
+      ),
+      workflow,
+    ],
+    [
+      "pg_restore flags",
+      change(
+        runbook,
+        "pg_restore --no-owner --no-acl --dbname",
+        "pg_restore --no-owner --dbname",
+      ),
+      workflow,
+    ],
+    // The job's flags change and the runbook does not follow: red too.
+    [
+      "pg_dump flags",
+      runbook,
+      change(
+        workflow,
+        "pg_dump --format=custom --no-owner --no-acl",
+        "pg_dump --format=custom --no-acl",
+      ),
+    ],
+    [
+      "neon date",
+      runbook.replace(/\b20\d\d-\d\d-\d\d\b/g, "on that day"),
+      workflow,
+    ],
+    [
+      "neon address",
+      runbook.replaceAll("https://neon.com/", "the page "),
+      workflow,
+    ],
+    [
+      "an address with a password",
+      `${runbook}\npostgres://owner:${["pw", "x"].join("-")}@db.example/sai\n`,
+      workflow,
+    ],
+    ["a key shape", `${runbook}\n${["AK", "IA"].join("")}EXAMPLE\n`, workflow],
+    [
+      "a path of a computer",
+      `${runbook}\n${["", "Users", "someone", "dump"].join("/")}\n`,
+      workflow,
+    ],
+    ["a path of a computer", `${runbook}\nC:\\dumps\\app.dump\n`, workflow],
+    [
+      "vercel without npx",
+      `${runbook}\n\`vercel@64.1.0 rollback\`\n`,
+      workflow,
+    ],
+  ];
+  for (const [label, text, wf] of cases) {
+    const found = backupFindings(text, wf);
+    assert.ok(found.includes(label), `${label}: ${JSON.stringify(found)}`);
+  }
+});

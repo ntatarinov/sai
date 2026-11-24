@@ -1,6 +1,9 @@
 import { Hono } from "hono";
 import { PUBLIC_LANGS } from "../public/shared/i18n/lang.js";
+import { DbError } from "./db/index.js";
+import { authContext, runPipeline, takesPipeline } from "./http/auth-mw.js";
 import { readBody } from "./http/body.js";
+import { normalise } from "./http/client-ip.js";
 import { errorBody, HttpError, UNIFORM_404 } from "./http/errors.js";
 import { API_CACHE, securityHeaders } from "./http/headers.js";
 import { isPreviewHost } from "./http/origin.js";
@@ -10,11 +13,15 @@ import { routeTable } from "./routes/index.js";
 
 // createApp(deps): the one Hono app of the Node server, Docker and the Vercel function (ARCH §0, §2).
 // Order: request id and log → headers → site gate (no database) → body limit → preview host → routes →
-// static files.
+// static files. The routes that use the session cookie or a rate limit take the request pipeline of
+// http/auth-mw.js (the code design M2AUTH, 4.7); the others the path below as before.
+
+// The Vercel entry imports only this file and config.js (ARCH §2.2), so the address rule is re-exported here.
+export { vercelClientIp } from "./http/client-ip.js";
 
 /**
  * @typedef {object} AppDeps
- * @property {{ siteGate: boolean, version: string }} config
+ * @property {{ siteGate: boolean, version: string, secretPepper?: Buffer | null, setupTokenHash?: string | null }} config
  * @property {import("./http/origin.js").Origins} origins
  * @property {import("./db/index.js").Db | null} db
  * @property {import("./static.js").StaticSite | null} site
@@ -23,9 +30,29 @@ import { routeTable } from "./routes/index.js";
  * @property {() => number} [now]
  * @property {{ intake: import("./routes/demo.js").Intake, langs: readonly string[] }} [demo] the intake and
  *   the languages of the two demo routes; without it their paths answer the uniform 404
+ * @property {import("./http/auth-mw.js").AuthDeps} [auth] accounts; by default the pepper and the setup hash
+ *   of the configuration, Date.now, Math.random and the scrypt hasher of auth/password.js
+ * @property {(deps: Parameters<typeof routeTable>[0]) => ReadonlyArray<import("./routes/index.js").Route>} [routeTable]
+ *   another route table (tests plant rows); by default the real one
  */
 
 const JSON_TYPE = "application/json; charset=utf-8";
+
+/**
+ * The client address of a request (the code design M2AUTH, 4.7): the address the Vercel entry gives in the
+ * env, else the socket address of the Node server, else null; normalised. No request header is read here.
+ * @param {unknown} env
+ * @returns {string | null}
+ */
+function clientIpOf(env) {
+  if (env === null || typeof env !== "object") return null;
+  const e =
+    /** @type {{ clientIp?: unknown, incoming?: { socket?: { remoteAddress?: unknown } } }} */ (
+      env
+    );
+  if (Object.hasOwn(e, "clientIp")) return normalise(e.clientIp);
+  return normalise(e.incoming?.socket?.remoteAddress);
+}
 
 /**
  * @param {AppDeps} deps
@@ -36,19 +63,27 @@ export function createApp(deps) {
   // static map looks up (never decoded). Hono's own getPath decodes it, so `/%61pi/health` would reach the
   // health handler while the app classifies it as a page: no `Cache-Control: no-store`, and an answer that
   // tells an existing route from a missing one. Route parameters are still decoded by `c.req.param()`.
-  /** @type {Hono<{ Variables: { tag: { route: string, code?: string }, body: Uint8Array } }>} */
+  /** @type {Hono<{ Variables: { tag: { route: string, code?: string, actor?: "user" | "admin" }, body: Uint8Array } }>} */
   const app = new Hono({ getPath: (req) => new URL(req.url).pathname });
-  const routes = routeTable({
+  const auth = authContext(
+    deps.auth ?? {
+      pepper: deps.config.secretPepper ?? null,
+      setupTokenHash: deps.config.setupTokenHash ?? null,
+    },
+    deps.origins.app,
+  );
+  const routes = (deps.routeTable ?? routeTable)({
     db: deps.db,
     migrations: deps.migrations,
     version: deps.config.version,
     demo: deps.demo,
+    auth,
   });
 
   app.use("*", async (c, next) => {
     const started = now();
     const reqId = newRequestId();
-    /** @type {{ route: string, code?: string }} */
+    /** @type {{ route: string, code?: string, actor?: "user" | "admin" }} */
     const tag = { route: "unknown" };
     c.set("tag", tag);
     await next();
@@ -70,6 +105,7 @@ export function createApp(deps) {
       status: res.status,
       ms: Math.round(now() - started),
     };
+    if (tag.actor) line.actor_kind = tag.actor;
     if (tag.code) line.code = tag.code;
     deps.log(line);
   });
@@ -130,7 +166,67 @@ export function createApp(deps) {
     return next();
   });
 
+  /**
+   * @param {any} c
+   * @param {{ status: number, body: unknown, headers?: Array<[string, string]> }} out
+   */
+  const answer = (c, out) => {
+    const body = /** @type {{ error?: unknown }} */ (out.body);
+    if (out.status >= 400 && body && typeof body.error === "string")
+      c.get("tag").code = body.error;
+    const res = json(c, out.status, JSON.stringify(out.body));
+    for (const [name, value] of out.headers ?? [])
+      if (name === "Set-Cookie" || name === "Retry-After")
+        res.headers.append(name, value);
+    return res;
+  };
+
   for (const r of routes) {
+    if (takesPipeline(r)) {
+      app.on(r.method, r.path, async (c) => {
+        const startedAt = performance.now();
+        const tag = c.get("tag");
+        tag.route = r.path;
+        try {
+          const out = await runPipeline(auth, deps.db, r, {
+            method: c.req.method,
+            headers: c.req.raw.headers,
+            query: new URL(c.req.url).searchParams,
+            params: c.req.param(),
+            bodyBytes: c.get("body"),
+            clientIp: clientIpOf(c.env),
+            startedAt,
+            noteActor: (kind) => {
+              tag.actor = kind;
+            },
+          });
+          return answer(c, out);
+        } catch (err) {
+          // A thrown refusal after the rollback: its status and stable code (and Retry-After for a 429);
+          // a database failure: 503 db_unavailable, or 500 server_error for a failed statement. No cookie
+          // is set on any of them. Any other exception goes to onError (500).
+          if (err instanceof HttpError) {
+            tag.code = err.code;
+            const res = json(c, err.status, errorBody(err.code));
+            if (err.retryAfter !== undefined)
+              res.headers.set("Retry-After", String(err.retryAfter));
+            return res;
+          }
+          if (err instanceof DbError) {
+            const code =
+              err.code === "E_DB_QUERY" ? "server_error" : "db_unavailable";
+            tag.code = code;
+            return json(
+              c,
+              code === "server_error" ? 500 : 503,
+              errorBody(code),
+            );
+          }
+          throw err;
+        }
+      });
+      continue;
+    }
     app.on(r.method, r.path, async (c) => {
       const tag = c.get("tag");
       tag.route = r.path;
@@ -147,7 +243,7 @@ export function createApp(deps) {
         tag.code = err.code;
         return json(c, err.status, errorBody(err.code));
       }
-      return json(c, out.status, JSON.stringify(out.body));
+      return answer(c, out);
     });
   }
 

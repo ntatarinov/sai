@@ -1,0 +1,137 @@
+{
+  "handoff_id": "step03-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "03",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/M2AUTH-20261123-01/step-03-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114",
+      "REQ-115",
+      "REQ-120"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "git diff base/M2AUTH-20261123-01 2f267d1 (the code: 58 files)",
+      "docs/design/M2AUTH-accounts-tenancy-backup.md (commit 84fe178) and decisions/0137 with Additions 1-3",
+      "handoffs/M2AUTH-20261123-01/step-02-backend-dev.json and step-02-frontend-dev-pages.json (what they proved; result.issues: their choices inside the design)",
+      "docs/requirements.yaml REQ-114, REQ-115, REQ-120; docs/workflows/WF-02-development.md steps 3 and 4; docs/quality-bar.md"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "parallel_work_now": [
+      "the other reviewer (read only)"
+    ],
+    "write_set": [
+      "handoffs/M2AUTH-20261123-01/step-03-security-reviewer.json (result only)"
+    ],
+    "orch_correction": " ORCH set result.status from DONE to COMPLETED (the allowed word); the verdict PASS is the reviewer's."
+  },
+  "task": {
+    "description": "WF-02 step 3 gate, SECURITY-REVIEWER, the first own-auth code of the product (read only; OWASP ASVS 4.0.3 V2, V3, V4, V5, V7, V8 as the checklist). Look hard at: scrypt parameters and the timing-safe compare; the dummy hash path for unknown/disabled accounts (one scrypt each, byte-equal answers); session cookie flags (__Host-, Secure, HttpOnly, SameSite), session id entropy and hashing at rest, logout and password-change revocation; CSRF and Origin on session routes only; re-auth token one-time consumption in the same transaction; the setup token one-time use with timingSafeEqual; lockout and the admin delay under the per-row locks (no check-then-act); rate limits and the client address on Vercel (x-forwarded-for exactly one IP) and on Node (socket only); TOTP window, replay and recovery codes stored as HMAC; reset links; RLS forced and the tenant context set in the same transaction; grants.sql; the audit chain append in the same transaction and its refusals (UPDATE/DELETE/TRUNCATE); secrets: SECRET_PEPPER never logged, no secret in the repository, the uat-login secret file rules; error answers leak no stack, SQL or path; db-verify reads URLs from env only. Verify by reading AND by your own probes on a fresh clone of 2f267d1 under <scratch> (npm ci in app/; PGlite; app.request in-process; never the repository test suites, npm run check or e2e: decision 0110). PASS or FAIL with findings by severity, each with file:line and the exact change wanted. Be thorough. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-23T19:34:29Z",
+  "started_at": "2026-11-23T19:34:32Z",
+  "completed_at": "2026-11-24T01:15:01Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "scope": "Commit 2f267d1 (58 files). git diff base/M2AUTH-20261123-01 2f267d1 also carries the ISS-0132 commits (tools/src/*, tools/test/*, their docs and handoffs), already gated in run ISS-0132-20261123-01 and not re-gated here. Checked by reading every changed code file and by own probes on a fresh clone of 2f267d1 under <scratch> (npm ci in app/; PGlite in-process, app.request, one Node http server on port 0 closed by the probe). No repository test suite, npm run check, node --test or e2e was run (decision 0110). Checklist: OWASP ASVS 4.0.3 V2, V3, V4, V5, V7, V8.",
+      "surface_map": [
+        "goes to the browser: app/public/login.html, setup.html, reset.html, admin-totp.html, app/public/js/api.js, js/pages/{login,setup,reset,admin-totp}.js, shared/i18n/texts.js; the answers of server/routes/auth.js, admin.js, http/errors.js, app.js -> Q7 and text display (every dynamic value is set with textContent; no innerHTML, insertAdjacentHTML or eval; no inline script; CSP unchanged default-src 'self'; the forms are method=post, so a submit without the script puts no password into an address)",
+        "comes from outside: http/auth-mw.js, csrf.js, schema.js, client-ip.js, rate-limit.js, routes/auth.js, routes/admin.js, api/index.js (x-forwarded-for), app.js (socket address), scripts/uat-login.js and db-verify.js (argv, env, a file, a server answer) -> Q10, input check, hostile input",
+        "writes files: scripts/uat-login.js (the session file, flag wx, mode 0600, outside the repository after realpath) -> the path stays in its place",
+        "holds a secret: server/config.js (SECRET_PEPPER, SETUP_TOKEN_HASH), auth/keys.js, sessions.js, reauth.js, setup.js, totp.js, password.js, db/auth-store.js, .github/workflows/app.yml (run-time peppers), compose.yaml, .env.example, scripts/setup-token.js, uat-login.js, docs/runbooks/backup-restore.md -> Q7",
+        "customer data: db/migrations/0002_identity.sql, db/grants.sql, db/tx.js, db/index.js, pg.js, pglite.js, migrate.js, selfcheck.js, audit-store.js, services/audit.js, health-read.js, routes/* -> Q8, Q9",
+        "the server goes by itself: none (no address a user sets is visited; db-verify and uat-login are owner scripts with addresses from env or argv) -> Q11 not applicable",
+        "no surface: decisions/0137 (+7 lines), docs/security-invariants.md, app/README.md, app/test/fixtures/rehearsal/*.sql (fixed test values, still read as Q7 matches), the two developer handoffs; routes/demo.js and routes/health.js (meta keys only; the same statement moved to db/health-read.js)"
+      ],
+      "items": {
+        "Q7": "applicable and met. Search of the change and of the page files (self_check S1): every match is a pinned action sha, an image digest, a CI address holding only $POSTGRES_PASSWORD, the SecLists commit sha, the seed audit hashes, the seed fake password hashes, or DUMMY_HASH (password.js:26, the hash of a discarded random text, not a secret); the page files hold only the old office checksums. SECRET_PEPPER is read only in config.js:118-133 (the refusal texts are fixed, without the value) and used only in keys.js; CI makes peppers at run time with ::add-mask::. Probes: no setup token, password, e-mail, client address, session token, CSRF token or pepper in any log line; log keys closed; session token, CSRF token, re-auth token, reset code, TOTP secret and recovery codes are not in the database in clear (HMAC or AES-GCM only); db-verify and uat-login output never echo an address, a password or a server text.",
+        "Q8": "applicable and met for M2.2 (no tenant route exists; the organisation of a session comes from the membership row, readSession auth-store.js:36). Probes: under withTenant(A) orgs, org_members and invites show only A, B by id gives 0 rows, an update of B 0 rows, an insert into B is refused 42501; sai_app without settings sees 0 orgs; a forged non-uuid app.org_id errors and does not widen; audit_log is invisible to a tenant; the sai_app grants equal the design table exactly (no TRUNCATE, no DELETE on users, orgs, org_members, invites, audit_log); sai_preview, sai_app_login and PUBLIC hold no table grant; no public relation is owned by an app role. Admin routes: anonymous, random or malformed cookie and an ordinary session get a 404 byte-equal (body and headers) to an unknown /api path, with no row changed. Login of an unknown, disabled or deleted e-mail is byte-equal to a wrong password, one scrypt each; real-scrypt medians 539, 540, 542 ms (wrong, unknown, disabled).",
+        "Q9": "applicable and met. No .query or .exec with a template literal or concatenation in app/server, app/api, app/scripts. Dynamic SQL only in db-verify.js:42-44 (identifiers from the catalog through format %I and quote_ident, values bound $1-$3) and in the old password step of migrate.js:60 (%L of a setting). grants.sql: static GRANTs inside if-blocks, no execute.",
+        "Q10": "applicable and met (with the residual of finding F4). A DbError answers 503 db_unavailable or 500 server_error; a planted failing statement, a division by zero and a thrown Error holding a path and a secret-looking text all answer exactly {\"error\":\"server_error\"}, and the log line carries none of it; no pepper -> 503 server_config; an APP_ORIGIN that allows no cookie -> 503 server_config. Hostile input under 200 ms each: 64k ':' and '1.' to normalise, a 1 MB Cookie header, a 64k '@' e-mail, a 253-character e-mail x1000, a 64k text with a zero-width sign, a 30k-deep JSON; a __proto__ key -> bad_body; non-UTF-8 -> bad_json. uat-login: fetch with a 10 s timeout and redirect manual.",
+        "Q11": "not applicable: no address set by a client or a user is called by the server (the Vercel entry and the Node server only read the client address; db-verify and uat-login are owner scripts).",
+        "R3": "not applicable: no photos of people (decision 0033).",
+        "R2": "not applicable: no Pixel Office file in 2f267d1.",
+        "ASVS": "V2: scrypt N=2^17 r=8 p=1, 16-byte salt, 64-byte key, full-length timingSafeEqual (password.js:65-73); 10-128 code points and the bundled common list; the dummy hash path; lockout 5 in 15 min for ordinary accounts and for e-mails without an active account, under a row lock; the admin never locked (probe: failed_logins 0) with the per-address delay; the re-auth counter separate (probe: 5 wrong -> 429 reauth_locked, failed_logins untouched); TOTP RFC 6238 with +-1 step and an atomic step claim (probes: t-2 refused, t+1 accepted, an older step after a newer one refused, a replay refused); recovery codes as HMAC, single use, case-insensitive. V3: __Host-sai_s; Path=/; Max-Age=604800; HttpOnly; SameSite=Lax; Secure, no Domain (https probe); 32-byte token stored as HMAC; rotation at login (the old token dead); idle 12 h and absolute 7 d (probes at the boundaries); logout clears the cookie and kills the token; a password change kills every other session and their re-auth tokens; a reset kills every session; a repeated cookie reads as no session. V4: admin routes give the uniform 404 before any other check; the re-auth token is bound to user, session and purpose, single use (3 parallel uses -> one 200), expires at 5 min, and a thrown refusal after its consumption rolls it back. V5: strict schema (unknown key, type, length, invisible sign). V7: closed log keys. V8: no secret in the database or in answers beyond the masked fields of design 4.13.",
+        "CSRF_and_origin": "met. On a session route: a missing Origin, 'null', a trailing slash, another port, localhost, upper case -> 403 origin_refused; text/plain, a form type, charset=latin1, 'application/json, text/plain', an extra parameter -> 415; a missing, one-character-off, shorter or longer x-sai-csrf and the CSRF token of another session -> 403 csrf_refused; the session stays alive after every refusal; login and setup need Origin; a login with a live session needs its CSRF token.",
+        "setup_token": "met: sha256 digests compared by timingSafeEqual on 32 bytes (setup.js:16-34); wrong, 44-character, 42-character, empty and space-prefixed tokens answer the uniform 404 byte-equal; after setup_done the right token answers the uniform 404; the 6th setup call of an hour from one address -> 429 (seen when the probe first reused one address).",
+        "client_address": "met: Node uses the socket only (11 logins with 11 spoofed X-Forwarded-For and X-Real-IP from one socket -> the 11th is 429, and the one rate key is mac(rl, login\\0127.0.0.1)); Vercel uses x-forwarded-for only when it is exactly one IP literal (13 forms probed: a list, a port, a zone id, a leading zero, a name, too many groups, a double '::' -> null; ::ffff:v4 -> v4; IPv6 lower case); x-real-ip and x-vercel-forwarded-for are never read; no address -> the shared bucket 'unknown'.",
+        "audit_chain": "met for M2.2: append in the request transaction under the advisory lock; UPDATE, DELETE and TRUNCATE refused for sai_app (42501) and for the superuser owner by the triggers (P0001), rows unchanged; the chain verifies after the whole probe 1. A trap for later routes: finding F1.",
+        "not_provable_on_this_pc": "Real Postgres behaviour (the row-lock races AUTH-RACE-1/3/4, the COMMIT limit of pg.js, RLS and grants on Postgres 17, the migration-rehearsal job) is checked here by reading only: the lock order of design 4.9.5 (the rate row, then at most one counter row, then the audit advisory lock) holds in auth.js:305-439, and every counter is read under FOR UPDATE and written in the same transaction (no check-then-act). The pg and migration-rehearsal jobs on GitHub must prove it (no CI run of 2f267d1 exists yet)."
+      },
+      "probes": "sp1-pipeline 125/125 PASS; sp2-db-ip 41/45: 3 of the 4 fails were the probe's own error (the owner cases ran after the login-role switch) and pass in sp2b-owner 6/6, the 4th is finding F1; sp3-timing (real scrypt, 12 logins); sp4-scripts 18/18 PASS. The first runs of sp1 failed on my own oracles (my wrong-token cases used up the setup limit of 5 per hour of one address; 15 x 11 h is under 7 days; a TOTP step boundary at second 29); after the oracles were fixed every case passes. Own cases in all: 195."
+    },
+    "findings": [
+      {
+        "id": "F1",
+        "place": "app/server/services/audit.js:152-173 (appendAudit), with the policy audit_log_select of app/db/migrations/0002_identity.sql:210-211",
+        "item": "Q8 / REQ-115 c10 (integrity of the audit chain)",
+        "severity": "MEDIUM, not blocking (not reachable in M2.2: every caller runs in the platform transaction)",
+        "what": "appendAudit works only in a platform transaction but does not enforce it. Under tenant settings (after switchToTenant, which the REQ-117 tenant routes will use) lastAuditHash reads no row, because the select policy gives rows to app.role 'platform' only; prev_hash becomes 64 zeros and the row is inserted anyway, so the chain breaks silently. Probe: withTenant(A, appendAudit(...)) then verifyAudit -> {ok:false, count:2, badId:'2'}.",
+        "fix": "In appendAudit, before lockChain, run one constant statement in audit-store.js, `select current_setting('app.role', true) as role`, and throw TypeError('audit: not a platform transaction') unless it is 'platform'; add the case to the audit-chain tests. REQ-117 then writes its audit rows before the switch, or the pipeline offers a platform-side audit step."
+      },
+      {
+        "id": "F2",
+        "place": "app/server/http/rate-limit.js:35 (the key text), app/server/routes/auth.js:382 (the admin delay key), app/server/http/client-ip.js:44-52",
+        "item": "ASVS V2.2.1 / REQ-114 c5, c9 (anti-automation)",
+        "severity": "MEDIUM, not blocking (the code follows REQ-114 'per IP' and the design; whether Vercel serves IPv6 clients today is not measured)",
+        "what": "An IPv6 client is keyed by its full /128 address. An attacker with an ordinary IPv6 /64 has 2^64 addresses, so the login limit (10 per 15 min), the reset and setup limits and the admin delay (the only brute-force brake on the never-locked admin account) do not hold against him. Ordinary accounts keep their per-account lock.",
+        "fix": "Key IPv6 addresses by their /64 prefix (the first four groups after expanding '::') for the labels rl and delay (ip_hmac may keep the full address), with a test where two addresses of one /64 share a bucket; or record in decisions/0137 that /128 keys are accepted, with the reason."
+      },
+      {
+        "id": "F3",
+        "place": "app/scripts/uat-login.js:146-165",
+        "item": "Q7 (rules of the secret file)",
+        "severity": "LOW",
+        "what": "The checks use lstatSync(file) and the read uses readFileSync(file), which follows a link: a file swapped for a symbolic link between the two calls is read (time of check versus time of use). Needs local write access to the folder of the secret file.",
+        "fix": "Open once with fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW), run fstatSync on that descriptor for isFile and the mode, and read from the same descriptor."
+      },
+      {
+        "id": "F4",
+        "place": "app/server/db/pg.js:26-34 (pool max 3), with the scrypt inside the request transaction (app/server/routes/auth.js:317, 358, 409; design 4.9.5)",
+        "item": "Q10 (one request does not break the work of others)",
+        "severity": "LOW (a residual of the accepted design shape)",
+        "what": "Each login holds one of the 3 pool connections of an instance for its whole scrypt (about 0.5 s, more under CPU load). Anonymous login attempts from a few addresses can keep the pool busy, so the other requests of that instance wait for a connection and answer 503 at the 4 s deadline. The design names the CPU bound (about 7 parallel logins) but not the pool bound.",
+        "fix": "Name the bound in the design residuals, or raise max for the function and measure it in the post-deploy record; no code change is needed for M2.2."
+      },
+      {
+        "id": "F5",
+        "place": "app/server/routes/auth.js:516-552 (POST /api/auth/password)",
+        "item": "ASVS V2.5 / V3.3",
+        "severity": "LOW",
+        "what": "A password change does not void an unused admin-issued reset code of the same user: the 30-minute link still sets a new password after the user changed his own.",
+        "fix": "Call deleteUnusedResets(req.q, row.id) (app/server/db/auth-store.js:527) in the password-change transaction."
+      }
+    ],
+    "self_check": {
+      "S1_secret_search": "git diff 2f267d1~1 2f267d1 --name-only (without common-passwords.js) | xargs grep -nEo with the patterns NAME=value of SECRET_PEPPER, SETUP_TOKEN_HASH, APP_DB_PASSWORD, POSTGRES_PASSWORD; [A-Za-z0-9_-]{40,}; [0-9a-f]{64}; postgres(ql)://...; -----BEGIN; sk-...; ghp_...; AKIA... -> 34 unique matches: action shas 3d3c42e5..., 82076278...; image digest 0d938e97...; CI addresses postgres://postgres:$POSTGRES_PASSWORD@127.0.0.1:5433/{a,b}; compose postgres://postgres:${POSTGRES_PASSWORD:?required}@db:5432/sai; the key part of DUMMY_HASH (password.js:27); seed audit hashes 872bfba1..., 4c948015...; seed fake hashes AAAA... and BBBB...; the SecLists sha e6b76a2d... in the developer handoff. Page files (app/public, *.js and *.html): only the checksum lines of app/public/office/grid.js and sim.js (unchanged files). None is a secret.",
+      "S2_raw_sql": "grep -rnE for .query( or .exec( followed by a template literal or a concatenation in app/server, app/api, app/scripts -> none; grep 'execute |format(' -> the triggers of 0002, migrate.js:60, db-verify.js:42 and 44 (identifiers quoted, values bound).",
+      "S3_pepper": "grep -rnE 'pepper|secretPepper|SECRET_PEPPER' app/server app/api app/scripts -> config.js:118-150, app.js:70, auth-mw.js:57-59, keys.js:41-50 only; no log or error path receives it.",
+      "S4_probes": "node sprobe/sp1-pipeline.mjs -> SUMMARY 125/125 pass; node sprobe/sp2-db-ip.mjs -> SUMMARY 41/45 (the owner cases rerun in sp2b-owner.mjs: PASS x6, P0001 and 42501; the F1 case: INFO appendAudit under tenant settings, then verify: {\"ok\":false,\"count\":2,\"badId\":\"2\"}); node sprobe/sp3-timing.mjs -> medians 539 540 542 ms, one dummy verify 541 ms, a malformed stored hash false in 0 ms; node sprobe/sp4-scripts.mjs -> 18 PASS. The probes are kept in <scratch> only; Node v22.23.4 first on PATH; the one server bound port 0 on 127.0.0.1 and was closed by the probe.",
+      "hashes": "The 58 files of 2f267d1, sha256sum of each, the list hashed: d39d3bce14f34d3db75a67056e65d51235531c236302153e1536318a3f419e0b at the start and d39d3bce14f34d3db75a67056e65d51235531c236302153e1536318a3f419e0b at the end (sha256sum -c of the 58: all OK). The repository stayed at HEAD 2f267d1 with no tracked change; only the result of this handoff was written.",
+      "not_run": "No npm run check, app test suites, node --test or e2e (decision 0110); no Docker or Postgres (the Docker daemon is not running on this PC and was not started)."
+    },
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "F1-F5 are not blocking. F1 should be fixed before REQ-117 (tenant routes) and F2 before IPv6 traffic can reach the app; ORCH decides whether CODE-FIXER takes them in this run or they become ISS entries."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Row-lock races, the COMMIT limit and RLS and grants on real Postgres 17 are proven here by reading only; the pg and migration-rehearsal jobs on GitHub must prove them (no CI run of 2f267d1 exists yet)."
+      },
+      {
+        "kind": "NOTE",
+        "text": "For REVIEWER (not a verdict item): the login and current-password fields use the text rule, so a password holding a control or invisible sign is refused as bad_body rather than verified; harmless for security."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

@@ -7,8 +7,12 @@
 // under `set local role sai_app` (ARCH §4), so a sai_app with BYPASSRLS or SUPERUSER, made before 0001 or
 // changed after it, must refuse the connection too. No row (never the case: a role is a member of itself)
 // reads as unsafe.
+//
+// A table owner can switch row security off for its table, so a role that owns (or is a member of a role
+// that owns) a relation of the public schema reads as bypassing row security too (REQ-115 criterion 5; the
+// code design M2AUTH, 4.6): the statement keeps its two columns and folds the ownership into rolbypassrls.
 export const SELFCHECK_SQL =
-  "select coalesce(bool_or(rolsuper), true) as rolsuper, coalesce(bool_or(rolbypassrls), true) as rolbypassrls from pg_roles where pg_has_role(session_user, oid, 'MEMBER')";
+  "select coalesce(bool_or(r.rolsuper), true) as rolsuper, coalesce(bool_or(r.rolbypassrls), true) or exists (select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind in ('r', 'p', 'v', 'm', 'S', 'f') and pg_has_role(session_user, c.relowner, 'MEMBER')) as rolbypassrls from pg_roles r where pg_has_role(session_user, r.oid, 'MEMBER')";
 
 /** @typedef {{ rolsuper: unknown, rolbypassrls: unknown }} RoleReading */
 

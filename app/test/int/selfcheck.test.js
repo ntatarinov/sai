@@ -22,13 +22,14 @@ import {
   waitFor,
 } from "../fixtures/helpers.js";
 import {
+  appWith,
   counting,
   migratedPglite,
   migrationList,
   MIGRATIONS,
 } from "../fixtures/db.js";
 
-// REQ-108 criterion 8 (the int part).
+// REQ-108 criterion 8 (the int part); REQ-115 criterion 5 (SC-7; every earlier case keeps its input and answer).
 
 const REFUSAL =
   "sai: refused: the database role of the app is a superuser or bypasses row security";
@@ -266,4 +267,57 @@ test("SC-6 the selfcheck reads every role the login role is a member of: a sai_a
     assert.equal(await runSelfcheck(ad), want, label);
     await ad.close();
   }
+});
+
+test("SC-7 a runtime role that owns a table of the public schema, or is a member of a role that owns one, is refused: node-main exits 1 with the one line, and /api/health of an app given that adapter answers 503", async (t) => {
+  // REQ-115 criterion 5 (the code design M2AUTH, 4.6). A table owner can switch row security off for its
+  // table, so owning one reads as bypassing row security. Red at the base commit: its statement passes a
+  // planted ownership (AP-071).
+  for (const [label, owner] of [
+    ["the login role owns a table", "sai_app_login"],
+    ["a role of the login role owns a table", "sai_app"],
+  ]) {
+    const plant = `create table planted_owned (x integer); alter table planted_owned owner to ${owner}`;
+    // node-main on a PGlite folder with the planted table.
+    const dir = path.join(tempDir(t), "pgl");
+    const db = new PGlite(dir);
+    const ad = {
+      query: (/** @type {string} */ q, /** @type {any[]} */ p) =>
+        db.query(q, p),
+      exec: (/** @type {string} */ q) => db.exec(q).then(() => {}),
+      close: () => db.close(),
+    };
+    await migrate({ adapter: ad, dir: MIGRATIONS, password: null });
+    await db.exec(plant);
+    await db.close();
+    const s = startNode(t, { PORT: "0", PGLITE_DIR: dir });
+    // A start that serves is red at once (it never exits by itself).
+    const outcome = await Promise.race([
+      s.exited.then((e) => ({ exit: /** @type {any} */ (e) })),
+      s.ready.then(
+        () => ({ exit: null }),
+        () => new Promise(() => {}),
+      ),
+    ]);
+    assert.ok(outcome.exit, `${label}: node-main started and serves`);
+    assert.equal(outcome.exit.code, 1, label);
+    assert.deepEqual(s.err().trim().split("\n"), [REFUSAL], label);
+    assert.doesNotMatch(s.err(), /planted_owned|sai_app|postgres|^\s+at /m);
+    // The same planted ownership behind the adapter of an app: health answers 503 with the role unsafe.
+    const inner = await openPglite(null);
+    t.after(() => inner.close());
+    await migrate({ adapter: inner, dir: MIGRATIONS, password: null });
+    await inner.exec(plant);
+    await inner.switchToLoginRole();
+    assert.equal(await runSelfcheck(inner), "unsafe", label);
+    const r = await appWith({ adapter: inner }).request(
+      "http://127.0.0.1:1/api/health",
+    );
+    assert.equal(r.status, 503, label);
+    assert.equal((await r.json()).role, "unsafe", label);
+  }
+  // Without the planted table the same database passes (the ownership is what is refused).
+  const clean = await migratedPglite();
+  t.after(() => clean.close());
+  assert.equal(await runSelfcheck(clean), "ok");
 });

@@ -1,0 +1,277 @@
+{
+  "handoff_id": "step02-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "02",
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/M2AUTH-20261123-01/step-02-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114",
+      "REQ-115",
+      "REQ-120"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/M2AUTH-accounts-tenancy-backup.md (commit 84fe178; THE design: build exactly it; section 3 is your file list and the order; section 12 the sub-steps; section 4 the interfaces; sections 7 and 8 failure paths and protection)",
+      "decisions/0137 with its Additions (ORCH's answers)",
+      "docs/requirements.yaml blocks REQ-114, REQ-115, REQ-120 (the criteria your code must meet)",
+      "the gate handoffs step-01b, 01e, 01g of handoffs/M2AUTH-20261123-01/ (what the validator checked)",
+      "docs/workflows/WF-02-development.md step 2",
+      ".claude/agents/backend-dev.md"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "write_set": [
+      "every file with owner B in section 3 of the design, and only those",
+      "handoffs/M2AUTH-20261123-01/step-02-backend-dev.json (result only)"
+    ],
+    "parallel_work_now": [
+      "FRONTEND-DEV step 02 pages (app/public/** and texts.js only; reads your errors.js and the API table)",
+      "ISS-0132-20261123-01 TEST-DESIGN-VALIDATOR (tools/ read only)"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 2, BACKEND-DEV, task M2.2: write the server, database, scripts, CI job and runbook files of the design (owner B in section 3), in the order of section 3 (errors.js codes and the route row shape first, because FRONTEND-DEV reads them) and the sub-steps of section 12. No test file (TEST-DESIGNER writes them at step 5): instead name in result, per sub-step, the existing tests you expect to turn red and why (section 11 is the table). The common-password module: generate it once from the named source exactly as the design says (4.9.2; the full MIT notice in its header) with your own script under <scratch>, run `cd tools && npm run -s traces` with it in the tree and drop entries until traces is 0 (R3), and say how many entries remain. Prove what you can on this PC with your own scripts under <scratch> on a copy of your tree (npm ci in app/, node scripts, PGlite: the migration applies, grants, RLS refusals, the transaction deadline, scrypt timing, the routes answering through app.fetch in-process): never the repository test suites, `npm run check` or e2e (decision 0110). Run prettier --check and eslint over your files from app/ (they only read). Verify traces 0, handoffs-check 0, no machine path, no secret, LF. In result: artifacts_out, per sub-step what was done and proved, expected red tests, must_be_proved_on_github, any divergence from the design (there should be none; a needed one goes to ORCH first). RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-23T18:48:36Z",
+  "started_at": "2026-11-23T18:48:39Z",
+  "completed_at": "2026-11-23T19:33:42Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "WF-02 step 2, task M2.2: every owner-B file of section 3 of docs/design/M2AUTH-accounts-tenancy-backup.md is written, in the order of section 3 (errors.js with the 23 AUTH_CODES and the route row shape first) and the sub-steps B1-B14 of section 12. No test file was written. Proved on this PC only with own probe scripts on a copy of the tree under <scratch> (npm ci there; PGlite in-process, app.request/app.fetch, one Node server on port 0 stopped in the same script): migration 0002 and the grants step (also on a 0001-only database, after a revoke, and a failing grants file → E_MIGRATE_GRANTS with the grants unchanged), forced RLS refusals 42501, the audit triggers P0001 for the owner (UPDATE, DELETE, TRUNCATE), the folded selfcheck (clean ok, a table owned by sai_app unsafe), the tx helpers, the deadline guard (503 at the deadline, nothing committed; COMMIT in flight past the deadline → 201 and committed), one transaction per request switched to tenant settings, every auth and admin route of 4.4 through the pipeline, db-verify both modes on two PGlite databases with the seeds, the scripts' refusals, scrypt 2^17 at about 528 ms. The common-password module was generated once from SecLists at commit e6b76a2dcacb52442672399a549f44947548b30d: 2311 entries, traces 0 with it in the tree, so no entry had to be dropped. No repository test suite, npm run check, node --test or e2e was run (decision 0110). Two departures of detail are named in issues (I1 a label the design's closed list lacks, I2 a stale count in 5.3); every other item is a choice inside the design or a note for TEST-DESIGNER.",
+    "changes": [
+      {
+        "file": "app/server/http/errors.js",
+        "section": "4.8, B1",
+        "text": "15 new codes in ERROR_STATUS; AUTH_CODES, the closed list of 23 codes (body_too_large and site_closed among them, B7b); HttpError takes an optional retryAfter for the Retry-After of a thrown 429."
+      },
+      {
+        "file": "app/server/routes/index.js, app/server/routes/demo.js",
+        "section": "4.4, B1",
+        "text": "every row has meta with exactly tenant, admin, reauth, worker, session, rateLimit (demo and health all false/null); the table appends the auth rows 4-10 and the admin rows 11-15 in the order of 4.4; RouteRequest of the demo/health routes unchanged, RouteAnswer gains headers (Set-Cookie, Retry-After only); demo.js: only the meta objects of its two rows."
+      },
+      {
+        "file": "app/server/app.js",
+        "section": "4.7, 4.10, B1/B8",
+        "text": "routes with session true or a rateLimit take runPipeline of http/auth-mw.js, the others the path of today; RouteAnswer.headers written (Set-Cookie, Retry-After only); HttpError → its status and code (+ Retry-After), DbError E_DB_DOWN/E_DB_ROLE → 503 db_unavailable, E_DB_QUERY → 500 server_error, no cookie; clientIp from c.env.clientIp (Vercel entry) else the socket address, normalised; deps.routeTable and deps.auth injection (defaults from config.secretPepper/setupTokenHash, Date.now, Math.random, password.js); log line gains actor_kind only (LG-1 key set); re-exports vercelClientIp."
+      },
+      {
+        "file": "app/api/index.js",
+        "section": "4.10, B1",
+        "text": "every app.fetch call passes { clientIp: vercelClientIp(request.headers) } (the one x-forwarded-for value)."
+      },
+      {
+        "file": "app/server/db/index.js, pg.js, pglite.js",
+        "section": "4.5.1, 4.5.2, B2",
+        "text": "adapter method transaction(fn); Db.transaction(fn, { deadlineAt }) with ensureSafe raced against the deadline, a guarded q that refuses a statement after the deadline (E_DB_DOWN, not sent) and the check before COMMIT, the deadline answer switched off once COMMIT is sent (R4); TX_DEADLINE_MS 4000; pg.js: pool.connect, begin, fn, commit with its own query_timeout COMMIT_LIMIT_MS 900, on a throw rollback (not awaited) and release(true); pglite.js: PGlite.transaction() only (C7), the throw of fn passes unchanged."
+      },
+      {
+        "file": "app/server/db/tx.js",
+        "section": "4.5.3, B2",
+        "text": "withTenant / withPlatform on Db.transaction: set local role sai_app, then the two set_config calls; a non-uuid orgId throws TypeError before any statement; switchToTenant(q, orgId) (B4); UUID exported; the only place of the set_config('app.role' text."
+      },
+      {
+        "file": "app/server/db/health-read.js, app/server/routes/health.js",
+        "section": "4.5.4, B2",
+        "text": "the health read moved under server/db (the same text through db.query, one statement); health.js answers as before."
+      },
+      {
+        "file": "app/server/db/selfcheck.js",
+        "section": "4.6, B3",
+        "text": "SELFCHECK_SQL is the folded statement of 4.6 (two columns; table ownership folds into rolbypassrls); judgeRole unchanged."
+      },
+      {
+        "file": "app/db/migrations/0002_identity.sql",
+        "section": "4.2.1-4.2.3, B4",
+        "text": "the 11 tables with their checks (printable-ASCII e-mail rule, scrypt$17 prefix, recovery array of 64-hex), the one-admin and one-owner-org partial indexes, the owner-identity trigger of org_members, the audit sequence, the append-only triggers (UPDATE/DELETE per row, TRUNCATE per statement), RLS enabled and forced on orgs, org_members, invites, audit_log with the policies of 4.2.3; no grant."
+      },
+      {
+        "file": "app/db/grants.sql, app/server/db/migrate.js",
+        "section": "4.2.4, B4",
+        "text": "the two schema-level lines of 0001 restated, then one to_regclass block per table in the order of 4.2.3 (platform_settings included, the audit sequence in the audit_log block); migrate applies it after the files and before the password step on every run in its own transaction under the advisory lock, log line «migrate: the grants are set», failure → MigrateError E_MIGRATE_GRANTS «migrate: refused: the grants step failed»; defaultGrantsFile(); migrate({ grantsFile })."
+      },
+      {
+        "file": "app/server/config.js, app/.env.example, app/compose.yaml, .github/workflows/app.yml (docker job)",
+        "section": "4.15, 6.3, B5",
+        "text": "secretPepper (base64url, at least 32 bytes; required in production, E_CONFIG_PEPPER) and setupTokenHash read after every existing check; the five names in .env.example; compose web gets SECRET_PEPPER: ${SECRET_PEPPER:?required}; the docker job makes POSTGRES_PASSWORD, APP_DB_PASSWORD and SECRET_PEPPER with openssl rand -hex 32, and its migration row compares every migration name in order."
+      },
+      {
+        "file": "app/server/auth/keys.js, password.js, common-passwords.js, totp.js",
+        "section": "4.9.1, 4.9.2, 4.9.7, B6",
+        "text": "mac(label, text) HMAC-SHA256 over a closed label list, csrfFor, AES-256-GCM seal/open of the TOTP secret under an HKDF key (AAD the user id); scrypt N=2^17 r=8 p=1 maxmem 160 MiB async only, full 64-byte timingSafeEqual, DUMMY_HASH, rules() with the bundled list (NFC, lower case); the list module generated from SecLists (header with source, commit, rules and the full MIT text); TOTP HOTP/SHA-1, steps t-1..t+1 newer than the last, base32."
+      },
+      {
+        "file": "app/server/db/auth-store.js, app/server/db/audit-store.js, app/server/services/audit.js",
+        "section": "4.9, 4.11, B7",
+        "text": "every statement of the auth services and of the audit writer as named functions of q (constant texts, bound parameters, times as parameters); appendAudit with the closed actions and details keys checked before any statement, pg_advisory_xact_lock(7300115), nextval, last hash, sha256(prev_hash + canonical(row)); verifyAudit in pages of 1000 in id order."
+      },
+      {
+        "file": "app/server/http/csrf.js, rate-limit.js, client-ip.js, schema.js, auth-mw.js, app/server/auth/sessions.js, reauth.js, lockout.js, setup.js",
+        "section": "4.7, 4.9.3-4.9.6, 4.10, C1, B8",
+        "text": "the pipeline of 4.7 steps 0a-13 in one withPlatform transaction with the request deadline; Origin / media type / CSRF; the fixed-window upsert (thrown 429, the increment rolls back); the closed address rules; the strict body validator; cookies __Host-sai_s / sai_s; re-auth issue and the one consuming update; the counter rules; the setup compare."
+      },
+      {
+        "file": "app/server/routes/auth.js",
+        "section": "4.4 rows 4-10, 4.9.5, 4.9.6, 4.9.8, B9",
+        "text": "setup, login (ordinary: users row for update; no active account: login_failures row for update and scrypt on DUMMY_HASH; admin: the login_delays row of the address for update, his users row never locked; TOTP and recovery codes after a right password, a missing or wrong code counts for the delay), logout, me, password, reauth, reset."
+      },
+      {
+        "file": "app/server/routes/admin.js",
+        "section": "4.4 rows 11-15, B10",
+        "text": "reset-link, TOTP enrol / confirm / off, audit verify."
+      },
+      {
+        "file": "app/scripts/setup-token.js, app/scripts/uat-login.js",
+        "section": "4.16, 4.17, B11",
+        "text": "setup-token: two lines, no argument, no environment, no file; uat-login: run({ argv, env, platform, fetch, repoRoot }) with every refusal of 4.17 (win32 refused), the session-state file with flag wx and mode 0600, only the path printed; no child_process, no keychain."
+      },
+      {
+        "file": "app/scripts/db-verify.js, app/test/fixtures/rehearsal/0001_init.sql, 0002_identity.sql",
+        "section": "6.1, 6.2, B12",
+        "text": "readSnapshot (constant texts, names as parameters, the count statement of N1), the pure compare for both modes with the closed kinds, the CLI with its exit-2 refusals; the seeds fill every table of their migration with fixed test values (two audit rows with the writer's hashes)."
+      },
+      {
+        "file": ".github/workflows/app.yml",
+        "section": "6.3, B13",
+        "text": "job migration-rehearsal between docker and e2e (e2e stays last): checkout, setup-node 22.23.4, node -v, npm ci, then the 18 steps of 6.3 in order (ports 5433 and 18080, О14)."
+      },
+      {
+        "file": "docs/runbooks/backup-restore.md, docs/security-invariants.md, app/README.md",
+        "section": "6.4, 4.14, B14",
+        "text": "the runbook with the six headings, the Neon facts of 2026-11-23 and the flags of the job; the invariants table of 13 rows; one README line naming the runbook."
+      }
+    ],
+    "self_check": [
+      "All on a copy of the tree under <scratch> (git clone -c core.autocrlf=false, npm ci in app), Node v22.23.4; no repository test suite, no npm run check, no node --test, no e2e.",
+      "npx tsc --noEmit -p jsconfig.json → exit 0; npx eslint <the 35 changed .js files> --max-warnings 0 → exit 0; npx prettier --check <the changed .js files, compose.yaml, README.md> → exit 0 (prettier --write was used on my own files only).",
+      "cd tools && npm run -s traces (real tree, with common-passwords.js in it) → «traces: файлов проверено 3054, следов 0, пропущено 67», exit 0; cd tools && npm run -s handoffs-check → exit 0 (run after this result was written).",
+      "probe p1-db (PGlite): migrate lines [applied 0001, applied 0002, the grants are set]; 13 tables; role_table_grants of sai_app equal the table of 4.2.3 (audit_log INSERT,SELECT; auth_sessions/reauth_tokens/password_resets/rate_limits/login_delays/login_failures DELETE,INSERT,SELECT,UPDATE; invites INSERT,SELECT,UPDATE; org_members, orgs, platform_settings INSERT,SELECT; schema_migrations SELECT; users INSERT,SELECT,UPDATE) and USAGE on audit_log_id_seq; second run [the grants are set, nothing to apply]; after a revoke one migrate gives all 13 back; a failing grants file → «E_MIGRATE_GRANTS migrate: refused: the grants step failed» with the grants unchanged; a 0001-only database → exit 0, grants platform_settings and schema_migrations only; owner-org member without owner identity → P0001; Cyrillic e-mail, upper-case email_norm, scrypt$15 → 23514; audit UPDATE/DELETE/TRUNCATE as the owner → P0001 each; under withTenant(B): current_user sai_app, app.org_id B, role tenant, orgs 1, members 1, invites 1, audit 0; after the transaction sai_app_login and ''; platform sees orgs 3, audit 1; tenant refusals 42501 for a foreign insert and update of invites, a foreign org_members insert, audit UPDATE/DELETE/TRUNCATE, users delete; without app.org_id 0/0/0 rows; withTenant with '', 'org', a uuid with a g → TypeError, 0 transactions; a throw rolls back; a plain db.query during a waiting tenant transaction answers sai_app_login; deadline: a late statement → E_DB_DOWN at 156 ms, 0 rows; the deadline passing after the last statement → rolled back, 0 rows; selfcheck clean ok, with a table owned by sai_app unsafe.",
+      "probe p2-app (createApp + PGlite, app.request, injected clock and a counting hasher): setup with a wrong token → 404 byte-equal (body and headers but Date/X-Request-Id) to /api/nope with the counts unchanged; a listed common password → password_rules; a Cyrillic e-mail and an org_id key → bad_body; no Origin → origin_refused; text/plain → unsupported_type; two parallel setups [201, 404]; rows: 1 admin, 1 owner org with ai_allowed, 1 org_owner, setup_done true, 1 audit row, email_norm lower case; the sixth setup from one address → 429 rate_limited Retry-After 3600; admin wrong password vs unknown e-mail: 401 and 401, bodies and headers equal, one scrypt each, no cookie; the admin delay → 429 rate_limited Retry-After 1 with 0 scrypt; the right password from another address → 200 with «sai_s=<43>; Path=/; Max-Age=604800; HttpOnly; SameSite=Lax»; me keys [id, name, language, platform_admin, memberships, csrf]; missing and changed CSRF → csrf_refused; reset-link without a token → 403 reauth_required; reauth → token, expires_in 300; unknown purpose → unknown_purpose; reset link <APP_ORIGIN>/reset.html#c=<22>; a second use of the token → reauth_required; an ordinary user and an anonymous caller on admin routes → 404 byte-equal; reset with 9 characters → password_rules; reset → 200 and the target's session 401; second use → reset_invalid; ordinary account: sixth login → 429 locked Retry-After 900, after 15 min the right password 200; an unknown e-mail: the sixth → 429 locked; login_failures keys are 64 hex; the eleventh login from one address → 429 rate_limited; TOTP enrol secret ^[A-Z2-7]{32}$ and the otpauth shape of 4.13; confirm → 10 codes ^[A-Z2-7]{16}$; the users row holds neither the base32 secret, its hex nor a recovery code; login without a code → totp_required, wrong code → totp_invalid, code of t+1 → 200, the same code again → totp_invalid; a recovery code once 200, twice totp_invalid; re-auth with a recovery code 200; TOTP off 200; password change → 200, the other session 401, the current 200; a wrong current → invalid_credentials; logout → 200, «sai_s=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax», the old cookie 401; audit verify {ok:true, count:50} over 14 kinds of actions; neither the planted addresses, the e-mail nor the password occur in rate_limits, auth_sessions, audit_log or the log lines; log keys ts, level, req_id, route, status, ms, code, actor_kind; the real scrypt: form ok, 528 ms, right password true, last character changed false, DUMMY_HASH false; rules: 9 chars, «1234567890», «PASSWORD123», 129 chars → password_rules, a long random one ok.",
+      "probe p3-fail: a refusing adapter → login, setup, logout, me each 503 db_unavailable in 0-9 ms, no cookie; a silent adapter → 503 in 4007-4014 ms (a request that joins the selfcheck shared with a timed-out one answers at once, the existing rule of createDb), no cookie; an admin route with the database down and no cookie → 404 byte-equal to /api/nope with 0 statements (N4); a slow adapter with txDeadlineMs 300 on setup → 503 at 307 ms and after the late work settled users 0, platform_settings 0, audit_log 0; COMMIT held 400 ms past a 600 ms deadline → 201 at 765 ms and the rows committed (R4); a planted tenant route via deps.routeTable → one adapter transaction, inside the handler current_user sai_app, app.role tenant, app.org_id = the session's organisation; a foreign insert there → 500 and nothing stored; the Node server on port 0: the handler saw only 127.0.0.1 for 11 calls each with another X-Forwarded-For, the eleventh → 429; the Vercel entry: x-forwarded-for 198.51.100.4 → that address, a list → null, only x-real-ip → null, ::FFFF:198.51.100.6 → 198.51.100.6; no pepper → 503 server_config; an APP_ORIGIN without a cookie name → 503 server_config.",
+      "probe p4-verify (two PGlite databases, the seeds): A from 0001 + seed, B the same then 0002 + its seed → previous-schema «platform_settings: ok, schema_migrations: ok, equal», exit 0; two databases migrated and seeded alike → same mode «equal»; one UPDATE of users in one → «users: differs: content»; a dropped seeded column in the previous mode → «users: differs: column dropped»; the seeded audit chain verifies (ok, count 2); every table of a fully seeded database has a row.",
+      "probe p5-guards (copies of four guard test files with node:test replaced by a no-op, so no test ran; their exported finders called on the real files): import-boundaries findings on every server/ and api/ file → []; stringSql on server/ and scripts/db-verify.js → []; ENV-1 envFindings → []; blanked .query(/.exec(/.transaction( outside server/db → only the regular-expression .exec( of config.js; set_config('app.role' only in server/db/tx.js; insert into audit_log only in server/db/audit-store.js; ciFindings of the new app.yml → [\"jobs\", \"docker 0001 row\"] (the two expected ones of A12/A13, nothing else).",
+      "probe p6-scripts: setup-token in an empty folder → exit 0, two lines (43 base64url, 64 hex), the folder still empty; with an argument → exit 2 «setup-token: refused: no argument is taken»; db-verify with a URL argument → exit 2 usage line; a missing variable → exit 2 «db-verify: refused: SAI_VERIFY_A_URL is not set»; a closed port → exit 2 «db-verify: refused: A does not answer», no stack, no address; uat-login: usage, bad base, --out inside the repository, relative --out, no SAI_UAT_IDENTITY_FILE, identity file inside the repository, missing, win32 («file permissions cannot be checked on Windows; run it on Linux or macOS»), and the POSIX branch on this disk (mode 0666 here) «can be read by group or others»: each exit 1 with one line, no file written.",
+      "probe p7-cleanup: with random 0.001 and the clock 2027-01-30 one pipeline request removed the seeded rate_limits, login_delays, login_failures, auth_sessions (and its reauth token), password_resets rows past their limits; with random 0.5 nothing was removed.",
+      "Secret and path search over every changed file (grep -Ei for a machine path, the reference product's name, sk-ant-, ghp_, github_pat_, AKIA, PRIVATE KEY) → nothing; the pepper and passwords of CI and compose are made in the run; no CRLF in any changed file."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "Design 4.9.1 lists the closed labels of mac() as session, csrfh, csrf, reauth, reset, recovery, ip, rl, delay, while 4.9.5 keys login_failures by mac(\"acct\", email_norm). keys.js adds \"acct\" to MAC_LABELS (it is the label 4.9.5 names); no other label exists. CODE-DESIGNER may want 4.9.1 updated."
+      },
+      {
+        "id": "I2",
+        "kind": "DISCREPANCY",
+        "text": "Design 5.3 says «auth_err_<code> for each of the 21 AUTH_CODES»; 4.8 and B7b give 23 (body_too_large and site_closed included). errors.js exports the 23 of 4.8; FRONTEND-DEV's texts.js needs a key for each of the 23 (TX-11)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Body shapes (4.4 gives the ranges, 4.1 the bad_body rule): login password and the current password ≤ 128 code points (more → bad_body); a new password (setup password, password next, reset password) is a text ≤ 1024 code points in the schema and its 10-128 rule is rules() → password_rules, as rows 4, 8, 10 require; setup token text ≤ 128 whose form is checked by the handler (→ the uniform 404, counted); reset code text ≤ 64 whose form is checked by the handler (→ reset_invalid, counted); purpose text ≤ 32 (→ unknown_purpose); code fields by their form (6 digits or 16 base32, a wrong form → bad_body). A route row has exactly method, path, meta, handler; its body shape is kept beside the row in a WeakMap of http/schema.js (withBody / bodyShapeOf); a planted row without a shape takes the empty body {}."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "AuthDeps of 4.7 gains one optional key, txDeadlineMs (default TX_DEADLINE_MS 4000): the injection point that ADD-2 needs («deadline injected small»), probed with 300 and 600 ms. The request deadline is the request's start on performance.now() plus that value."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "The audit writer's signature is appendAudit(q, entry, { now, mac }): the writer needs the clock time for created_at and the HMAC of keys.js for ip_hmac; entry keeps the fields of 4.11 (ip is the normalised address, stored only as mac(\"ip\", ip)). verifyAudit(q) → { ok, count, badId? }; the admin route answers bad_id. readAuditPage orders by audit_log.id (an order by the aliased text id would sort 1, 10, 11 — caught by probe p2 and fixed before the hand-over)."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Setup names the owner organisation with the admin's display name (4.4 row 4 gives no organisation name; orgs.name 1-120 holds the 1-80 name). The setup audit row: actor admin, target the new user, details {}. Failed logins: actor_kind system, target the account id or null, details.reason unknown_email, disabled (also for deleted), wrong_password, locked, delay, totp_missing, totp_wrong."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "docs/security-invariants.md has the 13 rows of 4.14 with one test file and one test name each (SI-1 reads one file and one name per row): IS-1, RLS-1, IS-4, SC-7, CS-1, SS-1, LO-1, AC-2, SQL-1, LG-2, RT-3, DBC-1, RLS-5. The further names 4.14 mentions (IS-3, IS-5, LO-3, AUTH-RACE-1, RLS-4) are not rows of their own."
+      },
+      {
+        "id": "I8",
+        "kind": "NOTE",
+        "text": "Seeds (6.2): the 0002 seed also holds `select setval('audit_log_id_seq', 2)` so that a writer on the seeded database continues the chain after the two seeded rows; every created_at/updated_at of a seeded row is a fixed literal (0001: platform_settings.updated_at), because the default now() made two databases «seeded alike» differ in content (probe p4 before the fix: platform_settings: differs: content)."
+      },
+      {
+        "id": "I9",
+        "kind": "NOTE",
+        "text": "The rehearsal job: seeds go to psql through `docker exec -i sai-reh psql -v ON_ERROR_STOP=1 -U postgres -d <db> -f - < <seed>`; step 14 is one `psql -c` of a constant do block with dollar-quoted strings; the dump file stays inside the container and is removed by the last step; the docker job's migration row is `test \"$(… -Atc 'select name from schema_migrations order by name')\" = \"$(ls app/db/migrations | sort)\"` (A13: the test's expected line follows this one). TEST-DESIGNER writes REHEARSAL_STEPS from the 18 step names of the job."
+      },
+      {
+        "id": "I10",
+        "kind": "NOTE",
+        "text": "Step 11 of 4.7 updates auth_sessions.last_seen_at also on a returned refusal of a signed-in caller (a wrong current password, a wrong TOTP code): the «session rows unchanged» of SS-8 (and the like) hold for every column but last_seen_at, as CS-4 states for GET. A thrown refusal changes nothing (rollback)."
+      },
+      {
+        "id": "I11",
+        "kind": "NOTE",
+        "text": "pg.js does not await the ROLLBACK after a throw (a silent connection would otherwise delay the 503 past 4.9 s); the connection is released with release(true) when the ROLLBACK settles, and dropping it rolls back too. If the platform admin becomes inactive between the two reads of a login, the attempt takes the no-account branch (a second counter row after the delay row, only in that race)."
+      },
+      {
+        "id": "I12",
+        "kind": "EXPECTED_RED",
+        "text": "B4 (0002 + grants step): app/test/int/migrate.test.js MG-1 — schema_migrations now [0001_init.sql, 0002_identity.sql] and 13 tables (A16); app/test/pg/migrate-pg.test.js MP-1 «no org_id» (org_id columns now exist; A14) and MP-2 (names [0001, 0002]; A15); app/test/unit/ci-workflow.test.js CIW-1 by the finding «docker 0001 row» (A13). B13 (job migration-rehearsal): CIW-1 by the finding «jobs» (JOBS literal, A12) and CIW-2 (its damaged copies start from a real file that now has these two findings). Measured: ciFindings(real app.yml) = [\"jobs\", \"docker 0001 row\"] and nothing else. B1-B3, B5-B12, B14: none expected (probe p5: import-boundaries, no-string-sql and ENV-1 finders give [] on the real files). On GitHub only: the docker job needs the compose SECRET_PEPPER line (written) and would also fail without it."
+      },
+      {
+        "id": "I13",
+        "kind": "NOTE",
+        "text": "must_be_proved_on_github (not measurable here, no Postgres, no POSIX modes): pg.js transaction with the COMMIT limit and release(true); the row locks AUTH-RACE-1..4 under READ COMMITTED; RLS-1..5 and AC-1..4 on Postgres 17; the folded selfcheck SP-2; the rehearsal job end to end (pg_dump --no-acl / pg_restore, openssl in the pinned image, db-verify on real Postgres, migrate B with the password step, node-main in production with SECRET_PEPPER, health role ok, smoke); the docker job with SECRET_PEPPER (production config refuses without it); uat-login's success path and the 0640/0604/0600 cases on Linux; the e2e suite unchanged."
+      }
+    ],
+    "prototype": "<scratch>/m2auth-02b: a fresh clone of the repository with npm ci in app/, the working files of this step copied in by a sync script; probe scripts p1-db, p2-app, p3-fail, p4-verify, p5-guards, p6-scripts, p7-cleanup and gen-seed under app/probe/ of that clone (outside the project), the SecLists source file and licence at commit e6b76a2dcacb52442672399a549f44947548b30d and the generator of common-passwords.js. The one Node server (p3) bound port 0 and was closed in the same script; no port 4780-4782 or 4790 was touched.",
+    "artifacts_out": [
+      "app/db/migrations/0002_identity.sql",
+      "app/db/grants.sql",
+      "app/server/db/index.js",
+      "app/server/db/pg.js",
+      "app/server/db/pglite.js",
+      "app/server/db/tx.js",
+      "app/server/db/selfcheck.js",
+      "app/server/db/migrate.js",
+      "app/server/db/health-read.js",
+      "app/server/db/auth-store.js",
+      "app/server/db/audit-store.js",
+      "app/server/config.js",
+      "app/server/app.js",
+      "app/server/http/errors.js",
+      "app/server/http/schema.js",
+      "app/server/http/csrf.js",
+      "app/server/http/auth-mw.js",
+      "app/server/http/rate-limit.js",
+      "app/server/http/client-ip.js",
+      "app/server/auth/keys.js",
+      "app/server/auth/password.js",
+      "app/server/auth/common-passwords.js",
+      "app/server/auth/sessions.js",
+      "app/server/auth/reauth.js",
+      "app/server/auth/lockout.js",
+      "app/server/auth/setup.js",
+      "app/server/auth/totp.js",
+      "app/server/services/audit.js",
+      "app/server/routes/index.js",
+      "app/server/routes/health.js",
+      "app/server/routes/demo.js",
+      "app/server/routes/auth.js",
+      "app/server/routes/admin.js",
+      "app/api/index.js",
+      "app/scripts/setup-token.js",
+      "app/scripts/uat-login.js",
+      "app/scripts/db-verify.js",
+      "app/test/fixtures/rehearsal/0001_init.sql",
+      "app/test/fixtures/rehearsal/0002_identity.sql",
+      "app/.env.example",
+      "app/compose.yaml",
+      "app/README.md",
+      ".github/workflows/app.yml",
+      "docs/runbooks/backup-restore.md",
+      "docs/security-invariants.md"
+    ]
+  }
+}

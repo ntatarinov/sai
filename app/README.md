@@ -83,6 +83,7 @@ of the server, off by default in the image and in stock Postgres; no statement o
 
 The Vercel CLI is used only as `npx vercel@64.1.0`, never installed. The release, the rollback and the
 owner's emergency close of the site are in `docs/runbooks/release.md` and `docs/runbooks/incident.md`.
+The backup, the restore with its check and the migration rehearsal of CI are in `docs/runbooks/backup-restore.md`.
 
 Production serves the public set, not the local set. The platform's build, `npm run vercel-build`
 (`scripts/vercel-build.js`) with `SITE_GATE` empty, writes it in place in the uploaded copy: it removes

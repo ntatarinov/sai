@@ -27,11 +27,15 @@ const GATE_SHA256 =
   "ac889bc15c7c6346acb45b932d021b2a70186d2fe5c286b86b7749792b1a065d";
 const PAGES = [
   "404.html",
+  "admin-totp.html",
   "demo.html",
   "examples.html",
   "gate.html",
   "how.html",
   "index.html",
+  "login.html",
+  "reset.html",
+  "setup.html",
 ];
 
 // ---------------------------------------------------------------------------------------------------------
@@ -338,7 +342,7 @@ function swap(text, from, to) {
 
 // ---------------------------------------------------------------------------------------------------------
 
-test("PP-1 the .html files of app/public are exactly the six; gate.html keeps its sha256", () => {
+test("PP-1 the .html files of app/public are exactly the ten; gate.html keeps its sha256", () => {
   assert.deepEqual(
     filesOf(PUBLIC).filter((f) => f.toLowerCase().endsWith(".html")),
     PAGES,
@@ -372,9 +376,16 @@ test("PP-2 every page but gate: doctype, html lang ru, charset, viewport, color-
     const scripts = doc.tags.filter((e) => e.name === "script");
     assert.equal(scripts.length, 1, f);
     assert.equal(scripts[0].attrs.get("type"), "module", f);
+    // The demo page and each account page load their own page module (the code design M2AUTH, 5.1); the
+    // others the landing module.
     assert.equal(
       scripts[0].attrs.get("src"),
-      f === "demo.html" ? "/js/pages/demo.js" : "/js/pages/landing.js",
+      f === "demo.html" ||
+        ["admin-totp.html", "login.html", "reset.html", "setup.html"].includes(
+          f,
+        )
+        ? `/js/pages/${f.replace(/\.html$/, "")}.js`
+        : "/js/pages/landing.js",
       f,
     );
   }
@@ -816,7 +827,17 @@ async function builtFindings(dir) {
   /** @type {string[]} */
   const out = [];
   const pages = [...site.files].filter((f) => f.endsWith(".html")).sort();
-  const want = ["404.html", "demo.html", "gate.html", "how.html", "index.html"];
+  const want = [
+    "404.html",
+    "admin-totp.html",
+    "demo.html",
+    "gate.html",
+    "how.html",
+    "index.html",
+    "login.html",
+    "reset.html",
+    "setup.html",
+  ];
   if (JSON.stringify(pages) !== JSON.stringify(want))
     out.push(`pages: ${pages.join(", ")}`);
   for (const f of pages)
