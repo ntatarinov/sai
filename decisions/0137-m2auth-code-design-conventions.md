@@ -66,3 +66,7 @@ SECURITY-REVIEWER gave PASS with five non-blocking findings and REVIEWER gave FA
 - **SEC F4** (the pool of three connections held through scrypt) is a named residual: the design and the post-deploy steps name the bound; it is measured after the deploy.
 - The REVIEWER lows F2-F6 are accepted as they are (F5 and F6 were already decided in Addition 3).
 - **I1 of rework 02b** `app/server/db/audit-store.js` gains `currentAppRole(q)` (the statement the SEC F1 check needs lives under `app/server/db/`, design 4.5.4); accepted.
+
+## Addition 5 — a defect found by the tests of step 5, 2026-11-24
+
+TEST-DESIGNER (lane auth) found with the new test ADD-4 that `app/server/db/pg.js` `transaction()` attaches no `error` listener to the client it checks out of the pool, so a connection that drops in the middle of a request emits an unhandled `error` and ends the process (REQ-114 c10, Q10). Fixed now by BACKEND-DEV (rework 02c): a listener on the checked-out client for the whole time it is held, which marks the transaction failed (answered 503 by the existing path) and releases the client as broken; then a narrow pass of SECURITY-REVIEWER and REVIEWER over that change.

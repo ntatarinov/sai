@@ -946,6 +946,7 @@ need not read it). `app/README.md` gets one line naming the runbook beside relea
 | Path | Answer | Unchanged |
 | --- | --- | --- |
 | Database refuses or is silent | 503 db_unavailable within 4.9 s, no cookie; page text `auth_err_db_unavailable`; process keeps serving | every row: a transaction whose deadline passed is rolled back before its next statement or before COMMIT, never committed **[B2]**; only a COMMIT already sent whose answer is lost is in doubt (4.5.2 residual) |
+| A database connection drops while a request transaction holds it **[decisions/0137 Addition 5]** | 503 db_unavailable within 5 s (pg.js keeps an `error` listener on the checked-out client: the transaction fails as E_DB_DOWN and the client is released as broken); no uncaught error, the process keeps serving | every row (the transaction never committed) |
 | Slow but answering database (a step past the deadline) **[B2]** | 503 db_unavailable at the deadline | every row (the late transaction rolls back, F24; ADD-2) |
 | Parallel wrong logins on one account **[B3]** | each waits for the row lock; 401 until the fifth failure, then 429 locked | no lost count; at most 5 guesses per 15 minutes |
 | Unknown, disabled or deleted e-mail **[B7a]** | 401 invalid_credentials like a wrong password; after 5 failures in 15 minutes 429 locked | the users row of a disabled or deleted account; only `login_failures` and one audit row change |
@@ -1356,3 +1357,9 @@ Rework 02b (handoff `handoffs/M2AUTH-20261123-01/step-02b-backend-dev.json`, dec
 | SEC F3 | 4.17: uat-login opens the secret file once with `O_RDONLY` plus `O_NOFOLLOW`, checks regular file and mode by fstat on that descriptor and reads from it | UL-2: a link swapped in after the lstat is refused (Linux CI) |
 | SEC F4 | 7: the pool bound of 3 connections held through scrypt is a named residual, measured after the deploy (14) | — (named) |
 | SEC F5 | 4.9.3: a password change also deletes the user's unused reset codes in its transaction | SS-8: after a password change an unused reset code answers reset_invalid |
+
+Rework 02c (handoff `handoffs/M2AUTH-20261123-01/step-02c-backend-dev.json`, decisions/0137 Addition 5):
+
+| Finding | Change | Test line for step 5 |
+| --- | --- | --- |
+| ADD-4 (TEST-DESIGNER) | 4.5.1: `pg.js` `transaction` attaches an `error` listener to the checked-out client while it is held; after the event every statement fails as E_DB_DOWN and the client is released as broken (`release(true)`); a client returned to the pool loses the listener | ADD-4: a cut connection answers 503 db_unavailable within 5 s, no uncaught error, the app keeps serving |

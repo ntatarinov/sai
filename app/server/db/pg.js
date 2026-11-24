@@ -1,5 +1,5 @@
 import pg from "pg";
-import { toDbError } from "./index.js";
+import { DbError, toDbError } from "./index.js";
 
 // The Postgres adapter (the only importer of `pg`, ARCH §2.2). Timeouts: decisions/0116 О11.
 
@@ -52,6 +52,10 @@ export function createPgAdapter(url, { connectTimeoutMs, max = 3 }) {
     // One connection of the pool between BEGIN and COMMIT. On any throw the transaction is rolled back and
     // the connection is dropped (release(true)), so a broken or silent connection never returns to the
     // pool. The throw of `fn` goes on unchanged; a failure of BEGIN, COMMIT or the connect is a DbError.
+    // While the client is held, an `error` listener of its own catches a connection that drops (the pool
+    // listens only to idle clients, so without it the event would end the process, decisions/0137
+    // Addition 5): the transaction then fails as E_DB_DOWN (the pipeline answers 503 and its log line holds
+    // the code, never the message), and the client is released as broken.
     async transaction(fn) {
       /** @type {pg.PoolClient} */
       let client;
@@ -60,8 +64,21 @@ export function createPgAdapter(url, { connectTimeoutMs, max = 3 }) {
       } catch (err) {
         throw toDbError(err);
       }
+      let broken = false;
+      const onError = () => {
+        broken = true;
+      };
+      client.on("error", onError);
+      // A client back in the pool loses the listener (the pool's idle listener takes over); a dropped one
+      // keeps it while it ends, so a late event of its socket cannot end the process either.
+      const release = (/** @type {boolean} */ drop) => {
+        const gone = drop || broken;
+        client.release(gone);
+        if (!gone) client.off("error", onError);
+      };
       /** @param {string | pg.QueryConfig} statement @param {unknown[]} [params] */
       const run = async (statement, params) => {
+        if (broken) throw new DbError("E_DB_DOWN");
         try {
           const r = await client.query(statement, params);
           return { rows: r.rows };
@@ -85,10 +102,10 @@ export function createPgAdapter(url, { connectTimeoutMs, max = 3 }) {
         void client
           .query("rollback")
           .catch(() => {})
-          .finally(() => client.release(true));
+          .finally(() => release(true));
         throw err;
       }
-      client.release();
+      release(false);
       return value;
     },
     async close() {
