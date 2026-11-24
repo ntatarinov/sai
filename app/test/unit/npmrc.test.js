@@ -29,8 +29,9 @@ const ALLOWED_DEV = [
 ];
 const LICENCES = ["MIT", "ISC", "BSD-2-Clause", "BSD-3-Clause", "Apache-2.0"];
 
-// The int and pg test files that the criteria of REQ-108 and REQ-109 name (decisions/0118 О17): the
-// presence guard of the int and pg steps runs here, in the unit step.
+// The int and pg test files that the criteria of REQ-108, REQ-109, REQ-114, REQ-115 and REQ-120 name
+// (decisions/0118 О17; the code design M2AUTH, guard edits A1 and A2): the presence guard of the int and pg
+// steps runs here, in the unit step.
 const INT_FILES = [
   "node-main",
   "migrate",
@@ -44,8 +45,29 @@ const INT_FILES = [
   "smoke-local",
   "demo",
   "demo-parity",
+  "auth-login",
+  "auth-setup",
+  "auth-session",
+  "auth-csrf",
+  "auth-lockout",
+  "auth-reauth",
+  "auth-totp",
+  "auth-reset",
+  "rate-limit",
+  "auth-db-down",
+  "uat-login",
+  "tx",
+  "isolation",
+  "permission-matrix",
 ];
-const PG_FILES = ["migrate-pg", "selfcheck-pg"];
+const PG_FILES = [
+  "migrate-pg",
+  "selfcheck-pg",
+  "rls",
+  "audit-chain",
+  "db-verify-pg",
+  "auth-race-pg",
+];
 // The e2e test files of REQ-111 criterion 12 and REQ-112 criterion 6, with the 15 named tests of the code design
 // 10 that they hold (the e2e step is not in the check chain; this guard is what makes an emptied folder red).
 const E2E_FILES = ["landing", "stage"];
@@ -403,7 +425,7 @@ test("NPM-4 check-public stands after tsc and before npm run test:unit; moved af
   assert.ok(checkScriptFindings(moved).includes("check-public place"));
 });
 
-test("NPM-5 app/test/int holds its 12 named test files and app/test/pg its 2; a copy without one is red", (t) => {
+test("NPM-5 app/test/int holds its 26 named test files and app/test/pg its 6; a copy without one is red", (t) => {
   assert.deepEqual(
     missingTestFiles(path.join(APP, "test", "int"), INT_FILES),
     [],

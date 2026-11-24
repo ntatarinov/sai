@@ -1,0 +1,138 @@
+{
+  "handoff_id": "step02-pages-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "02",
+  "from_agent": "ORCH",
+  "to_agent": "FRONTEND-DEV",
+  "file": "handoffs/M2AUTH-20261123-01/step-02-frontend-dev-pages.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/M2AUTH-accounts-tenancy-backup.md (commit 84fe178; THE design: build exactly it; section 3 is your file list and the order; section 12 the sub-steps; section 4 the interfaces; sections 7 and 8 failure paths and protection)",
+      "decisions/0137 with its Additions (ORCH's answers)",
+      "docs/requirements.yaml blocks REQ-114, REQ-115, REQ-120 (the criteria your code must meet)",
+      "the gate handoffs step-01b, 01e, 01g of handoffs/M2AUTH-20261123-01/ (what the validator checked)",
+      "docs/workflows/WF-02-development.md step 2",
+      ".claude/agents/frontend-dev.md",
+      "app/public/ today (the existing pages, site.css, shared/i18n/texts.js and its tests' rules: texts.test.js, check-public, word lists of REQ-111 c3)"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "write_set": [
+      "every file with owner F in section 3 of the design, and only those (app/public/setup.html, login.html, reset.html, admin-totp.html, app/public/js/api.js, app/public/js/pages/{setup,login,reset,admin-totp}.js, app/public/shared/i18n/texts.js)",
+      "handoffs/M2AUTH-20261123-01/step-02-frontend-dev-pages.json (result only)"
+    ],
+    "parallel_work_now": [
+      "BACKEND-DEV step 02 (writes app/server/** etc.; you read its app/server/http/errors.js when it exists, else the design's 4.4 and 4.8)"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 2, FRONTEND-DEV, task M2.2: the four functional pages of the design section 5 (setup, login, reset, admin TOTP) on the existing styles, their page scripts, app/public/js/api.js (the CSRF header, the JSON client, the error-code mapping to plain words by the page code list of 4.8), and the `auth_` keys in texts.js (ru and en; kk as the existing rule for hidden kk says), every value within the public word rules (REQ-111 c3: forbidden words, ≤ 18 words a phrase; no order_ keys). No G21 for these pages (decisions/0137 О6). No test file (TEST-DESIGNER writes them). Prove with your own script under <scratch>: the pages load in-process with no console error and no failed request through app.fetch of a copy of the tree, and the texts pass the word rules (cut the rule functions from the existing test files into your script; do not run the test files). One browser at a time if you use one. prettier --check and eslint on your files. Verify traces 0, handoffs-check 0, LF. In result: artifacts_out, the probe outputs, any divergence from the API table (report it, do not invent). RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-23T18:48:37Z",
+  "started_at": "2026-11-23T18:48:39Z",
+  "completed_at": "2026-11-23T19:33:43Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": [
+      "Built exactly design section 5 (and 4.4 / 4.8 for the API): the four account pages (setup, login, reset, admin two-step sign-in), their page scripts, app/public/js/api.js and the auth_ keys of texts.js (66 keys: 43 titles, labels, buttons and lines, 23 auth_err_<code>; ru, kk and en, all within the public word rules). Only files of the write set were written.",
+      "The pages sit on the existing frame and styles (tokens.css, site.css, the structure of demo.html: skip link, header with language and theme, test-mode strip, main, footer with the AI disclosure). No inline style, no innerHTML, no external address; texts by data-t and textContent; none of the six existing pages links to them. api.js maps every code to auth_err_<code>, sends the CSRF header from a cached GET /api/auth/me (read again once on csrf_refused) and keeps nothing in browser storage.",
+      "The backend was not ready (only errors.js existed), so the live run used a stub of the API written from the rows of design 4.4 / 4.8 (the 23 codes of AUTH_CODES in errors.js equal the list in api.js). The pages were not run against the real routes: that is for the later steps."
+    ],
+    "changes": [
+      {
+        "file": "app/public/shared/i18n/texts.js",
+        "what": "66 new keys auth_*: page titles, headings, field labels, buttons, done lines, the two-step texts, auth_label_error, and auth_err_<code> for each of the 23 AUTH_CODES (ru, kk, en); no order_ key; lock and limit texts say the equivalent of «попробуйте позже» with no time",
+        "by": "design 5.3, 4.8"
+      },
+      {
+        "file": "app/public/js/api.js",
+        "what": "call(method, path, body, {reauth}) -> {ok,status,body} | {ok:false,status,code,retryAfter?}; me() caches the CSRF token; one retry after csrf_refused; a network failure -> db_unavailable; errorKey and failText; the AUTH_CODES literal; mountFrame(doc) = the start every account page repeats (texts, kk note, theme button, language switch) with say and clear for messages that keep their key and are set again on a language change",
+        "by": "design 5.1"
+      },
+      {
+        "file": "app/public/setup.html, app/public/js/pages/setup.js",
+        "what": "token, e-mail, name, password, language (ru, en) -> POST /api/auth/setup; 201 shows the done line and the link to login.html; every refusal shows its plain text; the password field is emptied after each answer",
+        "by": "design 5.2 row 1"
+      },
+      {
+        "file": "app/public/login.html, app/public/js/pages/login.js",
+        "what": "e-mail and password -> POST /api/auth/login; on totp_required a code field appears and the form is sent again with the code (spaces removed, upper case); 200 -> GET me, shows the name and a logout button (POST logout), and for platform_admin the link to admin-totp.html; a signed-in caller sees that view at once",
+        "by": "design 5.2 row 2"
+      },
+      {
+        "file": "app/public/reset.html, app/public/js/pages/reset.js",
+        "what": "reads #c= (22 base64url characters) once and clears the fragment with history.replaceState; two password fields compared in the page; POST /api/auth/reset; 200 -> link to login.html; no or malformed code -> the reset_invalid text, no form",
+        "by": "design 5.2 row 3, 4.9.8"
+      },
+      {
+        "file": "app/public/admin-totp.html, app/public/js/pages/admin-totp.js",
+        "what": "needs me with platform_admin (else the not_found text, no forms); turn on: password -> reauth totp_enrol -> enrol -> key and address shown as text -> code -> confirm -> ten backup codes shown once with the save note; turn off: password (and a first code when the server says totp_required) -> reauth totp_off -> next code -> POST off",
+        "by": "design 5.2 row 4"
+      }
+    ],
+    "self_check": [
+      "Own probe on a copy of the tree (a folder under <scratch>, npm ci there; no repository test suite was run): 46 checks, ALL OK. Texts: 66 auth_ keys, every value passes textProblem and lintText of the repository modules in its language, no «ты», every phrase <= 18 words, placeholders equal in the three languages, the 23 AUTH_CODES each have auth_err_<code>, no stray auth_err_ key, no order_ key.",
+      "Pages (static): doctype, lang ru, charset, viewport, color-scheme, robots noindex, one title, icon, #test-mode and #ai-disclosure with their ru values, every data-t key exists and the static ru text equals its ru value, ids unique, every id a script uses exists, no style attribute, no on* handler, no innerHTML, no external address, none of REQ- / handoff / ORCH / decisions / Claude Code, no public page links an account page; the kk region of each page holds exactly the one kk button (the PB-6 content rule); the public-set cut on a copy leaves no kk, keeps 66 auth_ keys in the ru and en texts, and check-public over the cut is clean.",
+      "Live, one headless Chrome at a time with a fresh temporary profile, on a stub server bound to port 0 and closed at the end (ports 4780-4782 and 4790 untouched): setup (wrong token, short password, 201, language switch), login (wrong password, lock text without a duration, totp_required reveals the code field, totp_invalid, success view with name, logout and the admin link, placeholder text refilled on a language change, signed-in view on reload, logout sends the CSRF header), reset (fragment cleared at once, mismatch caught in the page with no request, 200, no code, malformed code), admin-totp (no session and non-admin show the not_found text, wrong password, enrol shows key and address, wrong code, ten codes shown once and the key cleared, turn-off in two steps, a refused turn-off returns to step 1, done), csrf_refused -> exactly one me() and one retry. Console errors other than the status lines of the deliberate refusals: 0; failed network requests: 0; static files answering >= 400: 0; the CSP of headers.js was sent with every page.",
+      "Look: four pages x windows 1470x784, 390x844, 320x568 x light and dark = 24 loads, no horizontal scroll in any; screenshots outside the project in <scratch>/shots (also en at 390 and the error, code, session, key and backup-codes states at 1470); two read by eye: the frame and the pixel panel match the existing pages.",
+      "On the copy: prettier --check public, eslint public --max-warnings 0, tsc --noEmit -p jsconfig.json, node scripts/check-public.js: all clean (eslint and tsc needed one fix each during work). In tools: npm run -s traces -> 0 traces; npm run -s handoffs-check -> 0 violations. LF checked on every file. No secret or machine path in the files; the browser files hold no key or token (the CSRF and re-auth tokens live in page memory only)."
+    ],
+    "issues": [
+      {
+        "kind": "DIVERGENCE",
+        "text": "Design 5.3 says auth_err_<code> «for each of the 21 AUTH_CODES»; section 4.8 and errors.js hold 23. All 23 have a text. Section 5.3 should read 23."
+      },
+      {
+        "kind": "DIVERGENCE",
+        "text": "api.js also holds mountFrame (the start every page repeats) because no other new shared file is in the write set; the four page scripts would otherwise copy about 20 lines each."
+      },
+      {
+        "kind": "DIVERGENCE",
+        "text": "Setup page: the language select offers ru and en only. A kk option inside a sai:kk region breaks the PB-6 content rule (a kk region holds exactly the one kk button), and outside a region the public build would show an unpublished language. kk stays reachable through the header button, and users.language still accepts kk."
+      },
+      {
+        "kind": "TEST_CONFLICT",
+        "text": "Test edit A6 (PB-6) says each new page has «no region». Each new page carries the one sai:kk region around its kk button, as the five existing pages do (the rule «data-lang kk outside a kk region» is red otherwise, and a page without the kk button cannot switch to kk locally). TEST-DESIGNER must expect one kk region and no order region on the four, or ORCH must say the kk button is dropped from them."
+      },
+      {
+        "kind": "DESIGN_NOTE",
+        "text": "Turning TOTP off takes two codes: the re-auth of totp_off needs a code when TOTP is on (4.9.7) and the step is single-use, so the POST off needs the next code from the app or a backup code. The page asks for the first code only after the server answers totp_required, and for the next code after the password is accepted. A turn-off refused with totp_invalid is a returned refusal, so its re-auth token is spent; the page drops it and the form starts again at the password."
+      },
+      {
+        "kind": "DESIGN_NOTE",
+        "text": "Forms are <form method=post action=own page>: if the script does not load, a submit posts to the static page and no field ever goes into the address. Not in the design; no server rule depends on it."
+      },
+      {
+        "kind": "NOTE",
+        "text": "login.js reads GET /api/auth/me on load; for an anonymous visitor that is one 401 (Chrome prints it as a resource line in the console; no script error). The inputs have no style of their own (site.css is outside the write set), so they look like browser defaults inside the pixel panel; a later style step can add them."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Tests expected red until TEST-DESIGNER edits them (design 12, F2): PP-1 and the PAGES list of public-pages.test.js (A8: ten .html files now), PB-6 of public-build.test.js (A6: the page-name list), the page lists of forbidden-words.test.js (A9). Not run on this PC (decision 0110); the names come from reading their assertions."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Not done here: G21 (decisions/0137 О6), test files, any run against the real routes (backend step 02 runs in parallel)."
+      }
+    ],
+    "artifacts_out": [
+      "app/public/setup.html",
+      "app/public/login.html",
+      "app/public/reset.html",
+      "app/public/admin-totp.html",
+      "app/public/js/api.js",
+      "app/public/js/pages/setup.js",
+      "app/public/js/pages/login.js",
+      "app/public/js/pages/reset.js",
+      "app/public/js/pages/admin-totp.js",
+      "app/public/shared/i18n/texts.js"
+    ]
+  }
+}

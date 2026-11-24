@@ -1,0 +1,84 @@
+{
+  "handoff_id": "step03b-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "03b",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/M2AUTH-20261123-01/step-03b-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114",
+      "REQ-115",
+      "REQ-120"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M2AUTH-20261123-01/step-03-security-reviewer.json (your pass-1 findings)",
+      "handoffs/M2AUTH-20261123-01/step-02b-backend-dev.json (the rework, per item)",
+      "decisions/0137 Addition 4 and its last line (I1)",
+      "git diff 2f267d1 bddef13 (the rework)"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "rework_of": "handoffs/M2AUTH-20261123-01/step-03-security-reviewer.json",
+    "write_set": [
+      "handoffs/M2AUTH-20261123-01/step-03b-security-reviewer.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "Narrow pass 2 of your gate over the rework 02b (git diff 2f267d1 bddef13): each item of decisions/0137 Addition 4 is fixed as it says, nothing else changed, nothing new weakens the code; re-run the probes of your pass 1 that touch the changed lines on a fresh checkout of bddef13. PASS or FAIL. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-24T01:21:06Z",
+  "started_at": "2026-11-24T01:21:18Z",
+  "completed_at": "2026-11-24T01:25:06Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "scope": "Narrow pass 2 over the rework 02b: git diff 2f267d1 bddef13 (code: .github/workflows/app.yml, app/scripts/uat-login.js, app/server/db/audit-store.js, app/server/http/rate-limit.js, app/server/routes/auth.js, app/server/services/audit.js; records: decisions/0137 Addition 4, the design rows of rework 02b, three handoffs). Read every changed line against decisions/0137 Addition 4 and re-ran on a fresh clone of bddef13 under <scratch> (npm ci in app/; PGlite, app.request) the pass-1 probes that touch the changed lines, plus one new probe for them. No repository suite, npm run check, node --test or e2e (decision 0110).",
+      "per_item": {
+        "SEC_F1": "fixed as Addition 4 says: services/audit.js:158-159 reads currentAppRole (one constant statement, audit-store.js:16-21) and throws TypeError before lockChain unless app.role is 'platform'. Probe: under withTenant the writer throws and audit_log is unchanged; with no app.role and with 'worker' it throws too; a platform write follows and the whole chain verifies (sp5, sp2: verify ok). Every M2.2 caller runs in the pipeline's platform transaction: sp1 (all auth and admin routes) passes 125/125 with the chain verifying at the end.",
+        "SEC_F2": "fixed: rate-limit.js:26-42 addressKey (IPv4 whole, IPv6 by its /64 as a:b:c:d::/64, 'unknown' as it is) is used for every address limit (rate-limit.js:58; the user limit keeps the session id) and for the admin delay key (auth.js:384); ip_hmac keeps the whole address. Own literal oracle over 12 forms (compressed, full, leading zeros, '::', '::1', link-local, an IPv4 tail, '::' in the middle) all match; 20k calls well under 200 ms. Probe: 11 logins from 11 addresses of one /64 → the 11th is 429; another /64 and an IPv4 address keep their own windows; the admin delay row is shared by the /64 (429) while a clean /64 signs in at once; the delay key is mac(delay, 2001:db8:9:9::/64); ip_hmac of the session is that of the whole address. An IPv6 key cannot collide with an IPv4 key or 'unknown' (they hold no ':').",
+        "SEC_F3": "fixed: uat-login.js:160-186 opens the secret file once with O_RDONLY|O_NOFOLLOW (ELOOP → 'is a symbolic link'), checks isFile and the mode by fstat on that descriptor, reads from it, and closes it in finally (also on a returned refusal). The open stands after the win32 refusal, so the missing O_NOFOLLOW constant of Windows is never used. Probe sp4 18/18 (the win32 refusal before any read or fetch; the POSIX branch refuses a group/other-readable file through the new fstat). The link-swap case itself needs Linux (UL-2 of the design, CI).",
+        "SEC_F4": "named as Addition 4 says: design section 7 gains the residual row (3 pool connections held through scrypt, measured after the deploy); no code change, as asked.",
+        "SEC_F5": "fixed: auth.js:545-546 deleteUnusedResets(req.q, row.id) in the password-change transaction, after the current password verified. Probe: after a password change the user's unused code answers 400 reset_invalid; the admin's own password change leaves another user's code usable (scoped by user id).",
+        "REVIEWER_F1": "app.yml:217 the do block is quoted $do$ … $do$ inside the single-quoted psql -c (no shell expansion); the statement text is constant, identifiers through %I. No security effect beyond the rehearsal running as written.",
+        "nothing_else": "The diff holds only these changes and their records; no check, refusal or limit was removed or loosened. The one new statement per audit row is a constant text with no parameter (Q9)."
+      },
+      "items": {
+        "Q7": "met (unchanged surface; the uat-login secret read is tighter; no new literal: grep of the diff finds no secret-shaped text).",
+        "Q8": "met (the audit writer is now refused outside platform settings; sp2 tenant isolation and grants unchanged, 42/45 with the 3 known probe-side owner cases passing in sp2b 6/6).",
+        "Q9": "met (currentAppRole is a constant statement; no concatenation added).",
+        "Q10": "met (a wrong caller of the writer is a thrown program error: the request rolls back and answers 500 server_error, no row written; addressKey is linear).",
+        "Q11": "not applicable (no address the server calls).",
+        "R2": "not applicable.",
+        "R3": "not applicable (decision 0033)."
+      },
+      "probes": "sp5-rework (new) 26/26 PASS; sp1-pipeline 125/125 PASS; sp2-db-ip 42/45 (the 3 fails are the probe's own owner cases after the login-role switch, as in pass 1; sp2b-owner 6/6 PASS covers them; the former F1 case now passes); sp4-scripts 18/18 PASS."
+    },
+    "findings": [],
+    "self_check": {
+      "diff": "git diff --stat 2f267d1 bddef13 → 11 files (the 6 code and workflow files above, decisions/0137, the design, step-02b-backend-dev.json, step-03-security-reviewer.json, step-04-reviewer.json). The committed step-03-security-reviewer.json equals the pass-1 result as written (git diff bddef13 of that file is empty).",
+      "hashes": "sha256sum of the 11 changed files of 2f267d1..bddef13 in the fresh clone, list hashed: b71e645866b8ce24c21398b235115a1625d747e7aa4a1aeadc8d344ebf276125 before the probes and b71e645866b8ce24c21398b235115a1625d747e7aa4a1aeadc8d344ebf276125 after; the clone has no tracked change (only the untracked probe folder in <scratch>).",
+      "commands": "Node v22.23.4 first on PATH; node sprobe/sp5-rework.mjs → SUMMARY 26/26 pass; node sprobe/sp1-pipeline.mjs → SUMMARY 125/125 pass; node sprobe/sp2-db-ip.mjs → SUMMARY 42/45 (INFO appendAudit under tenant settings, then verify: {\"ok\":true,\"count\":1}); node sprobe/sp2b-owner.mjs → 6 PASS; node sprobe/sp4-scripts.mjs → 18 PASS. No server was started in this pass."
+    },
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "For REVIEWER (no security effect): the comment at app/server/routes/auth.js:545 says «An unused reset link of the admin», but the deletion is of the user's own codes for any user whose password changes."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Still to be proven on GitHub, as in pass 1: the row-lock races, the COMMIT limit, RLS and grants on Postgres 17, the rehearsal job, and the uat-login link swap (UL-2, Linux)."
+      },
+      {
+        "kind": "NOTE",
+        "text": "My pass-1 handoff carries result.status \"DONE\" (committed in bddef13); if ORCH needs \"COMPLETED\" there too, ORCH may set it when it closes the step."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

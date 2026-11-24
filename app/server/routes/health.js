@@ -1,3 +1,4 @@
+import { readAppliedMigrations } from "../db/health-read.js";
 import { DbError } from "../db/index.js";
 
 // GET /api/health (ARCH §13, decisions/0116 О5): exactly ok, db, role, migrations_pending, version, node.
@@ -42,10 +43,7 @@ export function healthHandler({
     };
     if (db) {
       try {
-        const r = await within(
-          db.query("select name, sha256 from schema_migrations"),
-          deadlineMs,
-        );
+        const r = await within(readAppliedMigrations(db), deadlineMs);
         const applied = new Map(r.rows.map((row) => [row.name, row.sha256]));
         body.db = "ok";
         body.role = "ok";

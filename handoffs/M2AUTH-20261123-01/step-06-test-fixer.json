@@ -1,0 +1,100 @@
+{
+  "handoff_id": "step06-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "06",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-FIXER",
+  "file": "handoffs/M2AUTH-20261123-01/step-06-test-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114",
+      "REQ-115",
+      "REQ-120"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "GitHub: app run 45313003577 on ci/m2auth-3 (snapshot c7ad257 = the tree of the work line f53e691 on top of main): jobs migration-rehearsal, e2e, docker green; job pg red: 12 tests (AC-1..4, AUTH-RACE-1..5, RLS-2..4) — 11 with 57P01 «terminating connection due to administrator command», AC-1 first with an AssertionError; job check red: VB-1 (app/test: the vercel-build output, admin-totp.html not byte-equal: the open build cuts the kk region of the new pages). Read with gh run view 45313003577 --log-failed and --log (read only)",
+      "check run 45313003526 on the same snapshot: green",
+      "the trial branch run 45311745772 (ci/m2auth-rehearsal-trial: the rehearsal is red as designed with «users: differs: column dropped»)",
+      "the test files of step 05 (both lanes) and their handoffs; docs/design/M2AUTH-accounts-tenancy-backup.md sections 9, 11; decisions/0137 Addition 3 (pages keep one kk region)",
+      "docs/workflows/WF-02-development.md step 6, .claude/agents/test-fixer.md"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "write_set": [
+      "app/test/** (only the tests that cause or carry the failures; never weaken an assertion: a test that is wrong is made right, a product defect is reported, not hidden)",
+      "handoffs/M2AUTH-20261123-01/step-06-test-fixer.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 6, TEST-FIXER after a red GitHub run. Find the cause of each failure from the logs and the code: (1) the pg job: which test terminates connections (pg_terminate_backend, a DROP DATABASE, a pool closed under another test, or ADD-4's cut run against the shared database?), why AC-1 fails first, and whether the pg test files share one database without isolation; (2) VB-1: the build output list must name the four new pages as files the open build changes (their kk region is cut), as A7/A8 did for the other page lists. Fix the tests only; if the cause is in product code, STOP and report it (BLOCKED) with the evidence. You cannot run the pg tests on this PC (no Postgres; decision 0110): reason from the logs and the code, and prove what PGlite can show with your own harness under <scratch>. After the fix, say exactly what ORCH should push and which run lines must turn green. prettier, eslint, tsc on changed files; traces 0; handoffs-check 0. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-24T02:41:10Z",
+  "started_at": "2026-11-24T02:41:11Z",
+  "completed_at": "2026-11-24T02:48:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Run 45313003577 (snapshot c7ad257) had three test faults, no product fault. (1) pg, 11 × 57P01 uncaughtException: no test terminates connections on purpose; node:test runs a test's after hooks in the order of registration (measured on Node 22.23.4), so the hook of fixtures/pg-env.js freshDatabase — registered first — ran `drop database … with (force)` before the hooks that end the test's own superuser clients (`t.after(() => c.end())` in audit-chain world, auth-race-pg pgApp, rls RLS-2/3/4). The force drop sent 57P01 FATAL to those still-open pg.Client objects, which have no error listener, so the error event became an uncaught exception charged to the test running at that moment. Every failing test is one that leaves such a client to an after hook; every passing one ends its clients inside the body. The app pools are not affected (pg.js keeps pool.on('error')). The files do not share a database: each test makes its own sai_t_<hex> database. (2) AC-1 AssertionError «row 10: prev_hash»: the test's own read `select id::text as id … order by id` sorts by the text alias (1, 10, 11, …, 19, 2, …), so after row 1 it met row 10 and compared row 10's prev_hash with row 1's hash; the writer's chain and verify (readAuditPage orders by audit_log.id) are right. (3) VB-1: the CHANGED list of vercel-build.test.js lacked the four account pages whose kk region the open build cuts (decisions/0137 Addition 3), as A7/A8 lacked them in public-build and public-pages.",
+    "changes": [
+      {
+        "kind": "test",
+        "file": "app/test/fixtures/pg-env.js",
+        "where": "client() and freshDatabase()",
+        "what": "client() records each client it opens on a database of freshDatabase (removed again on its 'end'); the drop hook of freshDatabase ends the still-open ones before `drop database … with (force)`. A later end() by the test is a no-op (pg 8.23.1 Client.end returns at once when _ended). No assertion, test or timeout changed; the force drop stays.",
+        "criterion": "The pg tests of REQ-114 c2/c5 (AUTH-RACE-1..5), REQ-115 c1-3 (RLS-2..4) and c10 (AC-1..4) assert the behaviour of the app on real Postgres; a teardown that kills the test's own client is no part of any criterion, so the test was at fault."
+      },
+      {
+        "kind": "test",
+        "file": "app/test/pg/audit-chain.test.js",
+        "where": "chain(), the SELECT",
+        "what": "`order by id` → `order by audit_log.id` (the column, not the text alias), with a comment why. The assertions are unchanged.",
+        "criterion": "REQ-115 c10: the chain is in id order (the design M2AUTH 4.11; verifyAudit/readAuditPage order by audit_log.id); the test's text order departed from it."
+      },
+      {
+        "kind": "test",
+        "file": "app/test/unit/vercel-build.test.js",
+        "where": "const CHANGED",
+        "what": "adds admin-totp.html, login.html, reset.html, setup.html (the same four as CHANGED of public-build.test.js). VB-1 still requires the output tree to equal app/public without examples.html and every other file byte-equal; the cut of the four pages is proved by PB-2.",
+        "criterion": "REQ-111 c9 / the code design 4.11 with decisions/0137 Addition 3: the open build cuts the kk region of each account page, so these files are among the files the public set changes."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "node:test after-hook order, own harness under <scratch> (Node 22.23.4)",
+        "output": "two t.after hooks run first-registered first: «after #1 (freshDatabase drop)», then «after #2 (c.end / db.close)»"
+      },
+      {
+        "command": "own harness under <scratch>: a fake Postgres on port 0 whose `drop database … with (force)` sends 57P01 FATAL to the other connections of that database (as Postgres does); three tests in the pattern freshDatabase(t) → client(name) → t.after(() => c.end()), and one with a pg.Pool + pool.on('error') like pg.js",
+        "output": "old pg-env.js (f53e691): T-1..T-3 not ok, failureType 'uncaughtException', error 'terminating connection due to administrator command', code '57P01' (the CI message 1 to 1); the pool test ok. New pg-env.js: all 5 ok, exit 0."
+      },
+      {
+        "command": "PGlite (pglite of app/node_modules), own harness: ids 1..23, `select id::text as id from a order by id` and `… order by a.id`",
+        "output": "order by id: 1,10,11,12,…,19,2,20,21,22,23,3,…,9; order by a.id: 1,2,…,23"
+      },
+      {
+        "command": "fresh clone of f53e691 under <scratch> with the three changed files: prettier --check and eslint --max-warnings 0 on them; tsc --noEmit -p jsconfig.json",
+        "output": "prettier: All matched files use Prettier code style; eslint 0; tsc 0"
+      },
+      {
+        "command": "npm run check / node --test / test:pg",
+        "output": "not run on this PC (decisions/0110); the record comes from GitHub (see must_be_proved_on_github)"
+      }
+    ],
+    "issues": [],
+    "artifacts_out": [
+      "app/test/fixtures/pg-env.js",
+      "app/test/pg/audit-chain.test.js",
+      "app/test/unit/vercel-build.test.js",
+      "handoffs/M2AUTH-20261123-01/step-06-test-fixer.json"
+    ],
+    "must_be_proved_on_github": [
+      "ORCH pushes the work line with these three files (on top of f53e691) as a new ci/ snapshot; the next step is TEST-DESIGN-VALIDATOR (WF-02 5b) for the three test edits, then TEST-RUNNER (step 6).",
+      "app run: job pg green — AC-1..4, AUTH-RACE-1..5, RLS-2..4 pass, no 57P01; the 9 that passed stay green (21/21).",
+      "app run: job check green — VB-1 passes (and PB-2, PP-1/2/7 stay green); migration-rehearsal, e2e and docker stay green.",
+      "check run (tools) on the same snapshot stays green."
+    ]
+  }
+}

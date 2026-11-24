@@ -25,8 +25,26 @@ import { fileNames, snapshot } from "../fixtures/snapshot.js";
 const PUBLIC = path.join(APP, "public");
 const CONTENT = path.join(APP, "content");
 const TEXTS = "shared/i18n/texts.js";
-// The files that the public set changes (the code design 4.11); examples.html is removed.
-const CHANGED = ["404.html", "demo.html", "how.html", "index.html", TEXTS];
+// The four account pages of REQ-114 (the code design M2AUTH, 5): each holds exactly one region, the kk region
+// around its kk button, and no order region (decisions/0137 Addition 3, the guard edit A6); the open build
+// cuts that region, so they are files the public set changes too.
+const ACCOUNT_PAGES = [
+  "admin-totp.html",
+  "login.html",
+  "reset.html",
+  "setup.html",
+];
+// The files that the public set changes (the code design 4.11, and the account pages); examples.html is
+// removed.
+const CHANGED = [
+  "404.html",
+  "demo.html",
+  "how.html",
+  "index.html",
+  ...ACCOUNT_PAGES,
+  TEXTS,
+];
+// The pages with regions of both kinds.
 const PAGES = ["404.html", "demo.html", "how.html", "index.html"];
 
 const names = fileNames;
@@ -306,7 +324,7 @@ function diffFindings(src, out) {
   const want = [...CHANGED, "examples.html"].sort();
   if (JSON.stringify(differ) !== JSON.stringify(want))
     found.push(`the files that differ: ${differ.join(", ")}`);
-  for (const f of PAGES) {
+  for (const f of [...PAGES, ...ACCOUNT_PAGES]) {
     if (!now.has(f)) {
       found.push(`${f}: missing`);
       continue;
@@ -518,11 +536,18 @@ test("PB-2 every other file byte for byte; the files that differ are exactly the
           .equals(fs.readFileSync(path.join(PUBLIC, f))),
         f,
       );
-  // The pages do hold regions of both kinds, so the comparison has something to cut.
+  // The pages do hold regions of both kinds, so the comparison has something to cut; the account pages hold
+  // the kk region only.
   for (const f of PAGES) {
     const src = read(PUBLIC, f);
     assert.ok(/<!-- sai:kk -->/.test(src) && /<!-- sai:order -->/.test(src), f);
     assert.ok(read(pub, f).length < src.length, f);
+  }
+  for (const f of ACCOUNT_PAGES) {
+    const src = read(PUBLIC, f);
+    assert.ok(/<!-- sai:kk -->/.test(src) && !/sai:order/.test(src), f);
+    assert.ok(read(pub, f).length < src.length, f);
+    assert.doesNotMatch(read(pub, f), /data-lang\s*=\s*["']?kk/, f);
   }
   // Planted outputs: each is red by the strict comparison.
   /** @type {Array<[string, (dir: string) => void, RegExp]>} */
@@ -801,12 +826,25 @@ test("PB-6 the source pages' regions: each marker alone, one of the four forms, 
     .sort();
   assert.deepEqual(pages, [
     "404.html",
+    "admin-totp.html",
     "demo.html",
     "examples.html",
     "how.html",
     "index.html",
+    "login.html",
+    "reset.html",
+    "setup.html",
   ]);
-  for (const f of pages) {
+  // The account pages: no finding (so no data-lang kk outside the one region), exactly one region, the kk one.
+  for (const f of ACCOUNT_PAGES) {
+    assert.deepEqual(regionFindings(f, read(PUBLIC, f)), [], f);
+    assert.deepEqual(
+      readMarkers(read(PUBLIC, f)).regions.map((r) => r.kind),
+      ["kk"],
+      f,
+    );
+  }
+  for (const f of pages.filter((p) => !ACCOUNT_PAGES.includes(p))) {
     assert.deepEqual(regionFindings(f, read(PUBLIC, f)), [], f);
     const { regions } = readMarkers(read(PUBLIC, f));
     assert.ok(
