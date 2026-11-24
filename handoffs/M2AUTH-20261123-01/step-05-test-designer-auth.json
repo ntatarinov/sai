@@ -1,0 +1,231 @@
+{
+  "handoff_id": "step05-auth-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/M2AUTH-20261123-01/step-05-test-designer-auth.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/M2AUTH-accounts-tenancy-backup.md (sections 9, 11, 12, 13; the tables of tests and mutants; section 19 rework tables with the test lines of 01c, 01f and 02b)",
+      "decisions/0137 with Additions 1-4 (incl. Addition 3: pages keep one kk region; A6 reads «no kk outside the one region»)",
+      "docs/requirements.yaml REQ-114, REQ-115, REQ-120",
+      "the code: commit bddef13; the developer's probes in result of step-02-backend-dev.json and step-02b (expected red list: MG-1, MP-1, MP-2, CIW-1, CIW-2)",
+      "docs/workflows/WF-02-development.md step 5, .claude/agents/test-designer.md",
+      "app/test/ today (the existing tests, the helpers, app/package.json test scripts: unit, int, pg, e2e)"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "write_set": [
+      "the test files of design 9.1 (REQ-114 c1-c13): app/test/unit/auth-password.test.js, unit/totp.test.js, int/auth-setup.test.js, int/auth-session.test.js, int/auth-csrf.test.js, int/auth-lockout.test.js, int/auth-reauth.test.js, int/auth-totp.test.js, int/auth-reset.test.js, int/rate-limit.test.js, int/auth-db-down.test.js, int/uat-login.test.js, and the new cases of int/logging.test.js (LG-2), unit/texts.test.js (TX-11) and unit/route-table.test.js named by 9.1 c13; the pg file auth-race-pg.test.js (AUTH-RACE-1..4); app/test/fixtures/auth.js (WRITE IT FIRST: the other TEST-DESIGNER imports it)",
+      "handoffs/M2AUTH-20261123-01/step-05-test-designer-auth.json (result only)"
+    ],
+    "parallel_work_now": [
+      "TEST-DESIGNER tenancy (REQ-115, REQ-120, MG-6/7, section 11 guard edits, the golden matrix): disjoint files; if a guard edit of section 11 falls into one of your files, you make it and say so"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 5, TEST-DESIGNER (lane auth): write the tests of design 9.1 for REQ-114 (every named case, including the rework cases PW-2b, SU-5, ADD-2, LI-3, LI-4, LO-6, LO-7, AUTH-RACE-4, the IPv6 /64 and the reset-voiding cases of 02b), with the rules of WF-02 step 5 (assert behaviour and state, row counts and sha256 of state where the design says; injected clocks; no real network; servers on port 0; no skip; oracles independent of the code under test). You cannot run node --test on this PC (decision 0110): prove with your own harness under <scratch> on fresh clones of the tag base/M2AUTH-20261123-01 (red where the design says) and of bddef13 (green), PGlite for the int cases; the pg cases are proved on GitHub only. Apply at least 15 of the design's mutants to a copy of bddef13 (hash the tree before and after; leave none) and record which test kills each. prettier, eslint, tsc on your files. Verify traces 0, handoffs-check 0. In result: files, harness results tag/fix, mutants, must_be_proved_on_github (the commands TEST-RUNNER uses). Be thorough but economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-24T01:24:43Z",
+  "started_at": "2026-11-24T01:24:46Z",
+  "completed_at": "2026-11-24T02:20:36Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "WF-02 step 5, lane auth (REQ-114). Wrote app/test/fixtures/auth.js first (the shared harness: migrated PGlite under sai_app_login, createApp with injected pepper, setup hash, clock, random source, counting stand-in hasher of the stored form, txDeadlineMs and an adapter wrapper; app.request with a chosen client address; actors; row counts, sha256 of every row and a full dump; an own RFC 6238/RFC 4648 implementation) and the tests of design 9.1 c1-c13: 6 unit files (12 new tests: auth-password 5, totp 3, setup-compare 1, setup-token 1, route-table RT-6 1, texts TX-11 1), 12 int files (63 new tests: auth-login 4, auth-setup 5, auth-session 10, auth-csrf 4, auth-lockout 7, auth-reauth 5, auth-totp 8, auth-reset 4, rate-limit 6, auth-db-down 5, uat-login 4, logging LG-2 1) and pg/auth-race-pg.test.js (5). No skip, todo or disabled rule; servers on port 0; injected clocks; no real network. Own harness (a node:test stand-in loaded by a resolve hook, never node --test) on fresh clones: on bddef13 every new test is green except ADD-4, which caught a code error (issue I1: a pg pool client checked out by a request transaction had no error listener, so a dropped database connection crashed the process); CODE-FIXER fixed it in 5c85759 and on a fresh clone of 5c85759 auth-db-down.test.js is 5 of 5 green (ADD-4 included). On the tag base/M2AUTH-20261123-01 every new test is red (modules missing or the routes absent). 48 mutants applied to a copy of bddef13, all killed; the tree hash before and after is equal. The POSIX branches of uat-login, the pg file and the official run are for GitHub.",
+    "criterion_to_test": [
+      "c1 → unit/auth-password.test.js PW-1 (form, decoded 16/64 bytes, the key recomputed with node:crypto scrypt N=2^17 r=8 p=1, DUMMY_HASH form, NFC), PW-2 (first/last character in ASCII, Cyrillic, astral; other forms false), PW-2b (last, middle, first key byte changed → false), PW-3 (0/1/9/129/400 refused, 10/11/64/127/128 ok, counted in code points over three alphabets), PW-4 (header: source, file, 40-hex commit, full MIT notice; one frozen export; every entry 10-128, lower case, printable ASCII without quotes/backslash, unique, sorted; 42 seeded entries as is, upper and mixed case refused; 20 random ok; no fs read, no .txt under server/); int/auth-login.test.js LI-1 (unknown e-mail, wrong password of an ordinary account and of the admin, byte-equal, one scrypt each), LI-2 (no cookie, no auth_sessions row), LI-3 (disabled and deleted, right and wrong password, byte-equal, one scrypt, users row unchanged), LI-4 (six non-ASCII/malformed e-mails → 400 bad_body, no scrypt, every row unchanged; upper-case ASCII signs in); «PW-4 at the password change» in int/auth-session.test.js; SU-5; RS-2",
+      "c2 → int/auth-setup.test.js SU-1 (exact rows, columns, one audit row), SU-2 (5 wrong tokens, second and third call, unset hash and 5 malformed hashes, each 404 byte-equal to an unknown /api address, counts of the five tables unchanged), SU-3 (3 rounds of two parallel calls: one 201, one 404, one admin), SU-4 (sixth call in the hour → 429 + Retry-After of the window, rows unchanged, another address free, next window counts afresh), SU-5 (11 e-mail forms → bad_body, 5 listed/short/long passwords → password_rules, every row unchanged, no scrypt); unit/setup-compare.test.js SCMP-1 (timingSafeEqual counted on the node:crypto object: one call per compare on 32+32 bytes, first/last byte → false, other lengths and malformed hashes refused without a compare, the token check goes through it); unit/setup-token.test.js STK-1; pg AUTH-RACE-5 (SU-3 under real concurrency)",
+      "c3 → int/auth-session.test.js SS-1 (__Host-sai_s, Secure, HttpOnly, SameSite=Lax, Path=/, no Domain, Max-Age 604800), SS-2 (sai_s; three other origins → 503 server_config, no cookie, rows unchanged), SS-3 (session and CSRF token in text, base64, hex, upper hex, sha256 forms absent from a dump of every column; 64-hex HMACs stored), SS-4 (12 h − 1 s twice works, 12 h + 1 s → 401), SS-5 (hourly use, 7 d − 1 s works, 7 d + 1 s → 401), SS-6 (rotation, old row gone), SS-7 (logout, clearing cookie, other user's session stays), SS-8 (wrong current: password_hash and session rows unchanged but last_seen_at; change ends the two other sessions, keeps the current and another user's; the unused reset code is void, SEC F5), SS-9 (exact keys and values of me for a user and the admin; no hash, TOTP or token text)",
+      "c4 → int/auth-csrf.test.js CS-1 (the 10 non-GET session routes read from the real table at test time, a route without a case fails; 14 signed-in cases + 3 anonymous cases for non-admin routes = 158 refusals, each with the counts of every table and the sha256 of every row of every table unchanged, then the same request accepted), CS-2, CS-3 (demo/result with no Origin, text/plain, foreign Origin answers 200 and the same bytes as an app without accounts; no row changes), CS-4 (4 GET routes as anonymous, user, admin: no row change but auth_sessions.last_seen_at, rate_limits, audit_log)",
+      "c5 → int/auth-lockout.test.js LO-1 … LO-7 (LO-3: 20 admin failures, each delay 2^(n−1) capped 60 with Retry-After = seconds left and 0 scrypt, probes at 0 s and delay − 1 s, login limit kept by moving windows; LO-6 byte-equal six attempts incl. Retry-After; LO-7 totp_required and totp_invalid each add a delay step); pg/auth-race-pg.test.js AUTH-RACE-1 … 4",
+      "c6 → int/auth-reauth.test.js RA-1 (11 purposes), RA-2 (second use, 5 min − 1 s works / + 1 s refused, other session, other user, other purpose, changed/random/short token; on a planted route consuming «settings» and on the real reset-link route; action count and every row unchanged), RA-3 (8 unknown purposes, no scrypt, rows unchanged), RA-4, RA-5 (every route marked reauth read at test time, count printed, no/malformed token → 403, rows unchanged)",
+      "c7 → unit/totp.test.js TO-1 (RFC 6238 SHA-1 vectors, 8 and 6 digits), TO-2 (window t±1, used step, t±2/±3, malformed), TO-3 (RFC 4648 vectors, 200 random round trips against an own encoder); int/auth-totp.test.js TT-1 … TT-8 (codes by the test's own RFC 6238 code; recovery codes compared with HMAC(pepper, \"recovery\\0\" + code))",
+      "c8 → int/auth-reset.test.js RS-1 (code_hash = own HMAC, code absent from the dump, use at 30 min − 1 s, both sessions end, another user's stays, a newer link voids the older), RS-2 (9/129 characters and 5 listed passwords → password_rules with the code still usable; second use, 30 min + 1 s, never-issued/changed/short/long/empty codes → reset_invalid; users and auth_sessions sha256 unchanged), RS-3, RS-4",
+      "c9 → int/rate-limit.test.js RL-1 (IPv4 and IPv6 planted; 8 forms absent from rate_limits, auth_sessions, audit_log, login_delays, login_failures and the log lines; ip_hmac, limit keys and the delay key equal own HMACs, IPv6 by its /64), RL-2 (node-main, X-Forwarded-For / X-Real-IP / Forwarded varied, eleventh → 429), RL-3 (createEntry + createFunctionApp: x-real-ip ignored, x-forwarded-for gets its own window, missing or not-one-address XFF share one bucket), RL-4 (first refusal of setup/login/reset/user with Retry-After of the window, count stays at the limit, no duration words), RL-5 (cleanup with injected random: 0.01 none, 0.0099 removes rows older than 24 h and keeps newer, sessions/tokens/codes 30 days after their end), RL-6 (IPv6 /64 shares the login window and the delay row, another /64 does not; SEC F2)",
+      "c10 → int/auth-db-down.test.js ADD-1 (pg adapter of the app against a closed port and against the stalling Postgres stand-in: login, setup, logout, me in parallel → 503 db_unavailable < 5 s, no cookie, the app keeps serving, rows unchanged, recovery; waits until the stalled connections are released), ADD-1b (down from the first request, before any selfcheck), ADD-2 (statement counts measured on a fast database; mid, every statement late, after the last statement before COMMIT → 503 and every row unchanged after the transactions settled, for setup and password; COMMIT in flight → 200 and the change is there), ADD-3 (5 admin routes × 4 cookie forms → 404 byte-equal, 0 statements; a well-formed cookie → 503), ADD-4 (a connection dropped while a request transaction holds it → 503, no uncaught error, the app keeps serving) — RED on bddef13, see issue I1",
+      "c11 → int/uat-login.test.js UL-1 … UL-4 (POSIX: success path through the real process, the state file form and mode 0600, a working cookie; 0640/0604/0644/0660/0606/0704 refused, 0600/0400 work; a symbolic link and a link swapped in after the lstat refused; win32: the named refusal; every other refusal on every system; the grep of the criterion and its planted copies)",
+      "c12 → int/logging.test.js LG-2 (node-main, client address 127.0.0.5 by localAddress; setup, right and wrong login, me, two re-auths, enrol and confirm with a code, password change, reset link and its use, login with a recovery code, logout; the output holds none of 9 + n planted values, no line has a key outside LG-1, a line names actor_kind); LG-1 unchanged",
+      "c13 → unit/texts.test.js TX-11 (the literal 23 codes = AUTH_CODES, each with ERROR_STATUS and auth_err_<code> ru/kk/en, no duration word or digit in ru, no auth_err_ key without a code); unit/route-table.test.js RT-6 (see I2, I3)",
+      "c14 → not a test of this step: the GitHub run, traces and handoffs-check (below), SECURITY-REVIEWER"
+    ],
+    "quality_bar": [
+      "Q5: every refusal test compares row counts and/or sha256 of rows before and after (thrown refusals: every table; returned refusals: the tables the criterion names, last_seen_at excluded where step 11 of 4.7 changes it, I10 of step 02).",
+      "Q6: no skip/todo; the platform branch of uat-login is a branch the criterion names, every case still asserts.",
+      "Q7: no secret in tests; peppers, tokens and passwords are made at run time or are planted test values.",
+      "Q8: the membership in GET /api/auth/me (SS-9) and the uniform 404 of the admin routes (TT-1, RS-3, ADD-3); the isolation suite and RLS are the tenancy lane's.",
+      "Q10: ADD-1, ADD-1b, ADD-2, ADD-3, ADD-4 (refused, silent, slow, dropped database).",
+      "Q11: not touched — the server calls no address a user sets; the uat-login --base rule is checked in UL-2 (six non-origins refused).",
+      "R3: not applicable (decisions/0033)."
+    ],
+    "changes": [
+      {
+        "file": "app/test/fixtures/auth.js",
+        "text": "new: the shared account harness (written first; the tenancy lane imports authHarness, totpCode)."
+      },
+      {
+        "file": "app/test/unit/auth-password.test.js",
+        "text": "new: PW-1, PW-2, PW-2b, PW-3, PW-4."
+      },
+      {
+        "file": "app/test/unit/totp.test.js",
+        "text": "new: TO-1, TO-2, TO-3."
+      },
+      {
+        "file": "app/test/unit/setup-compare.test.js",
+        "text": "new: SCMP-1."
+      },
+      {
+        "file": "app/test/unit/setup-token.test.js",
+        "text": "new: STK-1."
+      },
+      {
+        "file": "app/test/unit/route-table.test.js",
+        "text": "new file with RT-6 only; RT-1 … RT-5 are the tenancy lane's (I5)."
+      },
+      {
+        "file": "app/test/unit/texts.test.js",
+        "text": "TX-11 appended; TX-1 … TX-10 unchanged."
+      },
+      {
+        "file": "app/test/int/auth-login.test.js",
+        "text": "new: LI-1 … LI-4."
+      },
+      {
+        "file": "app/test/int/auth-setup.test.js",
+        "text": "new: SU-1 … SU-5."
+      },
+      {
+        "file": "app/test/int/auth-session.test.js",
+        "text": "new: SS-1 … SS-9 and «PW-4 at the password change»."
+      },
+      {
+        "file": "app/test/int/auth-csrf.test.js",
+        "text": "new: CS-1 … CS-4."
+      },
+      {
+        "file": "app/test/int/auth-lockout.test.js",
+        "text": "new: LO-1 … LO-7."
+      },
+      {
+        "file": "app/test/int/auth-reauth.test.js",
+        "text": "new: RA-1 … RA-5."
+      },
+      {
+        "file": "app/test/int/auth-totp.test.js",
+        "text": "new: TT-1 … TT-8."
+      },
+      {
+        "file": "app/test/int/auth-reset.test.js",
+        "text": "new: RS-1 … RS-4."
+      },
+      {
+        "file": "app/test/int/rate-limit.test.js",
+        "text": "new: RL-1 … RL-6 (RL-6 = the 02b line, SEC F2)."
+      },
+      {
+        "file": "app/test/int/auth-db-down.test.js",
+        "text": "new: ADD-1, ADD-1b, ADD-2, ADD-3, ADD-4."
+      },
+      {
+        "file": "app/test/int/uat-login.test.js",
+        "text": "new: UL-1 … UL-4 (UL-2 holds the SEC F3 link-swap case)."
+      },
+      {
+        "file": "app/test/int/logging.test.js",
+        "text": "LG-2 appended with its request helper; LG-1 and KEYS unchanged; two imports added."
+      },
+      {
+        "file": "app/test/pg/auth-race-pg.test.js",
+        "text": "new: AUTH-RACE-1 … AUTH-RACE-5."
+      }
+    ],
+    "self_check": [
+      "On this PC no npm run check, no app npm script, no node --test of the suites, no e2e (decisions/0110, 0129). Harness: <scratch>/harness/run.mjs registers a resolve hook that maps node:test to a small stand-in (test(), t.after, t.diagnostic) and runs the tests of one file in order; Node 22.23.4 first on PATH; clones with core.autocrlf=false and npm ci: <scratch>/fix (bddef13), <scratch>/base (tag base/M2AUTH-20261123-01), <scratch>/mut (bddef13, mutants).",
+      "prettier --write/--check and eslint --max-warnings 0 (the clone's pinned versions, app/ config) on every file of this lane: clean. tsc: app/jsconfig.json does not include test/; a strict checkJs run over these files (a temporary tsconfig in the clone) reports 0 errors in them (2 remain in fixtures/helpers.js, not of this lane).",
+      "bddef13 (fix clone), final run: # file auth-password.test.js pass 5 fail 0 | # file totp.test.js pass 3 fail 0 | # file setup-compare.test.js pass 1 fail 0 | # file setup-token.test.js pass 1 fail 0 | # file route-table.test.js pass 1 fail 0 | # file texts.test.js pass 11 fail 0 | # file auth-login.test.js pass 4 fail 0 | # file auth-setup.test.js pass 5 fail 0 | # file auth-session.test.js pass 10 fail 0 | # file auth-csrf.test.js pass 4 fail 0 | # file auth-lockout.test.js pass 7 fail 0 | # file auth-reauth.test.js pass 5 fail 0 | # file auth-totp.test.js pass 8 fail 0 | # file auth-reset.test.js pass 4 fail 0 | # file rate-limit.test.js pass 6 fail 0 | # file auth-db-down.test.js pass 4 fail 1 | # file uat-login.test.js pass 4 fail 0 | # file logging.test.js pass 2 fail 0 | # file auth-race-pg.test.js pass 0 fail 5",
+      "tag base/M2AUTH-20261123-01 (base clone), final run: # file auth-password.test.js: import failed: common-passwords.js' | # file totp.test.js: import failed: totp.js' | # file setup-compare.test.js: import failed: setup.js' | # file setup-token.test.js pass 0 fail 1 | # file route-table.test.js: import failed: does not provide an export named 'AUTH_CODES' | # file texts.test.js pass 10 fail 1 | # file auth-login.test.js pass 0 fail 4 | # file auth-setup.test.js pass 0 fail 5 | # file auth-session.test.js: import failed: common-passwords.js' | # file auth-csrf.test.js pass 0 fail 4 | # file auth-lockout.test.js pass 0 fail 7 | # file auth-reauth.test.js pass 0 fail 5 | # file auth-totp.test.js pass 0 fail 8 | # file auth-reset.test.js: import failed: common-passwords.js' | # file rate-limit.test.js pass 0 fail 6 | # file auth-db-down.test.js pass 0 fail 5 | # file uat-login.test.js: import failed: uat-login.js' | # file logging.test.js pass 1 fail 1 | # file auth-race-pg.test.js pass 0 fail 5",
+      "auth-race-pg fails here at the env guard (no SAI_PG_*), as designed. Red on bddef13: only ADD-4 (AssertionError «no uncaught error»: Error «Connection terminated unexpectedly» emitted by a checked-out pg client). Probe in <scratch>/mut: adding `client.on(\"error\", () => {})` after `pool.connect()` in app/server/db/pg.js → ADD-4 ok; the file was restored by git checkout (mut status clean). The pg file runs only with SAI_PG_* (it stops at the env guard here).",
+      "Mutants (48, applied one at a time to <scratch>/mut, each restored by git checkout; hash of the tracked product tree app/server, scripts, api, public/shared, db before f4fa625ee8e36de283bed2fb128bff084b9b4b6652cd331d656af6e0042776ac and after f4fa625ee8e36de283bed2fb128bff084b9b4b6652cd331d656af6e0042776ac, status clean: True): M1 (server/auth/password.js) → killed by PW-1, PW-2, PW-2b of auth-password.test.js; M2 (server/auth/password.js) → killed by PW-2b of auth-password.test.js; M3 (server/auth/password.js) → killed by PW-3 of auth-password.test.js; M60a N=2^15 (server/auth/password.js) → killed by PW-1 of auth-password.test.js; M60c list not consulted (server/auth/password.js) → killed by PW-4 of auth-password.test.js; M4 (server/routes/auth.js) → killed by LI-1 of auth-login.test.js; M5 (server/routes/auth.js) → killed by LI-1 of auth-login.test.js; M56 (server/routes/auth.js) → killed by LI-3 of auth-login.test.js; M6 (server/auth/setup.js) → killed by SCMP-1 of setup-compare.test.js; M8 (server/routes/auth.js) → killed by SU-2 of auth-setup.test.js; M9 (scripts/setup-token.js) → killed by STK-1 of setup-token.test.js; M55 (server/http/schema.js) → killed by SU-5 of auth-setup.test.js; M55 (login) (server/http/schema.js) → killed by LI-4 of auth-login.test.js; M10 (server/auth/sessions.js) → killed by SS-1 of auth-session.test.js; M11 (server/auth/sessions.js) → killed by SS-3 of auth-session.test.js; M12 (server/auth/sessions.js) → killed by SS-4 of auth-session.test.js; M13 (server/routes/auth.js) → killed by SS-6 of auth-session.test.js; M14 (server/routes/auth.js) → killed by SS-8 of auth-session.test.js; M15 (server/routes/auth.js) → killed by SS-9 of auth-session.test.js; M16 (server/http/csrf.js) → killed by CS-1 of auth-csrf.test.js; M17 (server/http/auth-mw.js) → killed by CS-1 of auth-csrf.test.js; M18 (server/routes/demo.js) → killed by CS-2, CS-3 of auth-csrf.test.js; M20 (server/auth/lockout.js) → killed by LO-1 of auth-lockout.test.js; M21 (server/auth/lockout.js) → killed by LO-2 of auth-lockout.test.js; M23 (server/routes/auth.js) → killed by LO-3 of auth-lockout.test.js; M24 (server/routes/auth.js) → killed by LO-5 of auth-lockout.test.js; M57 (server/routes/auth.js) → killed by LO-6 of auth-lockout.test.js; M59b (server/routes/auth.js) → killed by LO-7 of auth-lockout.test.js; M25 (server/db/auth-store.js) → killed by RA-2 of auth-reauth.test.js; M26 (server/db/auth-store.js) → killed by RA-2 of auth-reauth.test.js; M27 (server/auth/reauth.js) → killed by RA-3 of auth-reauth.test.js; M28 (server/auth/totp.js) → killed by TT-4 of auth-totp.test.js; M29 (server/db/auth-store.js) → killed by TT-4 of auth-totp.test.js; M30 (server/routes/auth.js) → killed by TT-3 of auth-totp.test.js; M31 (server/db/auth-store.js) → killed by TT-6 of auth-totp.test.js; M32 (server/routes/admin.js) → killed by RS-2 of auth-reset.test.js; M33 (server/routes/auth.js) → killed by RS-1 of auth-reset.test.js; M60b list not at reset (server/routes/auth.js) → killed by RS-2 of auth-reset.test.js; M34 (server/auth/sessions.js) → killed by RL-1 of rate-limit.test.js; M35 (server/app.js) → killed by RL-2 of rate-limit.test.js; M36 (server/http/client-ip.js) → killed by RL-3 of rate-limit.test.js; SEC-F2 /64 dropped (server/http/rate-limit.js) → killed by RL-6 of rate-limit.test.js; M37b (server/db/index.js) → killed by ADD-2 of auth-db-down.test.js; M39 (server/app.js) → killed by LG-2 of logging.test.js; M40 (public/shared/i18n/texts.js) → killed by TX-11 of texts.test.js; M59a (server/http/errors.js) → killed by TX-11 of texts.test.js; M59a (RT-6) (server/http/errors.js) → killed by RT-6 of route-table.test.js; SEC-F5 resets kept at password change (server/routes/auth.js) → killed by SS-8 of auth-session.test.js",
+      "Not applied here: M7 (PGlite serialises; AUTH-RACE-5 on GitHub), M19 (needs a second transaction), M22, M38 (POSIX), M50, M51, M52, M52b (pg job). See I4.",
+      "One accidental run: while checking the imports of pg/auth-race-pg.test.js I imported it once with plain node in the fix clone, which started node:test for that file in-process; every case stopped at the env guard of fixtures/pg-env.js (no SAI_PG_HOST), no connection, no app test. Afterwards imports were checked through the harness only.",
+      "cd tools && npm run -s traces → «файлов проверено 3092, следов 0»; npm run -s handoffs-check → «нарушений 0» (before filling this result; repeated after, see the last line).",
+      "After the fix (commit 5c85759, fresh clone <scratch>/fix2, npm ci): own harness on app/test/int/auth-db-down.test.js → ADD-1 ok, ADD-1b ok, ADD-4 ok, ADD-2 ok, ADD-3 ok; «# file auth-db-down.test.js pass 5 fail 0» (2026-11-24T02:19:59Z)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "RESOLVED",
+        "at": "2026-11-24T02:12:16Z",
+        "text": "Was BLOCKED: ADD-4 (app/test/int/auth-db-down.test.js) caught that a pooled pg client held by a request transaction had no error listener, so a dropped database connection crashed the process (REQ-114 c10, Q10). Fixed by CODE-FIXER in app/server/db/pg.js, commit 5c85759 (decisions/0137 Addition 5), which passed the code review. Re-run at 2026-11-24T02:19:59Z with the own harness on a fresh clone of 5c85759 (core.autocrlf=false, npm ci) with this lane's fixtures/auth.js and auth-db-down.test.js: ADD-1 ok, ADD-1b ok, ADD-4 ok, ADD-2 ok, ADD-3 ok — «# file auth-db-down.test.js pass 5 fail 0». On bddef13 ADD-4 was red («no uncaught error»), so the test catches the defect.",
+        "resolved_at": "2026-11-24T02:19:59Z"
+      },
+      {
+        "id": "I2",
+        "kind": "DISCREPANCY",
+        "text": "RT-6 by the letter of 9.1 c13 scans app/server/http/*.js, and http/body.js holds readText with `new HttpError(\"bad_encoding\")`, a code outside AUTH_CODES; no file of server/ or api/ imports readText (dead code), so no route answers it. RT-6 leaves out the codes inside readText only while no file imports readText (checked in the test; a planted importer makes bad_encoding count). Alternative for CODE-DESIGNER/CODE-FIXER: drop the unused readText."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "RT-6 reads two forms more than 9.1 names: `refusal(\"…\")` (the returned refusals of routes/auth.js and admin.js pass their code through refusal()) and `errorBody(\"…\")` (app.js); without them the returned codes (invalid_credentials, reset_invalid, totp_invalid, not_found) would be outside the scan."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Mutants not killable by this lane's int tests: M7 (setup by a select first) — PGlite serialises transactions (F9), so SU-3 cannot see it; AUTH-RACE-5 (two parallel setups on Postgres) is added to the pg file for it. M52 (the admin's login_delays row read without for update) — on Postgres too, step 7 of the pipeline upserts the rate_limits row of the same address (same addressKey) and holds its row lock to the end of the transaction, so parallel attempts from one address are serialised before they reach login_delays: AUTH-RACE-3 holds as a behaviour test but cannot tell M52 from the code (an equivalent mutant while the login limit is counted per address). M37 (no transaction deadline) — ADD-1 still answers within 5 s because the pg adapter's own query_timeout (3000 ms) ends a silent statement; the guard itself is killed by ADD-2 (M37b). M19, M22 not applied."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "For the tenancy lane and ORCH: app/test/unit/route-table.test.js was created by this lane with RT-6 only (REQ-114 c13); RT-1 … RT-5 (REQ-115 c6) go into the same file from the tenancy lane. The npmrc INT_FILES/PG_FILES lists (A1, A2) must name auth-login, auth-setup, auth-session, auth-csrf, auth-lockout, auth-reauth, auth-totp, auth-reset, rate-limit, auth-db-down, uat-login and auth-race-pg (tenancy lane edits). ORCH confirmed: the tenancy lane adds RT-1 … RT-5 and the INT_FILES/PG_FILES entries; this lane does not touch them."
+      },
+      {
+        "id": "I6",
+        "kind": "DISCREPANCY",
+        "text": "The enumerated write_set leaves out three files of design 9.1 that the task names (LI-3, LI-4) or the criteria name: app/test/int/auth-login.test.js (c1), app/test/unit/setup-compare.test.js and app/test/unit/setup-token.test.js (c2). They fall under «the test files of design 9.1» and were written here; no other lane writes them."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "Cases added beyond the design's names, each under its criterion: TO-2, TO-3 (c7), ADD-1b, ADD-4 (c10), RL-6 (c9, the 02b line SEC F2), AUTH-RACE-5 (c2), «PW-4 at the password change» (c1, the name of REQ-114). CS-1 checks the sha256 of every table (the criterion names six; the rate counters are included, so M19-like commits are caught)."
+      }
+    ],
+    "must_be_proved_on_github": [
+      "The official record of every new test: app.yml on a ci/* snapshot branch — job check (npm run check: test:unit +12 tests, test:int +63 tests of this lane, plus the tenancy lane's), job pg (test:pg: auth-race-pg.test.js 5 tests), e2e unchanged. TEST-RUNNER: `gh run list --workflow app.yml --branch <ci branch> --limit 1 --json conclusion,headSha,databaseId` and `gh run view <id> --log | grep -E \"# (tests|pass|fail|skipped|todo) \"` (each folder: fail 0, skipped 0, todo 0).",
+      "ADD-4: green here on 5c85759 (I1 resolved); the GitHub run of the snapshot that holds 5c85759 is the record.",
+      "uat-login UL-1 success path through the real process, UL-2 symbolic link and link swapped after lstat (O_NOFOLLOW), UL-2 wrong password and malformed files, UL-3 modes 0640/0604/0644/0660/0606/0704 refused and 0600/0400 working: Linux only (this PC has no symlink privilege, no POSIX modes, WSL2 not enabled).",
+      "AUTH-RACE-1 … AUTH-RACE-5 on Postgres 17 with the pool of 10 (row locks under READ COMMITTED; M50, M51, M52b, M7 are killed only there).",
+      "RL-2 and LG-2 use node-main with real scrypt N = 2^17 (about 0.5 s each here); LG-2 binds the client side to 127.0.0.5 (a loopback address on Linux)."
+    ],
+    "artifacts_out": [
+      "app/test/fixtures/auth.js",
+      "app/test/unit/auth-password.test.js",
+      "app/test/unit/totp.test.js",
+      "app/test/unit/setup-compare.test.js",
+      "app/test/unit/setup-token.test.js",
+      "app/test/unit/route-table.test.js",
+      "app/test/unit/texts.test.js",
+      "app/test/int/auth-login.test.js",
+      "app/test/int/auth-setup.test.js",
+      "app/test/int/auth-session.test.js",
+      "app/test/int/auth-csrf.test.js",
+      "app/test/int/auth-lockout.test.js",
+      "app/test/int/auth-reauth.test.js",
+      "app/test/int/auth-totp.test.js",
+      "app/test/int/auth-reset.test.js",
+      "app/test/int/rate-limit.test.js",
+      "app/test/int/auth-db-down.test.js",
+      "app/test/int/uat-login.test.js",
+      "app/test/int/logging.test.js",
+      "app/test/pg/auth-race-pg.test.js"
+    ]
+  }
+}

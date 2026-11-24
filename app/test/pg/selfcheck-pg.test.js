@@ -13,7 +13,8 @@ import {
   url,
 } from "../fixtures/pg-env.js";
 
-// REQ-108 criterion 8: the real selfcheck on real Postgres.
+// REQ-108 criterion 8: the real selfcheck on real Postgres; REQ-115 criterion 5 (SP-2; SP-1 keeps its input
+// and answer).
 
 test("SP-1 refuses the superuser, a BYPASSRLS login, a SUPERUSER NOBYPASSRLS login and a login whose group role has BYPASSRLS or SUPERUSER; passes sai_app_login", async (t) => {
   const db = await freshDatabase(t);
@@ -97,4 +98,55 @@ test("SP-1 refuses the superuser, a BYPASSRLS login, a SUPERUSER NOBYPASSRLS log
   for (const { member, password } of members)
     assert.equal(await verdict(member, password), "unsafe", member);
   assert.equal(await verdict("sai_app_login", pw), "ok");
+});
+
+test("SP-2 a login role that owns a table of the public schema, or is a member of a role that owns one, is refused on real Postgres; without the planted table it passes", async (t) => {
+  // REQ-115 criterion 5 (the code design M2AUTH, 4.6): a table owner can switch row security off for its table.
+  const db = await freshDatabase(t);
+  const pw = newPassword();
+  const m = spawnSync(process.execPath, ["server/db/migrate.js"], {
+    cwd: APP,
+    env: childEnv({
+      DATABASE_URL: url("postgres", admin().password, db),
+      APP_DB_PASSWORD: pw,
+    }),
+    encoding: "utf8",
+  });
+  assert.equal(m.status, 0, m.stderr);
+  const verdict = async () => {
+    const s = await connectPgSession(url("sai_app_login", pw, db), {
+      connectTimeoutMs: 5000,
+    });
+    try {
+      return await runSelfcheck(s);
+    } finally {
+      await s.close();
+    }
+  };
+  assert.equal(await verdict(), "ok");
+  const c = await client(db);
+  try {
+    // The planted table lives in this test's database only (dropped with it); the shared roles keep their
+    // attributes.
+    await c.query("create table planted_owned (x integer)");
+    for (const owner of ["sai_app_login", "sai_app", "sai_preview"]) {
+      await c.query(`alter table planted_owned owner to ${owner}`);
+      assert.equal(await verdict(), "unsafe", owner);
+    }
+    // A sequence and a view of the public schema count too.
+    await c.query("alter table planted_owned owner to postgres");
+    assert.equal(await verdict(), "ok");
+    await c.query("create sequence planted_seq");
+    await c.query("alter sequence planted_seq owner to sai_app");
+    assert.equal(await verdict(), "unsafe", "a sequence");
+    await c.query("drop sequence planted_seq");
+    await c.query("create view planted_view as select 1 as x");
+    await c.query("alter view planted_view owner to sai_app");
+    assert.equal(await verdict(), "unsafe", "a view");
+    await c.query("drop view planted_view");
+    await c.query("drop table planted_owned");
+    assert.equal(await verdict(), "ok");
+  } finally {
+    await c.end();
+  }
 });

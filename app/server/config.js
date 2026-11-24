@@ -32,6 +32,8 @@ export class ConfigError extends Error {
  * @property {"info" | "debug"} logLevel
  * @property {string | null} pgliteDir
  * @property {string | null} migrationsDir
+ * @property {Buffer | null} secretPepper SECRET_PEPPER decoded (at least 32 bytes), the key of every HMAC
+ * @property {string | null} setupTokenHash SETUP_TOKEN_HASH as given (the setup route checks its form)
  */
 
 /**
@@ -111,6 +113,25 @@ export function readConfig(env) {
   const logLevel = raw("LOG_LEVEL") ?? "info";
   if (logLevel !== "info" && logLevel !== "debug")
     throw new ConfigError("E_CONFIG_LOG", "LOG_LEVEL is not info or debug");
+  // The pepper after every earlier check (the code design M2AUTH, 4.15): base64url of at least 32 bytes,
+  // required in production. A malformed SETUP_TOKEN_HASH is no start refusal: setup then answers 404.
+  const pepperText = raw("SECRET_PEPPER");
+  /** @type {Buffer | null} */
+  let secretPepper = null;
+  if (pepperText !== null) {
+    secretPepper = /^[A-Za-z0-9_-]+$/.test(pepperText)
+      ? Buffer.from(pepperText, "base64url")
+      : null;
+    if (!secretPepper || secretPepper.length < 32)
+      throw new ConfigError(
+        "E_CONFIG_PEPPER",
+        "SECRET_PEPPER is not base64url of at least 32 bytes",
+      );
+  } else if (production)
+    throw new ConfigError(
+      "E_CONFIG_PEPPER",
+      "SECRET_PEPPER is required when NODE_ENV=production",
+    );
   return {
     production,
     port: Number(portText),
@@ -126,6 +147,8 @@ export function readConfig(env) {
     logLevel,
     pgliteDir,
     migrationsDir,
+    secretPepper,
+    setupTokenHash: raw("SETUP_TOKEN_HASH"),
   };
 }
 

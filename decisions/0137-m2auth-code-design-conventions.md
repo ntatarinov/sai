@@ -46,3 +46,27 @@ CODE-DESIGN-VALIDATOR gave FAIL (`handoffs/M2AUTH-20261123-01/step-01b-code-desi
 - **О15** REQ-114 criterion 1 names scrypt N = 2^15 and the form `scrypt$15$8$1$`; the Addition above sets N = 2^17. REQ-114 is amended by a micro-amendment (N = 2^17, `scrypt$17$8$1$`, the memory limit 160 MiB measured by the designer) before step 2; the meaning of the criterion (one fixed, recorded parameter set at or above the OWASP minimum) does not change.
 - **О16** The common-password tests (PW-4, SU-5, RS-2) count under REQ-114 criterion 1 (the password rule), not as a criterion of their own.
 - **N2b, form of the list (gate of the scrypt amendment, B-1)** The common-password list is data in a JavaScript module `app/server/auth/common-passwords.js` (a frozen set of strings, generated once from the named source, with the source and licence in its header comment), not a `.txt` file: the import-boundary rule of `app/test/unit/import-boundaries.test.js` refuses non-`.js` files under `server/`, and that guard stays unchanged.
+
+## Addition 3 — divergences reported at step 2, 2026-11-24
+
+- **I1** The closed label list of the pepper-derived keys (design 4.9.1) gets the label `acct` that 4.9.5 uses; accepted as written by BACKEND-DEV in `keys.js`.
+- **I2** `AUTH_CODES` has 23 codes (design 4.8 rules over the count of 5.3); every code has a text key (FRONTEND-DEV wrote all 23).
+- **Pages and the kk region** Each new page carries exactly one `sai:kk` region around its kk button, as the five existing pages do; the guard edit A6 of the design («no region») is read as «no kk outside the one region», and TEST-DESIGNER writes it so at step 5. The setup page's language select offers ru and en only (kk stays hidden, G9).
+- **Turning TOTP off takes two codes** (the re-auth consumes one step) — accepted as designed; the page says so.
+
+## Addition 4 — the review gates of step 3 and 4, 2026-11-24
+
+SECURITY-REVIEWER gave PASS with five non-blocking findings and REVIEWER gave FAIL on one blocking finding (`handoffs/M2AUTH-20261123-01/step-03-security-reviewer.json`, `step-04-reviewer.json`). ORCH has them all fixed now, in one rework of BACKEND-DEV, before the tests are written:
+
+- **REVIEWER F1** `.github/workflows/app.yml`, the step «Every table of B has a row»: the `do` block is quoted `$do$ … $do$`, one `psql -c` with `ON_ERROR_STOP`.
+- **SEC F1** `appendAudit` refuses (a thrown program error, no write) unless `current_setting('app.role', true) = 'platform'`, before it takes the chain lock; a tenant caller of REQ-117 therefore audits before `switchToTenant` (the REQ-117 design names it).
+- **SEC F2** an IPv6 client is keyed by its /64 prefix for the rate limits and the admin delay (IPv4 by the whole address).
+- **SEC F3** `app/scripts/uat-login.js` opens the secret file with `O_NOFOLLOW`, checks the descriptor with `fstat` and reads from that descriptor.
+- **SEC F5** a password change deletes the user's unused reset codes in the same transaction.
+- **SEC F4** (the pool of three connections held through scrypt) is a named residual: the design and the post-deploy steps name the bound; it is measured after the deploy.
+- The REVIEWER lows F2-F6 are accepted as they are (F5 and F6 were already decided in Addition 3).
+- **I1 of rework 02b** `app/server/db/audit-store.js` gains `currentAppRole(q)` (the statement the SEC F1 check needs lives under `app/server/db/`, design 4.5.4); accepted.
+
+## Addition 5 — a defect found by the tests of step 5, 2026-11-24
+
+TEST-DESIGNER (lane auth) found with the new test ADD-4 that `app/server/db/pg.js` `transaction()` attaches no `error` listener to the client it checks out of the pool, so a connection that drops in the middle of a request emits an unhandled `error` and ends the process (REQ-114 c10, Q10). Fixed now by BACKEND-DEV (rework 02c): a listener on the checked-out client for the whole time it is held, which marks the transaction failed (answered 503 by the existing path) and releases the client as broken; then a narrow pass of SECURITY-REVIEWER and REVIEWER over that change.

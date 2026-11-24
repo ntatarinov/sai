@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="robots" content="noindex" />
+    <title data-t="auth_title_totp">Двухфакторный вход — Sai</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/site.css" />
+    <noscript><link rel="stylesheet" href="/css/noscript.css" /></noscript>
+    <script type="module" src="/js/pages/admin-totp.js"></script>
+  </head>
+  <body data-page="admin-totp">
+    <a class="skip" href="#main" data-t="skip_link"
+      >Перейти к основному содержанию</a
+    >
+    <header class="bar">
+      <a class="brand" href="/"
+        ><span class="tile" aria-hidden="true" data-t="brand_tile">S</span
+        ><span data-t="brand_name">Sai</span></a
+      >
+      <div class="ctl">
+        <div
+          class="langs"
+          role="group"
+          aria-label="Язык"
+          data-t-aria="lang_group"
+        >
+          <button type="button" data-lang="ru" lang="ru" data-t="lang_ru">
+            RU
+          </button>
+          <!-- sai:kk -->
+          <button type="button" data-lang="kk" lang="kk" data-t="lang_kk">
+            ҚАЗ
+          </button>
+          <!-- /sai:kk -->
+          <button type="button" data-lang="en" lang="en" data-t="lang_en">
+            EN
+          </button>
+        </div>
+        <button type="button" class="theme" id="theme" aria-label="Тема: Авто">
+          <span class="theme-icon" aria-hidden="true"></span
+          ><span class="theme-label" id="theme-label">Авто</span>
+        </button>
+      </div>
+    </header>
+    <p class="testmode" id="test-mode">
+      <span class="sq" aria-hidden="true"></span
+      ><span data-t="test_mode"
+        >Sai работает в тестовом режиме: вход по приглашению, заказы не
+        принимаются.</span
+      >
+    </p>
+    <main id="main" class="panel" tabindex="-1">
+      <div class="wrap ask-wrap">
+        <div class="ask">
+          <h1 class="msg-title" data-t="auth_h_totp">
+            Двухфакторный вход администратора
+          </h1>
+          <div class="msg" hidden>
+            <span class="lbl" data-t="auth_label_error">Ошибка</span>
+            <p class="msg-text" id="gate-msg" data-err role="alert"></p>
+          </div>
+          <div class="msg" id="panels" hidden>
+            <h2 class="msg-title" data-t="auth_h_enrol">Включить</h2>
+            <form
+              class="msg"
+              id="enrol-form"
+              method="post"
+              action="/admin-totp.html"
+              novalidate
+            >
+              <div class="msg" id="row-enrol-password">
+                <label
+                  class="msg-text"
+                  for="enrol-password"
+                  data-t="auth_f_password"
+                  >Пароль</label
+                >
+                <input
+                  id="enrol-password"
+                  name="enrol-password"
+                  type="password"
+                  autocomplete="current-password"
+                  maxlength="128"
+                  required
+                />
+              </div>
+              <div class="msg" hidden>
+                <span class="lbl" data-t="auth_label_error">Ошибка</span>
+                <p class="msg-text" id="enrol-err" data-err role="alert"></p>
+              </div>
+              <div class="msg-acts">
+                <button
+                  type="submit"
+                  class="btn"
+                  id="enrol-submit"
+                  data-t="auth_b_start"
+                >
+                  Начать подключение
+                </button>
+              </div>
+            </form>
+            <div class="msg" id="enrol-secret" hidden>
+              <p class="msg-text" data-t="auth_totp_enrol_note">
+                Добавьте ключ или адрес в приложение-аутентификатор, затем
+                введите код из приложения.
+              </p>
+              <p class="msg-text" data-t="auth_totp_secret">
+                Ключ для приложения
+              </p>
+              <p class="msg-title num" id="secret-text"></p>
+              <p class="msg-text" data-t="auth_totp_link">
+                Адрес для приложения
+              </p>
+              <p class="msg-text" id="otpauth-text"></p>
+              <form
+                class="msg"
+                id="confirm-form"
+                method="post"
+                action="/admin-totp.html"
+                novalidate
+              >
+                <div class="msg" id="row-confirm-code">
+                  <label
+                    class="msg-text"
+                    for="confirm-code"
+                    data-t="auth_f_code"
+                    >Код из приложения или резервный код</label
+                  >
+                  <input
+                    id="confirm-code"
+                    name="confirm-code"
+                    type="text"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    spellcheck="false"
+                    maxlength="6"
+                    required
+                  />
+                </div>
+                <div class="msg" hidden>
+                  <span class="lbl" data-t="auth_label_error">Ошибка</span>
+                  <p
+                    class="msg-text"
+                    id="confirm-err"
+                    data-err
+                    role="alert"
+                  ></p>
+                </div>
+                <div class="msg-acts">
+                  <button
+                    type="submit"
+                    class="btn"
+                    id="confirm-submit"
+                    data-t="auth_b_confirm"
+                  >
+                    Подтвердить код
+                  </button>
+                </div>
+              </form>
+            </div>
+            <div class="msg" id="codes" hidden>
+              <p class="msg-text" data-t="auth_totp_on">
+                Двухфакторный вход включён.
+              </p>
+              <h3 class="msg-title" data-t="auth_totp_codes_h">
+                Резервные коды
+              </h3>
+              <p class="msg-text" data-t="auth_totp_save">
+                Сохраните эти коды сейчас: повторно они показаны не будут.
+              </p>
+              <ul id="codes-list"></ul>
+            </div>
+            <h2 class="msg-title" data-t="auth_h_off">Отключить</h2>
+            <form
+              class="msg"
+              id="off-form"
+              method="post"
+              action="/admin-totp.html"
+              novalidate
+            >
+              <div class="msg" id="row-off-password">
+                <label
+                  class="msg-text"
+                  for="off-password"
+                  data-t="auth_f_password"
+                  >Пароль</label
+                >
+                <input
+                  id="off-password"
+                  name="off-password"
+                  type="password"
+                  autocomplete="current-password"
+                  maxlength="128"
+                  required
+                />
+              </div>
+              <div class="msg" hidden id="row-off-code1">
+                <label class="msg-text" for="off-code1" data-t="auth_f_code"
+                  >Код из приложения или резервный код</label
+                >
+                <input
+                  id="off-code1"
+                  name="off-code1"
+                  type="text"
+                  autocomplete="one-time-code"
+                  autocapitalize="characters"
+                  spellcheck="false"
+                  maxlength="24"
+                />
+              </div>
+              <div class="msg" hidden id="row-off-code2">
+                <label
+                  class="msg-text"
+                  for="off-code2"
+                  data-t="auth_f_code_next"
+                  >Следующий код из приложения или резервный код</label
+                >
+                <input
+                  id="off-code2"
+                  name="off-code2"
+                  type="text"
+                  autocomplete="one-time-code"
+                  autocapitalize="characters"
+                  spellcheck="false"
+                  maxlength="24"
+                />
+              </div>
+              <div class="msg" hidden>
+                <span class="lbl" data-t="auth_label_error">Ошибка</span>
+                <p class="msg-text" id="off-err" data-err role="alert"></p>
+              </div>
+              <div class="msg-acts">
+                <button
+                  type="submit"
+                  class="btn ghost"
+                  id="off-submit"
+                  data-t="auth_b_check"
+                >
+                  Проверить пароль
+                </button>
+              </div>
+            </form>
+            <p class="msg-text" id="done-msg" role="status"></p>
+          </div>
+        </div>
+      </div>
+    </main>
+    <footer>
+      <p class="disclosure">
+        <span class="sq2" aria-hidden="true"></span
+        ><span id="ai-disclosure" data-t="ai_disclosure"
+          >Работу в Sai выполняют ИИ-агенты (искусственный интеллект). Их ответы
+          могут быть неточными.</span
+        >
+      </p>
+      <nav>
+        <a class="lnk" href="/" data-t="nav_landing">Главная</a>
+      </nav>
+    </footer>
+  </body>
+</html>

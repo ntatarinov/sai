@@ -1,0 +1,50 @@
+{
+  "handoff_id": "step04c-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "04c",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/M2AUTH-20261123-01/step-04c-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "git diff bddef13 5c85759 -- app/server/db/pg.js (the only code change)",
+      "decisions/0137 Addition 5",
+      "handoffs/M2AUTH-20261123-01/step-02c-backend-dev.json"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "rework_of": "handoffs/M2AUTH-20261123-01/step-04b-reviewer.json",
+    "write_set": [
+      "handoffs/M2AUTH-20261123-01/step-04c-reviewer.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "Narrow pass 3 of your gate over the one change of rework 02c (app/server/db/pg.js): the listener is present for exactly the time a client is held, a dropped client is released as broken, no error is swallowed beyond the 503 path, no secret or message text is logged, the normal, rollback and plain-query paths are unchanged. Probe it yourself on a checkout of 5c85759 if useful. PASS or FAIL. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-24T02:16:18Z",
+  "started_at": "2026-11-24T02:16:29Z",
+  "completed_at": "2026-11-24T02:18:36Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Verdict PASS. Narrow pass 3 over git diff bddef13 5c85759: the one code change is app/server/db/pg.js (+20 lines); the rest is decisions/0137 Addition 5, design section 7 and 19 rows, and handoffs. No finding of any severity that blocks; no Low finding either.\nListener present exactly while the client is held: it is attached right after pool.connect() succeeds (a failed connect has no client and throws as before) and removed on the normal release by client.off after client.release(false), so the pool's own idle listener takes over. On a drop (the error path, or the flag set before a normal release) the client is released with release(true) and keeps the listener while it ends, so a late event of its socket cannot end the process either. There is exactly one release per path (the error path releases in finally after the not-awaited rollback settles; the normal path releases once), so no double-release.\nDropped client released as broken: the error handler only sets a flag; run() then throws DbError E_DB_DOWN before sending any statement, and a statement in flight is rejected by pg itself and mapped by toDbError; the throw goes through the unchanged rollback-then-release(true) path. A drop that happens after the last statement but before release makes release(false) become release(true) (gone = drop || broken).\nNo error swallowed beyond the 503 path, nothing logged: onError is a one-line flag setter that discards the error object, so neither its message nor the connection text can reach a log (the pipeline's log line holds the code only); there is no console call. The idle-client swallow pool.on('error', () => {}) is the earlier one and is unchanged.\nNormal, rollback and plain-query paths unchanged: the diff leaves query(), exec(), the begin/commit/rollback sequence, COMMIT_LIMIT_MS, the throw of fn passing unchanged and close() untouched; the only edits inside transaction() are the listener, the broken check in run() and the two release calls.\nOwn probe on a checkout of 5c85759 (a stub Postgres speaking the simple protocol on port 0 under <scratch>, stopped in the same script; no real database, no repository test). Old pg.js (bddef13) against the same stub: uncaught 'Connection terminated unexpectedly', process exit 3 (the defect reproduced). New pg.js: drop while the transaction waits between statements -> DbError E_DB_DOWN in 178 ms; drop in the middle of a statement -> E_DB_DOWN in 4 ms; no uncaught exception; the process lives; a normal transaction returns its value; 30 more normal transactions on the same pool give no MaxListenersExceededWarning (the listener does not pile up on pooled clients).\nOwn checks: prettier --check . exit 0; eslint . --max-warnings 0 exit 0; tsc --noEmit -p jsconfig.json exit 0; import-boundaries findings for server [] and fileFindings []; stringSql [] (DbError imported from ./index.js, the same file that already exports toDbError). Erosion grep over pg.js: no match; no CR. cd tools && npm run -s traces: 0 traces; handoffs-check: 0 violations.\nFor TEST-DESIGNER: ADD-4 as named in section 19 (a cut connection answers 503 db_unavailable within 5 s, no uncaught error, the app keeps serving) is enough; my stub can only be run on the pg job path for the real pool, but the behaviour is reproducible without Postgres as shown.",
+    "findings": [],
+    "self_check": [
+      "A checkout of 5c85759 in my own clone under <scratch>; no repository test suite, npm run check, node --test or e2e was run.",
+      "Probe script under <scratch> (outside the project): a net server on port 0 answering startup, begin, commit, rollback and a plain statement, and dropping the socket in the two named ways; run once with bddef13's pg.js (exit 3, uncaught 'Connection terminated unexpectedly') and once with the new one (E_DB_DOWN x2, 'value', 30 normal transactions, warnings []).",
+      "cd app: npx prettier --check . -> all matched files use Prettier code style; npx eslint . --max-warnings 0 -> exit 0; npx tsc --noEmit -p jsconfig.json -> exit 0 (run after moving my probe files out of the clone).",
+      "Finder script from the test files (node:test import replaced by a no-op): IB [] file [] SQL [].",
+      "git diff bddef13 5c85759 -- app lists only app/server/db/pg.js; grep -nE 'TODO|FIXME|.skip(|eslint-disable|ts-ignore|console\\.' on it -> no match; CR count 0.",
+      "cd tools && npm run -s traces -> 0 traces (3095 files); npm run -s handoffs-check -> 0 violations (1647 files)."
+    ],
+    "issues": [],
+    "artifacts_out": []
+  }
+}

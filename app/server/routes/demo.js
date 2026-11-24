@@ -248,13 +248,27 @@ export function demoRoutes({ intake, langs }) {
     Object.freeze({
       method: "GET",
       path: "/api/demo/questionnaire",
-      meta: Object.freeze({ tenant: false }),
+      meta: Object.freeze({
+        tenant: false,
+        admin: false,
+        reauth: null,
+        worker: false,
+        session: false,
+        rateLimit: null,
+      }),
       handler: questionnaire,
     }),
     Object.freeze({
       method: "POST",
       path: "/api/demo/result",
-      meta: Object.freeze({ tenant: false }),
+      meta: Object.freeze({
+        tenant: false,
+        admin: false,
+        reauth: null,
+        worker: false,
+        session: false,
+        rateLimit: null,
+      }),
       handler: result,
     }),
   ]);

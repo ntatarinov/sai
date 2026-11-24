@@ -161,3 +161,19 @@ test("SQL-2 each planted form is red, parameters are green", () => {
   ])
     assert.deepEqual(stringSql(green), [], green);
 });
+
+test("SQL-3 app/scripts/db-verify.js builds no SQL text from strings; a planted copy is red", () => {
+  // REQ-120 guard row (4) and the code design M2AUTH, A20: db-verify stands under app/scripts, outside SQL-1,
+  // and holds every statement as a constant text with bound parameters (C11).
+  const file = path.join(APP, "scripts", "db-verify.js");
+  const src = fs.readFileSync(file, "utf8");
+  assert.ok(/\.query\(/.test(src), "db-verify.js runs statements");
+  assert.deepEqual(stringSql(src), []);
+  // The same file with one statement built from a table name is red.
+  const planted = src.replace(
+    "(await q.query(COUNT_SQL, [name]))",
+    "(await q.query(`select count(*) from ${name}`))",
+  );
+  assert.notEqual(planted, src, "the plant applied");
+  assert.deepEqual(stringSql(planted), ["query: a template with ${"]);
+});

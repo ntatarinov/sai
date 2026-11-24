@@ -5,13 +5,22 @@ import { runSelfcheck } from "./selfcheck.js";
 // also holds the adapter contract and the database errors shared by pg.js, pglite.js and migrate.js.
 
 /**
+ * The query of one transaction: one statement with bound parameters on the transaction's connection.
+ * @typedef {{ query: (text: string, params?: unknown[]) => Promise<{ rows: any[] }> }} Q
+ */
+
+/**
  * The adapter contract (shared by pg.js, pglite.js and the test doubles). `query` is one statement with
  * bound parameters; `exec` is the simple protocol: several statements, no parameters (the migration
- * files and constant statements). Every error is a DbError.
+ * files and constant statements). `transaction(fn)` runs every statement of `fn` on one connection
+ * between BEGIN and COMMIT; a throw of `fn` rolls back and goes on unchanged (the code design M2AUTH,
+ * 4.5.1). Every database error is a DbError. Test doubles of the health and demo routes may lack
+ * `transaction`: those routes never call it.
  * @typedef {object} Adapter
  * @property {(text: string, params?: unknown[]) => Promise<{ rows: any[] }>} query
  * @property {(text: string) => Promise<void>} exec
  * @property {() => Promise<void>} close
+ * @property {<T>(fn: (c: Q) => Promise<T>) => Promise<T>} [transaction]
  */
 
 /** @typedef {"E_DB_DOWN" | "E_DB_ROLE" | "E_DB_QUERY"} DbErrorCode */
@@ -60,6 +69,11 @@ export function toDbError(err) {
 // later use waiting on it. A late answer of the earlier one still sets the state: it reads the same role.
 export const SELFCHECK_DEADLINE_MS = 4000;
 
+// The deadline of one request transaction (the code design M2AUTH, 4.5.2): the pipeline sets it once per
+// request as its start on the monotonic clock plus this value. With the COMMIT limit of pg.js (900 ms)
+// the worst answer comes at 4.9 s, inside the 5 s of REQ-114 criterion 10.
+export const TX_DEADLINE_MS = 4000;
+
 /**
  * @param {Adapter} adapter
  * @param {{ selfcheckDeadlineMs?: number }} [options]
@@ -107,6 +121,56 @@ export function createDb(
     async query(text, params) {
       await ensureSafe();
       return adapter.query(text, params);
+    },
+    /**
+     * One request transaction with its deadline (the code design M2AUTH, 4.5.2). The selfcheck runs first;
+     * every statement of `fn` first checks the deadline and is not sent once it has passed (E_DB_DOWN), and
+     * so does the end of `fn` before COMMIT, so a late transaction is rolled back, never committed. The
+     * caller gets E_DB_DOWN at the deadline while `fn` still runs; once COMMIT is sent that answer is off
+     * and the caller waits for COMMIT's own answer (the COMMIT limit of the adapter).
+     * @template T
+     * @param {(q: Q) => Promise<T>} fn
+     * @param {{ deadlineAt: number }} options `deadlineAt` on the clock of performance.now()
+     * @returns {Promise<T>}
+     */
+    transaction(fn, { deadlineAt }) {
+      const late = () => performance.now() >= deadlineAt;
+      let committing = false;
+      /** @type {NodeJS.Timeout | undefined} */
+      let timer;
+      /** @type {Promise<never>} */
+      const deadline = new Promise((_, reject) => {
+        timer = setTimeout(
+          () => {
+            if (!committing) reject(new DbError("E_DB_DOWN"));
+          },
+          Math.max(0, deadlineAt - performance.now()),
+        );
+      });
+      const work = (async () => {
+        await ensureSafe();
+        if (late()) throw new DbError("E_DB_DOWN");
+        if (typeof adapter.transaction !== "function")
+          throw new DbError("E_DB_QUERY");
+        return adapter.transaction(async (c) => {
+          /** @type {Q} */
+          const q = {
+            query(text, params) {
+              if (late()) return Promise.reject(new DbError("E_DB_DOWN"));
+              return c.query(text, params);
+            },
+          };
+          const value = await fn(q);
+          if (late()) throw new DbError("E_DB_DOWN");
+          committing = true;
+          return value;
+        });
+      })();
+      // The late transaction settles after the caller's answer; its outcome is the rollback above.
+      work.catch(() => {});
+      return /** @type {Promise<T>} */ (Promise.race([work, deadline])).finally(
+        () => clearTimeout(timer),
+      );
     },
     async close() {
       await adapter.close();

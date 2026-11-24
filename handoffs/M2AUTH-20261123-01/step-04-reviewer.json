@@ -1,0 +1,128 @@
+{
+  "handoff_id": "step04-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/M2AUTH-20261123-01/step-04-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114",
+      "REQ-115",
+      "REQ-120"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "git diff base/M2AUTH-20261123-01 2f267d1 (the code: 58 files)",
+      "docs/design/M2AUTH-accounts-tenancy-backup.md (commit 84fe178) and decisions/0137 with Additions 1-3",
+      "handoffs/M2AUTH-20261123-01/step-02-backend-dev.json and step-02-frontend-dev-pages.json (what they proved; result.issues: their choices inside the design)",
+      "docs/requirements.yaml REQ-114, REQ-115, REQ-120; docs/workflows/WF-02-development.md steps 3 and 4; docs/quality-bar.md"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "parallel_work_now": [
+      "the other reviewer (read only)"
+    ],
+    "write_set": [
+      "handoffs/M2AUTH-20261123-01/step-04-reviewer.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 4 gate, REVIEWER (read only): the code does what the design says and nothing more (every changed file and section traced to the design; any line outside it is a finding); the choices the developers reported in result.issues are inside the design or named as divergences (judge each); naming, errors, comments and structure as the neighbouring code; no dead code, no catch that swallows, no TODO; the import boundaries and the no-string-SQL rule (run their finder logic over the tree with your own read-only script cut from the tests, not the test files); prettier, eslint and tsc pass (you may run them: they only read); the expected-red list of the developer is complete (read the existing tests that the change touches). PASS or FAIL with findings by severity, each with file:line and the exact change wanted. Be economical but complete. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-23T19:34:31Z",
+  "started_at": "2026-11-23T19:34:32Z",
+  "completed_at": "2026-11-24T01:11:24Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "Verdict FAIL: one High finding blocks (F1: step 14 of the rehearsal job is invalid SQL and would be red on GitHub); everything else is Low or a note.\nQ1 cause not symptom: PASS. Every refusal is thrown (rollback) or returned (counters commit) as design C4 says; no catch swallows (the only empty catches are the late-transaction settle in db/index.js, the rollback in pg.js and the grants step of migrate.js, each named in the design); the DbError mapping in app.js gives 503 or 500 with no cookie.\nQ2 agrees with recorded: PASS except F1. Pipeline steps 0a-13, the 15 route rows with the six meta keys, the 23 AUTH_CODES, scrypt 2^17 with maxmem 160 MiB and the full 64-byte timingSafeEqual, the folded selfcheck (text equal to 4.6), the grants step (every block guarded by to_regclass, no grant in 0002), the audit writer (advisory lock, nextval, sha256 chain, closed actions and details keys) and decisions/0002 (Node 22, ES modules, no new runtime dependency: package.json untouched) match the design. The developers' departures (I1 label acct, I2 21 vs 23, I4 txDeadlineMs, I5 appendAudit options, I6 owner-org name, I8 seeds) are inside the design or named; I accept each (F6 asks for the design text to be updated).\nQ3 extra work: PASS. The 53 app and .github files plus docs/runbooks/backup-restore.md and docs/security-invariants.md are all in section 3 of the design; no file outside it, no generalisation or setting the design lacks. The only additions not in the design are small and named: mountFrame inside api.js (frontend DIVERGENCE, inside the write set), the ru/en-only language select on setup.html, and the form method=post action=own page on the four pages (F5).\nQ4 erosion: PASS. The search over the changed files for skip, todo, eslint-disable, ts-ignore, || true, continue-on-error, set +e and console. finds nothing; no test file is edited or deleted; the check command is untouched; ciFindings of the real app.yml gives exactly the two expected findings (jobs, docker 0001 row).\nQ5 idioms: PASS with Low remarks (F2-F4). Same style as the neighbouring code; every database call goes through the deadline guard and the COMMIT limit; no SQL built from strings.\nOwn checks on a fresh clone of 2f267d1 (Node 22.23.4): prettier --check . exit 0; eslint . --max-warnings 0 exit 0; tsc --noEmit -p jsconfig.json exit 0. The finder logic cut from the tests over the real tree: import-boundaries findings for server, api and the public js files: []; fileFindings over the git entries: []; stringSql over app/server and scripts/db-verify.js: []; ENV-1: []; the db-calls rule by grep: clean. cd tools && npm run -s traces: 0 traces; handoffs-check: 0 violations.\nExpected-red list of the developers: complete by my reading of the existing tests (not proved by running, decision 0110). I read MG-1, MG-2, MG-3 (its recording adapter has no transaction and migrate never uses one), HL-2 and HL-3 (the planted 0002_more.sql is still pending by name, so they stay green; the renames of design A17 and A18 are hygiene), DBC-4 and DBC-5 (the pepper is checked last), SC-*, AE-* (the entry only adds a second argument), LG-1, ENV-1, import-boundaries, no-string-sql, RB-1. Nothing else turns red beyond MG-1, MP-1, MP-2, CIW-1, CIW-2, PB-6, PP-1 and the forbidden-words page lists.\nFor TEST-DESIGNER: (1) the step 14 text of app.yml after F1 is fixed, REHEARSAL_STEPS must follow its wording; (2) the A6 conflict reported by FRONTEND-DEV (each new page has the one sai:kk region around the kk button, not no region) needs an ORCH decision before PB-6 is written; (3) test that a right password with a missing or wrong TOTP code counts for the admin delay (4.9.5); (4) test that the failed-login audit row of an unknown e-mail carries no e-mail and that login_failures keys are 64 hex; (5) the late-transaction guard with the deadline passing while COMMIT is in flight (R4) belongs to the pg job.",
+    "findings": [
+      {
+        "id": "F1",
+        "place": ".github/workflows/app.yml:217 (step: Every table of B has a row; sub-step B13, design 6.3 step 14)",
+        "severity": "High",
+        "blocking": true,
+        "what": "The constant do block is opened and closed with a single dollar sign: psql ... -c 'do $ declare t text; ... end loop; end $'. A dollar quote is $$ or $tag$; a lone $ is a syntax error. Reproduced on PGlite (same parser): `do $ ... $` gives 'syntax error at or near \"$\"'; the same body with $$ or $do$ runs, and raises 'a public table has no row' on an empty table. So on GitHub the job migration-rehearsal is red at step 14 every time, and the steps after it (start the app on B, selfcheck, smoke) never run; REQ-120 criterion 3 and the trial of design 6.3 cannot pass. The developer proved no part of the job on Postgres (I13) and the ci-workflow finder cannot see this.",
+        "fix": "In the run line of that step replace the opening `do $ declare` by `do $do$ declare` and the closing `end $'` by `end $do$'` (the inner $s$, $f$, $m$ tags stay; nothing inside contains $do$). Keep it one psql -c with ON_ERROR_STOP and no `||`. TEST-DESIGNER's REHEARSAL_STEPS then takes this text."
+      },
+      {
+        "id": "F2",
+        "place": "app/server/routes/auth.js:64-171 (refusal, audit, auditRecovery, secondFactor exported) imported by app/server/routes/admin.js:17",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Shared helpers of the second factor and the audit shortcut live in one route file and the other route file imports them. It works and passes every boundary rule, but a route file is an odd home for logic of auth/; the design names no file for secondFactor.",
+        "fix": "Optional, with the next edit of these files: move secondFactor and refusal to app/server/auth/ and import from there."
+      },
+      {
+        "id": "F3",
+        "place": "app/server/http/auth-mw.js:99, routes/index.js (RouteAnswer, Route.handler), routes/auth.js:54, routes/admin.js:23; auth/sessions.js:21, auth/reauth.js:37, auth/setup.js:11",
+        "severity": "Low",
+        "blocking": false,
+        "what": "The typedef RouteAnswer is written four times; the 43-character token regular expression three times; Route.handler is typed (req: any).",
+        "fix": "Optional: one typedef and one TOKEN_FORM exported from auth/sessions.js; type the handler as the union of the two request shapes."
+      },
+      {
+        "id": "F4",
+        "place": "app/server/auth/totp.js:43 (totpAt) and :91 (base32Decode); app/scripts/db-verify.js:21 (artifact_files in CONTENT_TABLES)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "totpAt and base32Decode have no caller in the product code (design 4.9.7 lists them as the interface; the tests are to use them for the RFC 6238 vectors). CONTENT_TABLES names artifact_files, a table no migration creates yet (harmless: only tables that exist are compared).",
+        "fix": "Keep; TEST-DESIGNER must use both functions in the TOTP tests or they are dead code. Add a one-line comment in db-verify that artifact_files is a forward reference."
+      },
+      {
+        "id": "F5",
+        "place": "app/public/setup.html, login.html, reset.html, admin-totp.html (form method=post action=own page)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Not in the design (reported by FRONTEND-DEV). If the script fails to load, a submit posts the fields as the body of a POST to the static page, never into the address; no server rule depends on it. The language select offers ru and en only (reported DIVERGENCE, forced by the PB-6 content rule).",
+        "fix": "Accept; ORCH records both as accepted choices."
+      },
+      {
+        "id": "F6",
+        "place": "docs/design/M2AUTH-accounts-tenancy-backup.md 4.9.1 (label list) and 5.3 ('21 AUTH_CODES')",
+        "severity": "Low",
+        "blocking": false,
+        "what": "The code and both developers use the label acct (named in 4.9.5) and 23 codes; the design text still lists nine labels and 21 codes.",
+        "fix": "CODE-DESIGNER or DOC-UPDATER: add acct to 4.9.1 and read 23 in 5.3 (AP-005)."
+      }
+    ],
+    "self_check": [
+      "A fresh clone of 2f267d1 under <scratch> (git clone -c core.autocrlf=false, npm ci in app, Node 22.23.4 first on PATH). No repository test suite, npm run check, node --test or e2e was run; no server was started.",
+      "cd app && npx prettier --check . -> 'All matched files use Prettier code style!' exit 0; npx eslint . --max-warnings 0 -> exit 0; npx tsc --noEmit -p jsconfig.json -> exit 0.",
+      "Own finder script over the clone (copies of the import-boundaries, no-string-sql, ci-workflow and npmrc test files with the node:test import replaced by a no-op, their exported finders called): IB findings []; fileFindings(gitEntries) [] (110 entries); stringSql server [] and db-verify []; ciFindings(app.yml) [\"jobs\",\"docker 0001 row\"]; ENV-1 envFindings [].",
+      "grep for .query( .exec( .transaction( outside app/server/db -> only config.js:164 (a regular-expression .exec); set_config('app.role' -> only db/tx.js; insert into audit_log -> only db/audit-store.js; node:net or isIP in server -> only a comment.",
+      "Erosion search grep -nE 'TODO|FIXME|XXX|.skip(|eslint-disable|ts-ignore|ts-nocheck|\\|\\| true|continue-on-error|set \\+e|console\\.(log|error)' over the changed app, .github, runbook and invariants files -> no match (common-passwords.js excluded); grep for a machine path, the reference product name, sk-ant-, ghp_ and a private key -> no match; CR count in the changed files 0.",
+      "Unused-export check by grep over server, api, scripts, public/js: only constants exported for tests, plus totpAt and base32Decode (F4).",
+      "F1 probe, a script under <scratch> on PGlite 0.5.15: do $ ... $ -> ERR syntax error at or near \"$\"; do $$ ... $$ -> OK; do $do$ ... $do$ -> OK; the same body with an empty public table -> 'a public table has no row'.",
+      "cd tools && npm run -s traces -> 0 traces (3058 files checked); npm run -s handoffs-check -> 0 violations.",
+      "Read in full: auth-mw.js, the app.js diff, routes/auth.js, routes/admin.js, routes/index.js, auth/*.js (common-passwords.js: header, licence, tail and the 2311-entry count), http/*.js, db/*.js, services/audit.js, 0002_identity.sql, grants.sql, setup-token.js, uat-login.js, db-verify.js, the app.yml diff, .env.example, compose.yaml, public/js/api.js; the four pages, their scripts and texts.js by grep for innerHTML, browser storage, inline style, event attributes and external addresses (none)."
+    ],
+    "issues": [
+      {
+        "kind": "BLOCKING_FINDING",
+        "text": "F1: fix the step 14 dollar quote in .github/workflows/app.yml (CODE-FIXER through ORCH); the file then passes steps 3 and 4 again. Nothing else needs a code change for a PASS."
+      },
+      {
+        "kind": "NOTE",
+        "text": "The audit writer must run on a platform transaction (design 4.11): the SELECT policy of audit_log gives rows to app.role platform only, so appendAudit on a q already switched to tenant settings would read no previous hash and start a second chain from 64 zeros. No M2.2 route does that (no tenant route exists); REQ-117 must audit before switchToTenant or the writer needs a guard. Suggest ORCH records it for the REQ-117 design."
+      },
+      {
+        "kind": "STATE_ALLOWED_REQUIREMENT_FORBIDS",
+        "text": "Every failed login, including one for an unknown e-mail, writes one append-only audit row and one login_failures row; only the per-address limit (10 per 15 minutes) bounds the growth, and audit_log has no cleanup by design. Slow growth against the size of the free database is possible from many addresses. Low; ORCH may open a defect or accept it with a note in the runbook (quality-bar section 6, item 6)."
+      },
+      {
+        "kind": "DECISION_NEEDED",
+        "text": "TEST_CONFLICT A6 from FRONTEND-DEV (one sai:kk region on each new page versus 'no region' in the design's test edit A6) needs ORCH's answer before TEST-DESIGNER edits PB-6; by my reading the pages are right (the rule 'data-lang kk outside a kk region' is red otherwise)."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Not proved here and left to the GitHub run: pg.js transaction with the COMMIT limit, the row-lock races AUTH-RACE-1..4, RLS and grants on Postgres 17, the uat-login success path on Linux. Until F1 is fixed the rehearsal job cannot show any step after step 14."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

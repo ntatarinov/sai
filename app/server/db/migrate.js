@@ -10,6 +10,9 @@ import { DbError } from "./index.js";
 // After the files, the password step sets the password of sai_app_login from APP_DB_PASSWORD on every
 // run (decisions/0116 О24, N3): the value is only a bound parameter; the dynamic statement that quotes
 // it runs inside a block whose handler replaces any error, so no error carries the statement.
+// Between the two, the grants step applies app/db/grants.sql on every run, in its own transaction
+// (decisions/0137 O1; the code design M2AUTH, 4.2.4): a restored or moved database gets its grants back, and
+// a database built from an older prefix of the migrations gets those of its own tables.
 
 export const NAME = /^\d{4}_[a-z0-9_]+\.sql$/;
 export const LOCK_KEY = 7300108;
@@ -25,6 +28,11 @@ export class MigrateError extends Error {
 
 export function defaultMigrationsDir() {
   return fileURLToPath(new URL("../../db/migrations/", import.meta.url));
+}
+
+/** The grants file, independent of MIGRATIONS_DIR (the rehearsal migrates a previous set with it). */
+export function defaultGrantsFile() {
+  return fileURLToPath(new URL("../../db/grants.sql", import.meta.url));
 }
 
 /**
@@ -52,11 +60,25 @@ export const PASSWORD_BLOCK =
   "do $$ begin execute format('alter role sai_app_login password %L', current_setting('sai.app_db_password')); exception when others then raise exception 'sai: the password step failed' using errcode = 'P0001'; end $$";
 
 /**
- * @param {{ adapter: import("./index.js").Adapter, dir: string, password: string | null, log?: (line: string) => void }} options
+ * @param {{ adapter: import("./index.js").Adapter, dir: string, password: string | null, log?: (line: string) => void, grantsFile?: string }} options
+ *   `grantsFile` another grants file, in-process only (tests)
  * @returns {Promise<{ applied: string[] }>}
  */
-export async function migrate({ adapter, dir, password, log = () => {} }) {
+export async function migrate({
+  adapter,
+  dir,
+  password,
+  log = () => {},
+  grantsFile = defaultGrantsFile(),
+}) {
   const files = readMigrations(dir);
+  /** @type {string | null} */
+  let grants;
+  try {
+    grants = fs.readFileSync(grantsFile, "utf8");
+  } catch {
+    grants = null;
+  }
   await adapter.query("select pg_advisory_lock($1)", [LOCK_KEY]);
   try {
     const exists = await adapter.query(
@@ -106,6 +128,19 @@ export async function migrate({ adapter, dir, password, log = () => {} }) {
       done.push(file.name);
       log(`migrate: applied ${file.name}`);
     }
+    await adapter.exec("begin");
+    try {
+      if (grants === null) throw new Error("the grants file is not readable");
+      await adapter.exec(grants);
+      await adapter.exec("commit");
+    } catch {
+      await adapter.exec("rollback").catch(() => {});
+      throw new MigrateError(
+        "E_MIGRATE_GRANTS",
+        "migrate: refused: the grants step failed",
+      );
+    }
+    log("migrate: the grants are set");
     if (password !== null) {
       await adapter.exec("begin");
       try {

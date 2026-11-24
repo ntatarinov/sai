@@ -68,7 +68,7 @@ test("HL-2 the failure answers: down, unsafe, one pending; nothing else leaks", 
     [
       ad,
       { migrations_pending: 1 },
-      [...migrationList(), { name: "0002_more.sql", sha256: "0".repeat(64) }],
+      [...migrationList(), { name: "9999_more.sql", sha256: "0".repeat(64) }],
     ],
   ];
   for (const [adapter, want, migrations] of cases) {
@@ -152,7 +152,7 @@ test("HL-3 after each failure the next request is answered and schema_migrations
         ad.query(q, p),
       migrations: [
         ...migrationList(),
-        { name: "0002_more.sql", sha256: "0".repeat(64) },
+        { name: "9999_more.sql", sha256: "0".repeat(64) },
       ],
     },
   ];

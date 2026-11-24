@@ -851,4 +851,302 @@ export const TEXTS = Object.freeze({
     kk: "Есептеулерді серверде сақтау",
     en: "Saving calculations on a server",
   }),
+
+  // The account pages (setup, login, reset, admin two-step sign-in): titles, headings, labels, buttons.
+  auth_title_setup: Object.freeze({
+    ru: "Первая настройка — Sai",
+    kk: "Алғашқы баптау — Sai",
+    en: "First setup — Sai",
+  }),
+  auth_title_login: Object.freeze({
+    ru: "Вход — Sai",
+    kk: "Кіру — Sai",
+    en: "Sign in — Sai",
+  }),
+  auth_title_reset: Object.freeze({
+    ru: "Новый пароль — Sai",
+    kk: "Жаңа құпиясөз — Sai",
+    en: "New password — Sai",
+  }),
+  auth_title_totp: Object.freeze({
+    ru: "Двухфакторный вход — Sai",
+    kk: "Екі факторлы кіру — Sai",
+    en: "Two-step sign-in — Sai",
+  }),
+  auth_h_setup: Object.freeze({
+    ru: "Первая настройка",
+    kk: "Алғашқы баптау",
+    en: "First setup",
+  }),
+  auth_h_login: Object.freeze({ ru: "Вход", kk: "Кіру", en: "Sign in" }),
+  auth_h_reset: Object.freeze({
+    ru: "Новый пароль",
+    kk: "Жаңа құпиясөз",
+    en: "New password",
+  }),
+  auth_h_totp: Object.freeze({
+    ru: "Двухфакторный вход администратора",
+    kk: "Әкімшінің екі факторлы кіруі",
+    en: "Administrator two-step sign-in",
+  }),
+  auth_h_enrol: Object.freeze({ ru: "Включить", kk: "Қосу", en: "Turn on" }),
+  auth_h_off: Object.freeze({ ru: "Отключить", kk: "Өшіру", en: "Turn off" }),
+  auth_f_token: Object.freeze({
+    ru: "Код установки",
+    kk: "Орнату коды",
+    en: "Setup code",
+  }),
+  auth_f_email: Object.freeze({
+    ru: "Электронная почта",
+    kk: "Электрондық пошта",
+    en: "Email",
+  }),
+  auth_f_name: Object.freeze({ ru: "Имя", kk: "Аты", en: "Name" }),
+  auth_f_password: Object.freeze({
+    ru: "Пароль",
+    kk: "Құпиясөз",
+    en: "Password",
+  }),
+  auth_f_language: Object.freeze({ ru: "Язык", kk: "Тіл", en: "Language" }),
+  auth_f_code: Object.freeze({
+    ru: "Код из приложения или резервный код",
+    kk: "Қолданбадағы код немесе қосалқы код",
+    en: "Code from the app or a backup code",
+  }),
+  auth_f_code_next: Object.freeze({
+    ru: "Следующий код из приложения или резервный код",
+    kk: "Қолданбадағы келесі код немесе қосалқы код",
+    en: "Next code from the app or a backup code",
+  }),
+  auth_f_new_password: Object.freeze({
+    ru: "Новый пароль",
+    kk: "Жаңа құпиясөз",
+    en: "New password",
+  }),
+  auth_f_repeat: Object.freeze({
+    ru: "Повторите новый пароль",
+    kk: "Жаңа құпиясөзді қайталаңыз",
+    en: "Repeat the new password",
+  }),
+  auth_label_error: Object.freeze({ ru: "Ошибка", kk: "Қате", en: "Error" }),
+  auth_hint_password: Object.freeze({
+    ru: "Не короче 10 символов. Простые и известные пароли не подходят.",
+    kk: "Кемінде 10 таңба. Қарапайым және белгілі құпиясөздер жарамайды.",
+    en: "At least 10 characters. Simple and well-known passwords are refused.",
+  }),
+  auth_b_setup: Object.freeze({
+    ru: "Создать учётную запись",
+    kk: "Тіркелгі жасау",
+    en: "Create the account",
+  }),
+  auth_b_login: Object.freeze({ ru: "Войти", kk: "Кіру", en: "Sign in" }),
+  auth_b_logout: Object.freeze({ ru: "Выйти", kk: "Шығу", en: "Sign out" }),
+  auth_b_reset: Object.freeze({
+    ru: "Сохранить пароль",
+    kk: "Құпиясөзді сақтау",
+    en: "Save the password",
+  }),
+  auth_b_start: Object.freeze({
+    ru: "Начать подключение",
+    kk: "Қосуды бастау",
+    en: "Start setup",
+  }),
+  auth_b_check: Object.freeze({
+    ru: "Проверить пароль",
+    kk: "Құпиясөзді тексеру",
+    en: "Check the password",
+  }),
+  auth_b_confirm: Object.freeze({
+    ru: "Подтвердить код",
+    kk: "Кодты растау",
+    en: "Confirm the code",
+  }),
+  auth_b_off: Object.freeze({ ru: "Отключить", kk: "Өшіру", en: "Turn off" }),
+  auth_done_setup: Object.freeze({
+    ru: "Готово: учётная запись администратора создана.",
+    kk: "Дайын: әкімші тіркелгісі жасалды.",
+    en: "Done: the administrator account is created.",
+  }),
+  auth_done_reset: Object.freeze({
+    ru: "Готово: новый пароль сохранён.",
+    kk: "Дайын: жаңа құпиясөз сақталды.",
+    en: "Done: the new password is saved.",
+  }),
+  auth_to_login: Object.freeze({
+    ru: "Перейти ко входу",
+    kk: "Кіруге өту",
+    en: "Go to sign in",
+  }),
+  auth_signed_in: Object.freeze({
+    ru: "Вы вошли как {name}.",
+    kk: "Сіз {name} ретінде кірдіңіз.",
+    en: "You are signed in as {name}.",
+  }),
+  auth_to_totp: Object.freeze({
+    ru: "Двухфакторный вход",
+    kk: "Екі факторлы кіру",
+    en: "Two-step sign-in",
+  }),
+  auth_mismatch: Object.freeze({
+    ru: "Пароли не совпадают.",
+    kk: "Құпиясөздер сәйкес келмейді.",
+    en: "The passwords do not match.",
+  }),
+  auth_totp_enrol_note: Object.freeze({
+    ru: "Добавьте ключ или адрес в приложение-аутентификатор, затем введите код из приложения.",
+    kk: "Кілтті немесе мекенжайды аутентификатор қолданбасына қосыңыз, содан кейін қолданбадағы кодты енгізіңіз.",
+    en: "Add the key or the address to an authenticator app, then enter the code from the app.",
+  }),
+  auth_totp_secret: Object.freeze({
+    ru: "Ключ для приложения",
+    kk: "Қолданбаға арналған кілт",
+    en: "Key for the app",
+  }),
+  auth_totp_link: Object.freeze({
+    ru: "Адрес для приложения",
+    kk: "Қолданбаға арналған мекенжай",
+    en: "Address for the app",
+  }),
+  auth_totp_on: Object.freeze({
+    ru: "Двухфакторный вход включён.",
+    kk: "Екі факторлы кіру қосылды.",
+    en: "Two-step sign-in is turned on.",
+  }),
+  auth_totp_off_done: Object.freeze({
+    ru: "Двухфакторный вход отключён.",
+    kk: "Екі факторлы кіру өшірілді.",
+    en: "Two-step sign-in is turned off.",
+  }),
+  auth_totp_codes_h: Object.freeze({
+    ru: "Резервные коды",
+    kk: "Қосалқы кодтар",
+    en: "Backup codes",
+  }),
+  auth_totp_save: Object.freeze({
+    ru: "Сохраните эти коды сейчас: повторно они показаны не будут.",
+    kk: "Бұл кодтарды қазір сақтаңыз: қайта көрсетілмейді.",
+    en: "Save these codes now: they will not be shown again.",
+  }),
+  auth_totp_off_next: Object.freeze({
+    ru: "Пароль принят. Введите следующий код из приложения или резервный код.",
+    kk: "Құпиясөз қабылданды. Қолданбадағы келесі кодты немесе қосалқы кодты енгізіңіз.",
+    en: "Password accepted. Enter the next code from the app or a backup code.",
+  }),
+
+  // Plain words for every code the account routes can answer (AUTH_CODES of the server).
+  auth_err_not_found: Object.freeze({
+    ru: "Страница не найдена.",
+    kk: "Бет табылмады.",
+    en: "Page not found.",
+  }),
+  auth_err_body_too_large: Object.freeze({
+    ru: "Запрос слишком большой.",
+    kk: "Сұраныс тым үлкен.",
+    en: "The request is too large.",
+  }),
+  auth_err_site_closed: Object.freeze({
+    ru: "Сервис временно остановлен владельцем.",
+    kk: "Қызметті иесі уақытша тоқтатты.",
+    en: "The service is paused by the owner.",
+  }),
+  auth_err_bad_json: Object.freeze({
+    ru: "Запрос не удалось прочитать. Обновите страницу и повторите.",
+    kk: "Сұранысты оқу мүмкін болмады. Бетті жаңартып, қайталаңыз.",
+    en: "The request could not be read. Refresh the page and try again.",
+  }),
+  auth_err_bad_body: Object.freeze({
+    ru: "Проверьте введённые данные: одно из полей заполнено неверно.",
+    kk: "Енгізілген деректерді тексеріңіз: өрістердің бірі қате толтырылған.",
+    en: "Check what you entered: one of the fields is wrong.",
+  }),
+  auth_err_server_error: Object.freeze({
+    ru: "Что-то пошло не так на нашей стороне. Попробуйте позже.",
+    kk: "Біздің жағымызда бірдеңе дұрыс болмады. Кейінірек қайталаңыз.",
+    en: "Something went wrong on our side. Try again later.",
+  }),
+  auth_err_server_config: Object.freeze({
+    ru: "Вход пока не настроен. Попробуйте позже.",
+    kk: "Кіру әлі бапталмаған. Кейінірек қайталаңыз.",
+    en: "Sign-in is not set up yet. Try again later.",
+  }),
+  auth_err_auth_required: Object.freeze({
+    ru: "Нужно войти.",
+    kk: "Алдымен кіру керек.",
+    en: "You need to sign in.",
+  }),
+  auth_err_invalid_credentials: Object.freeze({
+    ru: "Неверная почта или пароль.",
+    kk: "Пошта немесе құпиясөз қате.",
+    en: "The email or the password is wrong.",
+  }),
+  auth_err_totp_required: Object.freeze({
+    ru: "Введите код из приложения или резервный код.",
+    kk: "Қолданбадағы кодты немесе қосалқы кодты енгізіңіз.",
+    en: "Enter the code from the app or a backup code.",
+  }),
+  auth_err_totp_invalid: Object.freeze({
+    ru: "Код не подошёл. Введите другой.",
+    kk: "Код сәйкес келмеді. Басқасын енгізіңіз.",
+    en: "The code was not accepted. Enter another one.",
+  }),
+  auth_err_origin_refused: Object.freeze({
+    ru: "Запрос отклонён. Откройте страницу заново.",
+    kk: "Сұраныс қабылданбады. Бетті қайта ашыңыз.",
+    en: "The request was refused. Open the page again.",
+  }),
+  auth_err_csrf_refused: Object.freeze({
+    ru: "Сессия устарела. Обновите страницу и повторите.",
+    kk: "Сессия ескірді. Бетті жаңартып, қайталаңыз.",
+    en: "The session is out of date. Refresh the page and try again.",
+  }),
+  auth_err_reauth_required: Object.freeze({
+    ru: "Подтвердите пароль ещё раз.",
+    kk: "Құпиясөзді қайта растаңыз.",
+    en: "Confirm the password again.",
+  }),
+  auth_err_unsupported_type: Object.freeze({
+    ru: "Запрос отклонён. Обновите страницу и повторите.",
+    kk: "Сұраныс қабылданбады. Бетті жаңартып, қайталаңыз.",
+    en: "The request was refused. Refresh the page and try again.",
+  }),
+  auth_err_password_rules: Object.freeze({
+    ru: "Пароль не подходит: он слишком короткий, слишком длинный или слишком известный.",
+    kk: "Құпиясөз жарамайды: тым қысқа, тым ұзын немесе тым белгілі.",
+    en: "The password is not accepted: too short, too long or too well known.",
+  }),
+  auth_err_unknown_purpose: Object.freeze({
+    ru: "Это действие недоступно.",
+    kk: "Бұл әрекет қолжетімсіз.",
+    en: "This action is not available.",
+  }),
+  auth_err_reset_invalid: Object.freeze({
+    ru: "Ссылка недействительна или уже использована. Попросите новую.",
+    kk: "Сілтеме жарамсыз немесе қолданылып қойған. Жаңасын сұраңыз.",
+    en: "The link is not valid or was already used. Ask for a new one.",
+  }),
+  auth_err_totp_state: Object.freeze({
+    ru: "Сейчас это действие недоступно: проверьте, включён ли двухфакторный вход.",
+    kk: "Қазір бұл әрекет қолжетімсіз: екі факторлы кіру қосулы ма, тексеріңіз.",
+    en: "This action is not available now: check whether two-step sign-in is on.",
+  }),
+  auth_err_locked: Object.freeze({
+    ru: "Слишком много неудачных попыток. Попробуйте позже.",
+    kk: "Сәтсіз әрекеттер тым көп. Кейінірек қайталаңыз.",
+    en: "Too many failed attempts. Try again later.",
+  }),
+  auth_err_reauth_locked: Object.freeze({
+    ru: "Слишком много неудачных проверок пароля. Попробуйте позже.",
+    kk: "Құпиясөзді сәтсіз тексеру тым көп. Кейінірек қайталаңыз.",
+    en: "Too many failed password checks. Try again later.",
+  }),
+  auth_err_rate_limited: Object.freeze({
+    ru: "Слишком много запросов. Попробуйте позже.",
+    kk: "Сұраныстар тым көп. Кейінірек қайталаңыз.",
+    en: "Too many requests. Try again later.",
+  }),
+  auth_err_db_unavailable: Object.freeze({
+    ru: "Сервис сейчас недоступен. Попробуйте позже.",
+    kk: "Қызмет қазір қолжетімсіз. Кейінірек қайталаңыз.",
+    en: "The service is unavailable now. Try again later.",
+  }),
 });

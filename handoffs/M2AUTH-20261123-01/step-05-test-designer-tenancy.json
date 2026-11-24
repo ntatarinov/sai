@@ -1,0 +1,243 @@
+{
+  "handoff_id": "step05-tenancy-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/M2AUTH-20261123-01/step-05-test-designer-tenancy.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-115",
+      "REQ-120"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/M2AUTH-accounts-tenancy-backup.md (sections 9, 11, 12, 13; the tables of tests and mutants; section 19 rework tables with the test lines of 01c, 01f and 02b)",
+      "decisions/0137 with Additions 1-4 (incl. Addition 3: pages keep one kk region; A6 reads «no kk outside the one region»)",
+      "docs/requirements.yaml REQ-114, REQ-115, REQ-120",
+      "the code: commit bddef13; the developer's probes in result of step-02-backend-dev.json and step-02b (expected red list: MG-1, MP-1, MP-2, CIW-1, CIW-2)",
+      "docs/workflows/WF-02-development.md step 5, .claude/agents/test-designer.md",
+      "app/test/ today (the existing tests, the helpers, app/package.json test scripts: unit, int, pg, e2e)"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "write_set": [
+      "the test files of design 9.2 and 9.3 and MG-6/MG-7: app/test/pg/rls.test.js, int/tx.test.js, the new cases of int/selfcheck.test.js (SC-7) and pg/selfcheck-pg.test.js (SP-2), int/isolation.test.js, int/permission-matrix.test.js with app/test/fixtures/permission-matrix.golden.json, pg/audit-chain.test.js, unit/security-invariants.test.js, unit/db-verify.test.js, unit/rehearsal-seeds.test.js, unit/ci-workflow.test.js (CIW-1/2), unit/runbooks.test.js (RB-3), int/migrate.test.js (MG-6, MG-7, and the MG-1 change), the pg migrate tests (MP-1, MP-2 changes), and the guard edits of design section 11 (A1-A26) in every existing file that the auth lane does not own",
+      "handoffs/M2AUTH-20261123-01/step-05-test-designer-tenancy.json (result only)"
+    ],
+    "parallel_work_now": [
+      "TEST-DESIGNER auth (REQ-114 files; it writes app/test/fixtures/auth.js first: import it, never edit it)"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 5, TEST-DESIGNER (lane tenancy): write the tests of design 9.2 (REQ-115) and 9.3 (REQ-120), MG-6 and MG-7, and the replacement edits of section 11 (each «was → became» exactly as the table says; the prohibition is never weakened; A6 per decisions/0137 Addition 3), with the rules of WF-02 step 5. You cannot run node --test on this PC (decision 0110): prove with your own harness under <scratch> on fresh clones of the tag base/M2AUTH-20261123-01 (red where the design says, e.g. SC-7, SEED-1) and of bddef13 (green), PGlite for the int cases; the pg cases and the migration-rehearsal job are proved on GitHub only. Apply at least 15 of the design's mutants to a copy of bddef13 (hash the tree before and after; leave none) and record which test kills each. prettier, eslint, tsc on your files. Verify traces 0, handoffs-check 0. In result: files, harness results tag/fix, mutants, must_be_proved_on_github. Be thorough but economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-24T01:24:45Z",
+  "started_at": "2026-11-24T01:24:46Z",
+  "completed_at": "2026-11-24T02:20:26Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "WF-02 step 5, lane tenancy: the tests of design 9.2 (REQ-115 c1-c12) and 9.3 (REQ-120 c1-c4), MG-6 and MG-7, and the guard edits of section 11 that fall outside the auth lane's files. 46 new tests: unit +18, int +16, pg +12. Every existing case keeps its input and answer; the counts of test( and assert. in every edited old file are not lower than at base/M2AUTH-20261123-01. No product file was touched.\nProof on this PC (decision 0110: no node --test, no npm run check): my own harness under <scratch> (a stand-in of node:test loaded by a module hook, the test files imported and run one by one as plain async functions) on fresh clones of base/M2AUTH-20261123-01 and of bddef13 with npm ci; PGlite for every int case; the pg files and the rehearsal job are proved on GitHub only.\nCriterion → test (Q5): REQ-115 c1 → pg/rls.test.js RLS-1 (catalogue at test time, count printed and ≥ 3, planted tables reported by name, no table owned by an app role); c2 → RLS-2 (three organisations, every tenant table, 0 rows without app.org_id, refused INSERT/UPDATE with counts, the refusal proved to be row security by its message) and RLS-3 (20 parallel withTenant over a pool of 4, distinct backends) and RLS-5 (role_table_grants equal the 4.2.3 table; sai_preview nothing; sequence usage); c3 → RLS-4 (UPDATE, DELETE, TRUNCATE refused for sai_app and for the owner P0001; tenant SELECT 0, platform all); c4 → int/tx.test.js TXH-1..TXH-5 and unit/db-calls.test.js DBC-1..DBC-3, plus TXH-6 for SEC F1 of rework 02b; c5 → int/selfcheck.test.js SC-7 (red on the base) and pg/selfcheck-pg.test.js SP-2; c6 → unit/route-table.test.js RT-1..RT-5; c7 → int/isolation.test.js IS-1 (count printed: 0), IS-2 (0), IS-3 (planted pair green/red on the one switched transaction, 7 transactions for 7 requests); c8 → IS-4 (11 body routes, 400 bad_body, sha256 of every table unchanged) and IS-5 (15 routes, each call pair from one PGlite clone, MASKED of 4.13 with shape checks, no row takes the planted organisation); c9 → int/permission-matrix.test.js PM-1 (15 routes × 6 actors equal the golden file) and PM-2 (missing row, route, actor, duplicate, class; the four role greps) with app/test/fixtures/permission-matrix.golden.json written from the table of 4.12; c10 → pg/audit-chain.test.js AC-1 (20 parallel writes, own canonical_json recomputation, unbroken chain, verify ok with count, the insert grep), AC-2 (tamper → ok false with that id), AC-3 (closed details keys; under tenant settings), AC-4 (uniform 404); c11 → unit/security-invariants.test.js SI-1; c12 → the guard rows below and the GitHub run. REQ-120 c1 → unit/db-verify.test.js DV-1..DV-5 (snapshots read by the real reader from PGlite, the pure comparer, the CLI refusals incl. an RLS-blind role) and pg/db-verify-pg.test.js DVP-1, DVP-2; c2 → unit/rehearsal-seeds.test.js SEED-1 (red on the base); c3 → unit/ci-workflow.test.js CIW-1, CIW-2 (REHEARSAL_STEPS: the 18 kinds in order and the damaged copies of the criterion) and CIW-3 (the do block of step 14 raises on an empty table, run on PGlite); c4 → unit/runbooks.test.js RB-3; c5, c6 → commands on GitHub. MG-6 (a)(b)(c) and MG-7 in int/migrate.test.js.\nQuality-bar items: Q8 — RLS-1..5, TXH-2..6, IS-1..5, PM-1/2, DBC-3; Q9 — DBC-1/2, SQL-3, MG-7 (no execute); Q10 — TXH-4 (a throw rolls back every statement), MG-6 (c) (a failing grants file changes no grant), DV-3 (an unreachable database is exit 2, never a false equal); Q11 — not touched (no address a user supplies is called by the tested code); R3 — not applicable (decisions/0033); Q7 — no secret in the tests (peppers and passwords made at run time).",
+    "changes": [
+      {
+        "file": "app/test/unit/db-verify.test.js",
+        "what": "new: DV-1..DV-5 (REQ-120 c1)"
+      },
+      {
+        "file": "app/test/unit/rehearsal-seeds.test.js",
+        "what": "new: SEED-1 (REQ-120 c2)"
+      },
+      {
+        "file": "app/test/unit/security-invariants.test.js",
+        "what": "new: SI-1 (REQ-115 c11)"
+      },
+      {
+        "file": "app/test/unit/db-calls.test.js",
+        "what": "new: DBC-1..DBC-3 (REQ-115 c4)"
+      },
+      {
+        "file": "app/test/unit/route-table.test.js",
+        "what": "RT-1..RT-5 (REQ-115 c6) appended after the auth lane's RT-6, whose header names RT-1 … RT-5 as the tenancy lane's; the auth lane's part byte-equal (one append, compared before and after); the block imports its modules in place, so no line of the first part changed"
+      },
+      {
+        "file": "app/test/unit/ci-workflow.test.js",
+        "what": "A12: JOBS + migration-rehearsal (e2e last), REHEARSAL_STEPS with stepsOf/rehearsalFindings, the image of the pg job, the install in app/; CIW-2 + the rehearsal copies; A13: «docker 0001 row» → «docker migration rows» with the developer's line; new CIW-3 (02b REVIEWER F1)"
+      },
+      {
+        "file": "app/test/unit/runbooks.test.js",
+        "what": "new RB-3 (REQ-120 c4); RB-1, RB-2 unchanged (A22)"
+      },
+      {
+        "file": "app/test/unit/no-string-sql.test.js",
+        "what": "new SQL-3 over app/scripts/db-verify.js (A20); SQL-1, SQL-2 unchanged"
+      },
+      {
+        "file": "app/test/unit/npmrc.test.js",
+        "what": "A1 INT_FILES 12 → 26, A2 PG_FILES 2 → 6, A3 the NPM-5 title; the rule unchanged"
+      },
+      {
+        "file": "app/test/unit/public-build.test.js",
+        "what": "A6 per decisions/0137 Addition 3: PB-6 page list + the four account pages, each with no finding and exactly one region, the kk one; consequence of Addition 3 for A7: ACCOUNT_PAGES join CHANGED and the cut comparison of PB-2, with their own «kk only» check (I1)"
+      },
+      {
+        "file": "app/test/unit/public-pages.test.js",
+        "what": "A8: PAGES + the four (PP-1 «ten»), PP-2 script rule names each account page's own module, PP-7 built pages + the four (I1)"
+      },
+      {
+        "file": "app/test/int/migrate.test.js",
+        "what": "A16: MG-1 every file with its own sha256 in order, the 13 tables, the 0001 columns filtered, the applied lines, «nothing to apply»; A17: MG-2 planted 9999_bad.sql; MG-5 + the grants line (REQ-115 guard (9)); new MG-6 (a)(b)(c), MG-7 (grantsFindings)"
+      },
+      {
+        "file": "app/test/int/health.test.js",
+        "what": "A18: the planted pending 0002_more.sql → 9999_more.sql (two places)"
+      },
+      {
+        "file": "app/test/int/selfcheck.test.js",
+        "what": "new SC-7; appWith imported; SC-1..SC-6 unchanged (A19)"
+      },
+      {
+        "file": "app/test/int/tx.test.js",
+        "what": "new: TXH-1..TXH-6"
+      },
+      {
+        "file": "app/test/int/isolation.test.js",
+        "what": "new: IS-1..IS-5 with MASKED and masked()"
+      },
+      {
+        "file": "app/test/int/permission-matrix.test.js",
+        "what": "new: PM-1, PM-2"
+      },
+      {
+        "file": "app/test/fixtures/permission-matrix.golden.json",
+        "what": "new: 90 rows from the table of design 4.12"
+      },
+      {
+        "file": "app/test/pg/rls.test.js",
+        "what": "new: RLS-1..RLS-5"
+      },
+      {
+        "file": "app/test/pg/audit-chain.test.js",
+        "what": "new: AC-1..AC-4"
+      },
+      {
+        "file": "app/test/pg/db-verify-pg.test.js",
+        "what": "new: DVP-1, DVP-2"
+      },
+      {
+        "file": "app/test/pg/migrate-pg.test.js",
+        "what": "A14: MP-1 «no org_id» → RLS on every org_id table (title too), «no table owned» kept; A15: MP-2 every migration file in name order, read at test time"
+      },
+      {
+        "file": "app/test/pg/selfcheck-pg.test.js",
+        "what": "new SP-2; SP-1 unchanged (A19)"
+      },
+      {
+        "file": "unchanged by the table",
+        "what": "A4, A5, A7 (see I1), A9 (see I2), A10, A11, A21, A23 (LG-2 is the auth lane's), A24, A25, A26"
+      }
+    ],
+    "self_check": [
+      {
+        "command": "harness on the clone of bddef13 (<scratch>/fix, my files and the tree's app/test copied in): every file of mine but the pg ones, plus route-table, vercel-config, docker-files, import-boundaries, forbidden-words, api-entry, demo-parity, node-main, db-down, headers, site-gate",
+        "output": "# harness tests 117 pass 113 fail 4: NPM-6 and PB-6 stop at fs.symlinkSync EPERM (Windows without the symlink right; PB-6 passed its page-list and region asserts before it), NM-1 and SG-3 (SIGTERM exit code null on Windows) fail the same on the base clone — none from this work. Printed: «isolation IS-1: 0 object-id tenant routes», «IS-2: 0», «IS-4: 11 routes with a body», «IS-5: 15 routes», «permission matrix: 15 routes × 6 actors»"
+      },
+      {
+        "command": "harness on the clone of base/M2AUTH-20261123-01 (<scratch>/base), my files one by one",
+        "output": "SC-7 red («the login role owns a table: node-main started and serves»), SEED-1 red («app/test/fixtures/rehearsal is a folder»), as the design says; red for missing code: DV-* and TXH-* (import: scripts/db-verify.js, services/audit.js absent), DBC-1..3, CIW-1..3, RB-3, SQL-3, SI-1, NPM-5, MG-1, MG-5, MG-6, MG-7, PB-2, PB-6, PP-1..PP-4, PP-7, IS-1..IS-5, PM-1, PM-2; green and unchanged: HL-1..HL-4 (the rename only), MG-2..MG-4, SC-1..SC-6, RB-1, RB-2, SQL-1, SQL-2, NPM-1..4, NPM-7, ENV-1, PB-1, PB-3..5, PB-7, PP-5, PP-6"
+      },
+      {
+        "command": "harness/pgcheck.mjs on PGlite (not a pg-job run): rlsFindings of rls.test.js, the planted tables, the grant and sequence reads of RLS-5",
+        "output": "clean {count 3, findings []}; planted → the six expected findings; role_table_grants of sai_app 39 rows equal 4.2.3; sequence: audit_log_id_seq sai_app USAGE; audit_log owner postgres"
+      },
+      {
+        "command": "npx prettier --check (my 22 files) / npx eslint --max-warnings 0 (my files and route-table.test.js) / npx tsc --noEmit -p jsconfig.json (in <scratch>/fix)",
+        "output": "All matched files use Prettier code style! / no finding / exit 0"
+      },
+      {
+        "command": "cd tools && npm run -s traces",
+        "output": "traces: файлов проверено 3092, следов 0, пропущено 67"
+      },
+      {
+        "command": "cd tools && npm run -s handoffs-check",
+        "output": "handoffs-check: файлов проверено 1644, нарушений 0, исключений использовано 110 из 110"
+      },
+      {
+        "command": "mutants (harness/mutants.mjs on <scratch>/fix; each edit applied, the named tests run, the file restored from its bytes and compared by sha256)",
+        "output": "tree sha256 before = after (ea80ed97… for 28 mutants, 7eafe29c… for M45b/M45c after RT-1..5 were added). Killed 29 of 30: M42 with check (true) on org_members → TXH-5 (1); M43 manual begin on PGlite → TXH-3 (1); M44 old selfcheck → SC-7 (1); M45a q.query in services/audit.js → DBC-1 (1); M45b a seventh meta key → RT-1 (1); M45c admin check after Origin → RT-3 (1); M46 step 9b removed → TXH-5, IS-3 (2); M53 nested withTenant → TXH-5 at its 5 s bound (1); M46 orgId/org_id accepted in a body → IS-4 (1); M46 a golden row missing → PM-1, PM-2 (2); M46 invariant row naming a missing test → SI-1 (1); M46 db-verify ignores audit_log content → DV-2 (1); M46 previous-schema accepts a dropped column → DV-5 (1); M46 a seed missing → SEED-1 (1); M46 job without pg_dump → CIW-1 (1); M46 runbook flags differ → RB-3 (1); M47 plain grant without its block → MG-6, MG-7 (2); M48 grants statement by statement without a transaction → MG-6 (1); M49 public.user → MG-6, MG-7 (2); M54 set_config('app.role','platform') in auth-store.js → DBC-3 (1); M58 literal <row> count → DV-1, DV-2 (2); X1 withTenant without the uuid check → TXH-1 (1); X2 no set local role → TXH-2 (1); X3 settings for the session → TXH-3 (1); X4 audit writer without the platform check → TXH-6 (1); X5 docker step back to 0001 → CIW-1 (1); X6 rehearsal password unmasked → CIW-1 (1); X7 grants step skipped → MG-6 (1); X8 step 14 quoted $$ → CIW-1, CIW-3 (2). Survived: M48b (I5, equivalent)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "A7 says CHANGED/PAGES of public-build stay because «the new pages have no region»; decisions/0137 Addition 3 gives each account page one kk region, which the open build cuts, so PB-2 was red on bddef13 (the files that differ included the four pages) — not in the developers' expected-red list. The four pages joined CHANGED and the region-cut comparison of PB-2 with a «kk region only» check; likewise A8 needed PP-2's script rule to name each account page's own module (/js/pages/<page>.js) and PP-7's built page list to gain the four. No rule was loosened; each widens a list to the new files."
+      },
+      {
+        "id": "I2",
+        "kind": "DISCREPANCY",
+        "text": "A9 (forbidden-words page lists the six → + the four): the file holds no literal page list; its real-files case (FW-7) runs check-public, which reads every page of app/public, so the four pages are already covered. No edit."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "app/test/unit/route-table.test.js has two writers in sequence: the auth lane created it with RT-6 and a header naming RT-1 … RT-5 as the tenancy lane's; I appended RT-1..RT-5 once at the end (their 6432 bytes byte-equal before and after, imports done inside my block). If the auth lane rewrites the file, RT-1..RT-5 must stay (RT-3 is invariant row 11 of docs/security-invariants.md, SI-1)."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "unit/db-calls.test.js (DBC-1..3, REQ-115 c4, design 9.2) was not in the handoff's explicit file list but is a 9.2 file no lane named; written here."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "M48b (the grants step's BEGIN and COMMIT removed, the file still sent as one exec) survives and is equivalent: one simple-protocol message with several statements runs as one implicit transaction on Postgres and on PGlite, so a failure still leaves no grant. M48 as the design states it (half the grants applied) is the statement-by-statement form, killed by MG-6 (c)."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Added beyond the named cases, by the 02b test lines: TXH-6 (SEC F1: appendAudit under tenant settings throws before the chain lock, audit_log unchanged; also in AC-3 on pg) and CIW-3 (REVIEWER F1: the $do$ block raises on an empty public table, run on PGlite). A11 docker-files and A21 import-boundaries were run unchanged and are green on bddef13."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "SI-1 is green only with both lanes' files in the tree (it was red while RT-3 was missing); NPM-5 likewise needs the auth lane's 14 int and 1 pg files."
+      }
+    ],
+    "artifacts_out": [
+      "app/test/unit/db-verify.test.js",
+      "app/test/unit/rehearsal-seeds.test.js",
+      "app/test/unit/security-invariants.test.js",
+      "app/test/unit/db-calls.test.js",
+      "app/test/unit/route-table.test.js (RT-1..RT-5 block)",
+      "app/test/unit/ci-workflow.test.js",
+      "app/test/unit/runbooks.test.js",
+      "app/test/unit/no-string-sql.test.js",
+      "app/test/unit/npmrc.test.js",
+      "app/test/unit/public-build.test.js",
+      "app/test/unit/public-pages.test.js",
+      "app/test/int/migrate.test.js",
+      "app/test/int/health.test.js",
+      "app/test/int/selfcheck.test.js",
+      "app/test/int/tx.test.js",
+      "app/test/int/isolation.test.js",
+      "app/test/int/permission-matrix.test.js",
+      "app/test/fixtures/permission-matrix.golden.json",
+      "app/test/pg/rls.test.js",
+      "app/test/pg/audit-chain.test.js",
+      "app/test/pg/db-verify-pg.test.js",
+      "app/test/pg/migrate-pg.test.js",
+      "app/test/pg/selfcheck-pg.test.js"
+    ],
+    "must_be_proved_on_github": [
+      "The app.yml run of the ci/* snapshot (gh run list --workflow app.yml --branch <ci branch> --limit 1 --json conclusion,headSha; gh run view <id> --log | grep -E \"# (tests|fail|skipped|todo) \"): every job green; unit, int and pg each «# fail 0», «# skipped 0», «# todo 0»; this lane adds unit +18, int +16, pg +12.",
+      "Job pg: rls.test.js RLS-1..RLS-5 (the diagnostic «RLS-1: 3 tables with org_id, and orgs»), audit-chain.test.js AC-1..AC-4, db-verify-pg.test.js DVP-1, DVP-2, migrate-pg.test.js MP-1 (RLS rule) and MP-2 (all migration names), selfcheck-pg.test.js SP-1, SP-2 — each «ok» (none ran on this PC).",
+      "Job check: NPM-6 and PB-6 in full (their symlink cases cannot run on this Windows PC), and NM-1, SG-3 (red here on base and fix alike: SIGTERM on Windows).",
+      "Job docker: the step «Every migration is recorded» green (CIW pins its line).",
+      "Job migration-rehearsal: both db-verify comparisons end «db-verify: equal», the table-filled step, «\"role\":\"ok\"», the smoke; and the trial branch ci/m2auth-rehearsal-trial (design 6.3) red at the previous-schema step with «db-verify: users: differs: column dropped», recorded with its run id.",
+      "The four greps of REQ-115 c9 on the golden file (each > 0: org_admin 15, org_owner 15, member 15, viewer 15) and the grep of c10 (insert into audit_log only in app/server/db/audit-store.js, also asserted in AC-1)."
+    ]
+  }
+}

@@ -946,6 +946,7 @@ need not read it). `app/README.md` gets one line naming the runbook beside relea
 | Path | Answer | Unchanged |
 | --- | --- | --- |
 | Database refuses or is silent | 503 db_unavailable within 4.9 s, no cookie; page text `auth_err_db_unavailable`; process keeps serving | every row: a transaction whose deadline passed is rolled back before its next statement or before COMMIT, never committed **[B2]**; only a COMMIT already sent whose answer is lost is in doubt (4.5.2 residual) |
+| A database connection drops while a request transaction holds it **[decisions/0137 Addition 5]** | 503 db_unavailable within 5 s (pg.js keeps an `error` listener on the checked-out client: the transaction fails as E_DB_DOWN and the client is released as broken); no uncaught error, the process keeps serving | every row (the transaction never committed) |
 | Slow but answering database (a step past the deadline) **[B2]** | 503 db_unavailable at the deadline | every row (the late transaction rolls back, F24; ADD-2) |
 | Parallel wrong logins on one account **[B3]** | each waits for the row lock; 401 until the fifth failure, then 429 locked | no lost count; at most 5 guesses per 15 minutes |
 | Unknown, disabled or deleted e-mail **[B7a]** | 401 invalid_credentials like a wrong password; after 5 failures in 15 minutes 429 locked | the users row of a disabled or deleted account; only `login_failures` and one audit row change |
@@ -954,6 +955,7 @@ need not read it). `app/README.md` gets one line naming the runbook beside relea
 | Admin route, no session cookie, database down **[N4]** | 404 uniform (no statement) | — |
 | Admin route with a session cookie, database down **[N4]** | 503 db_unavailable (accepted: the caller holds a session) | every row |
 | Many parallel logins on one Vercel instance **[R1]**: the 1 vCPU is the bound (F32: on one thread the 7th of eight parallel scrypt computations ends at 3.9 s, the 8th at 4.5 s); memory allows about 12 (F30) | about 7 parallel logins fit the 4 s deadline; above that the later ones answer 503 db_unavailable (the deadline) and roll back; a computation that cannot get memory fails → 500. Accepted for an invite-only V1 (ORCH's answer R1 in `handoffs/M2AUTH-20261123-01/step-01f-code-designer.json`); the post-deploy record measures one login's time on production (14) | every row |
+| **[SEC F4, decisions/0137 Addition 4]** Named residual: the pool of an instance has 3 connections (`createPgAdapter` max 3) and each login holds one through its scrypt (about 0.5 s, more under CPU load) | anonymous logins from a few addresses can keep the 3 connections busy, so other requests of that instance wait for a connection and answer 503 db_unavailable at the 4 s deadline; bounded by the login limit per address and the admin delay; accepted for an invite-only V1; the post-deploy record (14) measures it with the time of one login | every row |
 | Unsafe role at start | node-main exits 1 with the one line; on Vercel health 503 role unsafe, auth 503 | — |
 | Pepper missing in production | node-main and migrate refuse with one line; Vercel /api 503 server_config (also the demo) | database untouched |
 | Foreign Origin, wrong type, bad CSRF, missing re-auth, bad body, unknown purpose | 403 / 415 / 403 / 403 / 400 / 400 | every row, the rate counters included (thrown → rollback). **[N6]** So a request refused at step 8 or 9, after the increment of step 7, is not counted by the rate limit: accepted, because such a refusal runs no scrypt and changes nothing; the limits that matter (the scrypt paths) count every attempt that reaches the handler |
@@ -1344,3 +1346,20 @@ Rework 01f (handoff `handoffs/M2AUTH-20261123-01/step-01f-code-designer.json`, p
 | R2 MIT notice | 4.9.2 | PW-4 | — | — |
 | R3 traces over the list | 4.9.2, 12 B6 | traces (step 10) | — | — |
 | R4 no 503 after COMMIT | 4.5.2 item 4 | ADD-2 (commit in flight) | M37b | — |
+
+Rework 02b (handoff `handoffs/M2AUTH-20261123-01/step-02b-backend-dev.json`, decisions/0137 Addition 4, the gates of step 3 and 4):
+
+| Finding | Change | Test line for step 5 |
+| --- | --- | --- |
+| REVIEWER F1 | 6.3 step 14: the `do` block is quoted `$do$ … $do$` in one `psql -c` with ON_ERROR_STOP | CIW: the step's text holds `do $do$` and `end $do$`; the block raises on an empty table |
+| SEC F1 | 4.11: `appendAudit` reads `current_setting('app.role', true)` (`currentAppRole` of `audit-store.js`) and throws TypeError before the chain lock unless it is `platform`; no row is written | AC-3 (or a TXH case): under withTenant the writer throws and audit_log is unchanged |
+| SEC F2 | 4.10: the address part of a rate-limit key and of the admin delay key is `addressKey(ip)` of `rate-limit.js`: IPv4 whole, IPv6 by its /64 prefix (`a:b:c:d::/64`), `unknown` as it is; ip_hmac columns keep the whole address | RL: two IPv6 addresses of one /64 share one login window and one delay row |
+| SEC F3 | 4.17: uat-login opens the secret file once with `O_RDONLY` plus `O_NOFOLLOW`, checks regular file and mode by fstat on that descriptor and reads from it | UL-2: a link swapped in after the lstat is refused (Linux CI) |
+| SEC F4 | 7: the pool bound of 3 connections held through scrypt is a named residual, measured after the deploy (14) | — (named) |
+| SEC F5 | 4.9.3: a password change also deletes the user's unused reset codes in its transaction | SS-8: after a password change an unused reset code answers reset_invalid |
+
+Rework 02c (handoff `handoffs/M2AUTH-20261123-01/step-02c-backend-dev.json`, decisions/0137 Addition 5):
+
+| Finding | Change | Test line for step 5 |
+| --- | --- | --- |
+| ADD-4 (TEST-DESIGNER) | 4.5.1: `pg.js` `transaction` attaches an `error` listener to the checked-out client while it is held; after the event every statement fails as E_DB_DOWN and the client is released as broken (`release(true)`); a client returned to the pool loses the listener | ADD-4: a cut connection answers 503 db_unavailable within 5 s, no uncaught error, the app keeps serving |
