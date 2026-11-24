@@ -1,0 +1,72 @@
+{
+  "handoff_id": "step03c-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "03c",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/M2AUTH-20261123-01/step-03c-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "git diff bddef13 5c85759 -- app/server/db/pg.js (the only code change)",
+      "decisions/0137 Addition 5",
+      "handoffs/M2AUTH-20261123-01/step-02c-backend-dev.json"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "rework_of": "handoffs/M2AUTH-20261123-01/step-03b-security-reviewer.json",
+    "write_set": [
+      "handoffs/M2AUTH-20261123-01/step-03c-security-reviewer.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "Narrow pass 3 of your gate over the one change of rework 02c (app/server/db/pg.js): the listener is present for exactly the time a client is held, a dropped client is released as broken, no error is swallowed beyond the 503 path, no secret or message text is logged, the normal, rollback and plain-query paths are unchanged. Probe it yourself on a checkout of 5c85759 if useful. PASS or FAIL. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-24T02:16:16Z",
+  "started_at": "2026-11-24T02:16:29Z",
+  "completed_at": "2026-11-24T02:19:15Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "scope": "Narrow pass 3 over rework 02c: git diff bddef13 5c85759 changes one code file, app/server/db/pg.js (transaction()), plus decisions/0137 Addition 5, two design rows and handoffs. Read against Addition 5 and probed on a fresh clone of 5c85759 under <scratch> (npm ci in app/) with my own script: a fake checked-out client (an EventEmitter) patched into pg.Pool, the real createPgAdapter, createDb and createApp. The same script on bddef13 is the control. No repository suite, npm run check, node --test or e2e (decision 0110).",
+      "surface_map": "pg.js: customer data and comes from outside (the database connection) -> Q10, Q7 (messages), Q8 and Q9 unchanged; decisions/0137 and the design rows: no surface (records).",
+      "checks": {
+        "listener_lifetime": "met. The listener is attached right after pool.connect() resolves. No socket event can come between the pool's checkout (pg-pool removes its idle listener there, node_modules/pg-pool/index.js:344) and the attach, because a promise continuation runs before any I/O callback. A client returned to the pool loses the listener after release(false), and the pool's idle listener takes over. A client released as broken keeps it, so a late socket event cannot end the process. Probe: normal path → release(false) and 0 own listeners; a late error on a dropped client → no uncaught error.",
+        "dropped_client_released_as_broken": "met. After the event every statement throws E_DB_DOWN without being sent (pg.js:81). COMMIT is never sent on a broken client, and release(drop || broken) drops it. Probes: a drop during an in-flight statement, a drop between statements and a drop after fn's last statement each give E_DB_DOWN, no COMMIT, a ROLLBACK attempt and release(true).",
+        "no_error_swallowed": "met. The listener only sets a flag. The failure surfaces through the next statement or the in-flight one (rejected by the driver) as DbError E_DB_DOWN, the existing 503 path. A throw of fn passes on as the same object. Through the app, a dropped connection answers 503 {\"error\":\"db_unavailable\"} and the next request answers 200 with no uncaught error.",
+        "no_secret_or_message_logged": "met. The listener logs nothing. The DbError carries its fixed text ('the database does not answer'), never the driver's message, whose planted host and address do not appear. The app's log line holds route, status and code db_unavailable only.",
+        "unchanged_paths": "met. Normal: begin, statements, commit, release to the pool. Rollback on a throw: not awaited, then release(true) as before. The plain query and exec paths and connectPgSession are untouched (pool.query keeps pg-pool's own once('error') listener, pg-pool index.js:464)."
+      },
+      "items": {
+        "Q7": "met (no message text or secret reaches a log line, an answer or an error).",
+        "Q8": "unchanged (no data path changed).",
+        "Q9": "unchanged (no statement text added except the existing begin, commit and rollback).",
+        "Q10": "met. This is the fix itself: a dropped connection is a 503 for that request, the process lives and serves the next one. The control run on bddef13 records the uncaught 'Connection terminated unexpectedly' error that the fix removes.",
+        "Q11": "not applicable.",
+        "R2": "not applicable.",
+        "R3": "not applicable (decision 0033)."
+      },
+      "probes": "sp6-pgdrop on 5c85759: 13/13 PASS (SUMMARY fails 0). On bddef13 as control: the drop case records an uncaught error (the defect), and the normal-path case differs only because the old code called release() with no argument. My first run on 5c85759 stopped at a case of my own probe that emitted an error on a client returned to my fake pool, which has no idle listener (a real pool has one); I removed that emit and the rerun passes."
+    },
+    "findings": [],
+    "self_check": {
+      "diff": "git diff --stat bddef13 5c85759 → app/server/db/pg.js 23 lines (the only code file), decisions/0137 +4, the design +7, step-02c-backend-dev.json, step-03b-security-reviewer.json, step-04b-reviewer.json.",
+      "hashes": "sha256 of app/server/db/pg.js in the fresh clone: 4f166a306e241813337fd5a1d5f20f78edc43edb8667120df0332c639344a071 before and after the probe; no tracked change in the clone (only the untracked probe file in <scratch>).",
+      "commands": "Node v22.23.4 first on PATH; node sp6-pgdrop.mjs → 13 PASS, SUMMARY fails 0; the same script on a clone of bddef13 → FAIL on the drop case with an uncaught 'Connection terminated unexpectedly…' error (the control). No server was started and no network connection was made: the pool's connect and query were replaced in-process."
+    },
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "A real cut connection on Postgres (ADD-4) is still to be proven by the pg job on GitHub; this pass used an in-process fake client."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
