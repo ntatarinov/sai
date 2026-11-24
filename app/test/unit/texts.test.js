@@ -1561,3 +1561,63 @@ test("TX-10 the static source of how.html: the status block between the intro an
       `${name}: ${JSON.stringify(howFindings(copy, texts.TEXTS))}`,
     );
 });
+
+/** The 23 codes of the code design M2AUTH, 4.8 (AUTH_CODES): every code that routes 4-15 can answer. */
+const AUTH_CODES_OF_THE_DESIGN = [
+  "not_found",
+  "body_too_large",
+  "site_closed",
+  "bad_json",
+  "bad_body",
+  "server_error",
+  "server_config",
+  "auth_required",
+  "invalid_credentials",
+  "totp_required",
+  "totp_invalid",
+  "origin_refused",
+  "csrf_refused",
+  "reauth_required",
+  "unsupported_type",
+  "password_rules",
+  "unknown_purpose",
+  "reset_invalid",
+  "totp_state",
+  "locked",
+  "reauth_locked",
+  "rate_limited",
+  "db_unavailable",
+];
+
+test("TX-11 AUTH_CODES of errors.js equals the 23 codes of the code design (body_too_large and site_closed among them), and each code has an auth_err_<code> key with ru, kk and en values", async () => {
+  const { AUTH_CODES, ERROR_STATUS } = await import(
+    url(path.join(APP, "server", "http", "errors.js"))
+  );
+  assert.equal(AUTH_CODES_OF_THE_DESIGN.length, 23);
+  assert.deepEqual(
+    [...AUTH_CODES].sort(),
+    [...AUTH_CODES_OF_THE_DESIGN].sort(),
+  );
+  assert.equal(new Set(AUTH_CODES).size, AUTH_CODES.length, "no code twice");
+  for (const code of AUTH_CODES_OF_THE_DESIGN) {
+    assert.ok(Object.hasOwn(ERROR_STATUS, code), `${code} has a status`);
+    const entry = texts.TEXTS[`auth_err_${code}`];
+    assert.ok(entry, `auth_err_${code}`);
+    for (const lang of ["ru", "kk", "en"]) {
+      assert.equal(typeof entry[lang], "string", `auth_err_${code} ${lang}`);
+      assert.ok(entry[lang].trim().length > 0, `auth_err_${code} ${lang}`);
+    }
+    // The lock and limit texts name no duration (word lists В and Ц).
+    assert.doesNotMatch(
+      entry.ru,
+      /(?<!\p{L})(минут|секунд|час|дня|дней|сутк)|\d/iu,
+      `auth_err_${code}`,
+    );
+  }
+  // No auth_err_ key without a code: the pages map exactly these.
+  const extra = Object.keys(texts.TEXTS)
+    .filter((k) => k.startsWith("auth_err_"))
+    .map((k) => k.slice("auth_err_".length))
+    .filter((c) => !AUTH_CODES_OF_THE_DESIGN.includes(c));
+  assert.deepEqual(extra, []);
+});

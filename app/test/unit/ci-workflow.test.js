@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { PGlite } from "@electric-sql/pglite";
 import { readRoot } from "../fixtures/helpers.js";
 
 // REQ-108 criteria 11 and 12 (the checks of the docker job), REQ-109 criterion 6 (the smoke step) and REQ-111
 // criteria 11 and 12 (the e2e job, the paths of the picker, the layout and the sim of the office, the demo
-// step of the docker job; code design 4.13). Line rules over .github/workflows/app.yml.
+// step of the docker job; code design 4.13), REQ-115 guard row (3) (the docker step of the migration rows)
+// and REQ-120 criterion 3 (the job migration-rehearsal; the code design M2AUTH, 6.3 and the guard edits A12,
+// A13). Line rules over .github/workflows/app.yml.
 //
 // The named limit (the scope decided for this round by the session that leads the program in ORCH's role).
 // The rules guard the forms an author writes in good faith; deliberate obfuscation is outside what text
@@ -28,8 +31,9 @@ const PATHS = [
   ".github/workflows/app.yml",
 ];
 
-// The jobs of the file, in this order (REQ-111 criterion 11: e2e joins check, pg and docker).
-const JOBS = ["check", "pg", "docker", "e2e"];
+// The jobs of the file, in this order (REQ-111 criterion 11: e2e joins check, pg and docker; REQ-120
+// criterion 3: migration-rehearsal stands after docker; e2e stays the last job).
+const JOBS = ["check", "pg", "docker", "migration-rehearsal", "e2e"];
 
 // The first step of the e2e job (decisions/0124 О7): it prints the path and the version of the Chrome that
 // the browser tests open, so a runner without it is red at once.
@@ -73,9 +77,11 @@ const DOCKER_STEPS = [
     "docker uid",
     'run: test "$(docker compose -f app/compose.yaml exec -T web id -u)" != "0"',
   ],
+  // Every migration file is recorded, in name order: the names of app/db/migrations, read by the step itself
+  // when it runs (REQ-115 guard row (3)).
   [
-    "docker 0001 row",
-    `run: test "$(docker compose -f app/compose.yaml exec -T db psql -U postgres -d sai -Atc 'select name from schema_migrations')" = "0001_init.sql"`,
+    "docker migration rows",
+    `run: test "$(docker compose -f app/compose.yaml exec -T db psql -U postgres -d sai -Atc 'select name from schema_migrations order by name')" = "$(ls app/db/migrations | sort)"`,
   ],
   [
     "docker probe health",
@@ -95,6 +101,186 @@ const DOCKER_STEPS = [
     "run: node app/scripts/smoke.js --base http://127.0.0.1:8080 --preview http://localhost:8080",
   ],
 ];
+
+// The steps of the job migration-rehearsal (REQ-120 criterion 3; the code design M2AUTH, 6.3): the 18 kinds,
+// in this order. Each kind is one step of the job that holds these lines (exact trimmed lines, or a pattern)
+// in this order; a kind that is missing, out of place or changed is red with its label. The passwords are
+// made in the run and masked before they reach GITHUB_ENV; the database addresses stand only in the
+// environment of the commands, never as an argument of db-verify; the dump is removed at the end, also after
+// a failure (`if: always()`).
+/** @type {Array<[string, Array<string | RegExp>]>} */
+const REHEARSAL_STEPS = [
+  [
+    "rehearsal passwords",
+    [
+      "for name in POSTGRES_PASSWORD APP_DB_PASSWORD SECRET_PEPPER; do",
+      'pw="$(openssl rand -hex 32)"',
+      'echo "::add-mask::$pw"',
+      'echo "$name=$pw" >> "$GITHUB_ENV"',
+    ],
+  ],
+  [
+    "rehearsal postgres",
+    [
+      /^docker run -d --name sai-reh -e POSTGRES_PASSWORD -p 127\.0\.0\.1:5433:5432 postgres:17@sha256:[0-9a-f]{64}$/,
+      "for i in $(seq 1 60); do docker exec sai-reh pg_isready -U postgres -d postgres -h 127.0.0.1 && exit 0; sleep 1; done",
+      "exit 1",
+    ],
+  ],
+  [
+    "rehearsal databases",
+    [
+      "docker exec sai-reh createdb -U postgres a",
+      "docker exec sai-reh createdb -U postgres b",
+    ],
+  ],
+  [
+    "rehearsal previous set",
+    [
+      'mkdir "$RUNNER_TEMP/prev"',
+      'for name in $(ls app/db/migrations | sort | head -n -1); do cp "app/db/migrations/$name" "$RUNNER_TEMP/prev/$name"; done',
+    ],
+  ],
+  [
+    "rehearsal migrate A",
+    [
+      "working-directory: app",
+      'run: MIGRATIONS_DIR="$RUNNER_TEMP/prev" DATABASE_URL="postgres://postgres:$POSTGRES_PASSWORD@127.0.0.1:5433/a" node server/db/migrate.js',
+    ],
+  ],
+  [
+    "rehearsal seed A",
+    [
+      'for name in $(ls "$RUNNER_TEMP/prev" | sort); do',
+      'docker exec -i sai-reh psql -v ON_ERROR_STOP=1 -U postgres -d a -f - < "app/test/fixtures/rehearsal/$name"',
+    ],
+  ],
+  ["rehearsal openssl", ["run: docker exec sai-reh openssl version"]],
+  [
+    "rehearsal pg_dump",
+    [
+      "run: docker exec sai-reh pg_dump --format=custom --no-owner --no-acl -U postgres -d a -f /tmp/a.dump",
+    ],
+  ],
+  [
+    "rehearsal pg_restore",
+    [
+      "run: docker exec sai-reh pg_restore --no-owner --no-acl -U postgres -d b /tmp/a.dump",
+    ],
+  ],
+  [
+    "rehearsal db-verify same",
+    [
+      "working-directory: app",
+      'run: SAI_VERIFY_A_URL="postgres://postgres:$POSTGRES_PASSWORD@127.0.0.1:5433/a" SAI_VERIFY_B_URL="postgres://postgres:$POSTGRES_PASSWORD@127.0.0.1:5433/b" node scripts/db-verify.js',
+    ],
+  ],
+  [
+    "rehearsal migrate B",
+    [
+      "working-directory: app",
+      'run: DATABASE_URL="postgres://postgres:$POSTGRES_PASSWORD@127.0.0.1:5433/b" node server/db/migrate.js',
+    ],
+  ],
+  [
+    "rehearsal seed B",
+    [
+      'name="$(ls app/db/migrations | sort | tail -n 1)"',
+      'docker exec -i sai-reh psql -v ON_ERROR_STOP=1 -U postgres -d b -f - < "app/test/fixtures/rehearsal/$name"',
+    ],
+  ],
+  [
+    "rehearsal db-verify previous",
+    [
+      "working-directory: app",
+      'run: SAI_VERIFY_A_URL="postgres://postgres:$POSTGRES_PASSWORD@127.0.0.1:5433/a" SAI_VERIFY_B_URL="postgres://postgres:$POSTGRES_PASSWORD@127.0.0.1:5433/b" node scripts/db-verify.js --previous-schema',
+    ],
+  ],
+  [
+    "rehearsal every table filled",
+    [
+      /^run: docker exec sai-reh psql -v ON_ERROR_STOP=1 -U postgres -d b -c 'do \$do\$ [^']* end \$do\$'$/,
+    ],
+  ],
+  [
+    "rehearsal start app",
+    [
+      "working-directory: app",
+      'NODE_ENV=production PORT=18080 HOST=127.0.0.1 DATABASE_URL="postgres://postgres:$POSTGRES_PASSWORD@127.0.0.1:5433/b" APP_ORIGIN=http://127.0.0.1:18080 PREVIEW_ORIGIN=http://localhost:18080 nohup node server/node-main.js > "$RUNNER_TEMP/app.log" 2>&1 &',
+      'echo "$!" > "$RUNNER_TEMP/app.pid"',
+    ],
+  ],
+  [
+    "rehearsal selfcheck",
+    [
+      "for i in $(seq 1 30); do",
+      `if curl -fsS http://127.0.0.1:18080/api/health | grep -q '"role":"ok"'; then exit 0; fi`,
+      "sleep 1",
+      "done",
+      "exit 1",
+    ],
+  ],
+  [
+    "rehearsal smoke",
+    [
+      "working-directory: app",
+      "run: node scripts/smoke.js --base http://127.0.0.1:18080 --preview http://localhost:18080",
+    ],
+  ],
+  [
+    "rehearsal stop and remove",
+    [
+      "if: always()",
+      'if [ -f "$RUNNER_TEMP/app.pid" ]; then kill "$(cat "$RUNNER_TEMP/app.pid")"; fi',
+      "if docker inspect sai-reh > /dev/null 2>&1; then docker exec sai-reh rm -f /tmp/a.dump; docker rm -f sai-reh; fi",
+    ],
+  ],
+];
+
+/**
+ * The steps of a job: the trimmed lines of each `- ` entry under `steps:` (the leading `- ` removed), blank
+ * lines left out.
+ * @param {string} body
+ * @returns {string[][]}
+ */
+export const stepsOf = (body) =>
+  body
+    .split(/^ {6}(?=- )/m)
+    .slice(1)
+    .map((s) =>
+      s
+        .split("\n")
+        .map((l) => l.trim().replace(/^- /, ""))
+        .filter(Boolean),
+    );
+
+/**
+ * The labels of REHEARSAL_STEPS whose step the job does not hold, in order.
+ * @param {string[][]} steps
+ * @returns {string[]}
+ */
+export function rehearsalFindings(steps) {
+  const out = [];
+  let at = -1;
+  /** @param {string[]} lines @param {Array<string | RegExp>} want */
+  const holds = (lines, want) => {
+    let k = -1;
+    for (const w of want) {
+      const i = lines.findIndex(
+        (l, j) => j > k && (typeof w === "string" ? l === w : w.test(l)),
+      );
+      if (i < 0) return false;
+      k = i;
+    }
+    return true;
+  };
+  for (const [label, want] of REHEARSAL_STEPS) {
+    const i = steps.findIndex((s, j) => j > at && holds(s, want));
+    if (i < 0) out.push(label);
+    else at = i;
+  }
+  return out;
+}
 
 // The options of `docker run`, `docker create` and `docker pull` that take no value (Docker's CLI
 // reference, read, not measured). Any other option is read as taking the next word, so the word read as
@@ -350,6 +536,19 @@ export function ciFindings(text) {
     if (i < 0) out.push(label);
     else at = i;
   }
+  // The job migration-rehearsal: its install in app/ before its first step on the database, its 18 kinds of
+  // steps in order, and the one image, that of the pg job.
+  const rehearsal = jobs["migration-rehearsal"] ?? "";
+  const install = rehearsal.search(/working-directory: app\n\s+run: npm ci\n/);
+  if (install < 0 || install > rehearsal.indexOf("sai-reh"))
+    out.push("rehearsal npm ci");
+  out.push(...rehearsalFindings(stepsOf(rehearsal)));
+  const pgImage = (jobs.pg ?? "").match(/postgres:17@sha256:[0-9a-f]{64}/)?.[0];
+  const images = [
+    ...rehearsal.matchAll(/(?:^|\s)(postgres:[^\s"'$/][^\s"']*)/g),
+  ].map((m) => m[1]);
+  if (!pgImage || images.length !== 1 || images[0] !== pgImage)
+    out.push("rehearsal image");
   if (/\|\||continue-on-error|set \+e/.test(text))
     out.push("a hidden exit code");
   if (/^\s+! /m.test(text)) out.push("a negated command");
@@ -417,6 +616,28 @@ test("CIW-2 each damaged copy is red with the finding of the rule it breaks", ()
     "      - name: Install the app dependencies\n        working-directory: app\n        run: npm ci\n";
   const e2eRunStep =
     "      - name: Run the browser tests\n        working-directory: app\n        run: npm run test:e2e\n";
+  // The job migration-rehearsal stands between docker and e2e: a copy changes only its text.
+  const rehAt = t.indexOf("\n  migration-rehearsal:\n");
+  assert.ok(
+    rehAt > 0 && rehAt < e2eAt,
+    "app.yml has no rehearsal job before e2e",
+  );
+  const rehText = t.slice(rehAt, e2eAt);
+  const inReh = (/** @type {string} */ a, /** @type {string} */ b) =>
+    t.slice(0, rehAt) + change(rehText, a, b) + t.slice(e2eAt);
+  /** The whole line of the rehearsal job that starts (trimmed) with `start`, with its newline. */
+  const rehLine = (/** @type {string} */ start) => {
+    const line = rehText.split("\n").find((l) => l.trim().startsWith(start));
+    assert.ok(line, `the rehearsal job has no line ${start}`);
+    return `${line}\n`;
+  };
+  /** The whole step of the rehearsal job named `name`, with its lines. */
+  const rehStep = (/** @type {string} */ name) => {
+    const at = rehText.indexOf(`      - name: ${name}\n`);
+    assert.ok(at > 0, `the rehearsal job has no step ${name}`);
+    const end = rehText.indexOf("\n      - ", at + 1);
+    return rehText.slice(at, end < 0 ? undefined : end + 1);
+  };
   /** @type {Array<[string, string]>} */
   const cases = [
     ["trigger", change(t, "on:\n  push:", "on:\n  pull_request:\n  push:")],
@@ -918,6 +1139,125 @@ test("CIW-2 each damaged copy is red with the finding of the rule it breaks", ()
         '          ! echo "$rows" | grep -qx postgres\n',
       ),
     ],
+    // The job migration-rehearsal (REQ-120 criterion 3): the damaged copies the criterion names (no pg_dump,
+    // an unpinned image, an unmasked password, db-verify removed), and each kind of step missing, changed or
+    // out of place.
+    ["rehearsal passwords", inReh(rehLine('echo "::add-mask::'), "")],
+    [
+      "rehearsal passwords",
+      inReh('pw="$(openssl rand -hex 32)"', 'pw="fixed-test-password"'),
+    ],
+    ["rehearsal postgres", inReh(rehLine("docker run -d --name sai-reh"), "")],
+    ["image of docker run", inReh(pinned, "postgres:17")],
+    ["rehearsal postgres", inReh(pinned, "postgres:17")],
+    ["rehearsal image", inReh(pinned, "postgres:latest")],
+    ["rehearsal image", inReh(pinned, `postgres:17@sha256:${hex}`)],
+    [
+      "rehearsal postgres",
+      inReh(
+        "-e POSTGRES_PASSWORD -p",
+        "-e POSTGRES_PASSWORD=fixed-test-password -p",
+      ),
+    ],
+    [
+      "rehearsal databases",
+      inReh(rehLine("docker exec sai-reh createdb -U postgres b"), ""),
+    ],
+    ["rehearsal previous set", inReh("| sort | head -n -1)", "| sort)")],
+    ["rehearsal migrate A", inReh('MIGRATIONS_DIR="$RUNNER_TEMP/prev" ', "")],
+    [
+      "rehearsal seed A",
+      inReh(
+        rehLine(
+          "docker exec -i sai-reh psql -v ON_ERROR_STOP=1 -U postgres -d a",
+        ),
+        "",
+      ),
+    ],
+    ["rehearsal openssl", inReh(rehStep("openssl is in the pinned image"), "")],
+    ["rehearsal pg_dump", inReh(rehStep("pg_dump of A"), "")],
+    [
+      "rehearsal pg_dump",
+      inReh(
+        "--format=custom --no-owner --no-acl",
+        "--format=custom --no-owner",
+      ),
+    ],
+    ["rehearsal pg_restore", inReh(rehStep("pg_restore into B"), "")],
+    [
+      "rehearsal pg_restore",
+      inReh(rehStep("pg_dump of A"), "").replace(
+        rehStep("pg_restore into B"),
+        `${rehStep("pg_restore into B")}${rehStep("pg_dump of A")}`,
+      ),
+    ],
+    ["rehearsal db-verify same", inReh(rehStep("db-verify A and B"), "")],
+    [
+      "rehearsal db-verify same",
+      inReh(
+        'SAI_VERIFY_B_URL="postgres://postgres:$POSTGRES_PASSWORD@127.0.0.1:5433/b" node scripts/db-verify.js\n',
+        "node scripts/db-verify.js postgres://a postgres://b\n",
+      ),
+    ],
+    [
+      "rehearsal db-verify previous",
+      inReh(rehStep("db-verify A and B in the previous-schema mode"), ""),
+    ],
+    [
+      "rehearsal db-verify previous",
+      inReh(
+        "node scripts/db-verify.js --previous-schema",
+        "node scripts/db-verify.js",
+      ),
+    ],
+    [
+      "rehearsal migrate B",
+      inReh(rehStep("Migrate B to the newest migration"), ""),
+    ],
+    ["rehearsal seed B", inReh(rehStep("Seed B with the newest seed"), "")],
+    [
+      "rehearsal every table filled",
+      inReh(rehStep("Every table of B has a row"), ""),
+    ],
+    // The quoting of REVIEWER F1 (rework 02b): the block is quoted `$do$ … $do$`, never `$$`, and psql stops
+    // on its error.
+    ["rehearsal every table filled", inReh("-c 'do $do$", "-c 'do $$")],
+    ["rehearsal every table filled", inReh("end $do$'", "end $$'")],
+    [
+      "rehearsal every table filled",
+      inReh(
+        "psql -v ON_ERROR_STOP=1 -U postgres -d b -c",
+        "psql -U postgres -d b -c",
+      ),
+    ],
+    ["rehearsal start app", inReh("NODE_ENV=production ", "")],
+    ["rehearsal start app", inReh(rehLine('echo "$!" >'), "")],
+    [
+      "rehearsal selfcheck",
+      inReh(`grep -q '"role":"ok"'`, `grep -q '"ok":true'`),
+    ],
+    ["rehearsal smoke", inReh(rehStep("Smoke against the app on B"), "")],
+    [
+      "rehearsal stop and remove",
+      inReh("docker exec sai-reh rm -f /tmp/a.dump; ", ""),
+    ],
+    ["rehearsal stop and remove", inReh(rehLine("if: always()"), "")],
+    [
+      "rehearsal npm ci",
+      inReh(
+        "working-directory: app\n        run: npm ci\n",
+        "working-directory: app\n        run: npm install\n",
+      ),
+    ],
+    ["migration-rehearsal timeout", inReh("    timeout-minutes: 20\n", "")],
+    ["migration-rehearsal node -v", inReh("        run: node -v\n", "")],
+    // The job moved after e2e, or before docker.
+    ["jobs", `${t.slice(0, rehAt)}${t.slice(e2eAt).trimEnd()}\n${rehText}`],
+    [
+      "jobs",
+      change(t.slice(0, rehAt), "\n  docker:\n", `${rehText}\n  docker:\n`) +
+        t.slice(e2eAt),
+    ],
   ];
   for (const [label, copy] of cases)
     assert.ok(
@@ -942,4 +1282,34 @@ test("CIW-2 each damaged copy is red with the finding of the rule it breaks", ()
     ),
   ])
     assert.deepEqual(ciFindings(copy), []);
+});
+
+test("CIW-3 the do block of the step «Every table of B has a row» raises on a database with an empty public table and passes when every table has a row", async () => {
+  const jobs = jobsOf(readRoot(".github/workflows/app.yml"));
+  const line = (jobs["migration-rehearsal"] ?? "")
+    .split("\n")
+    .map((l) => l.trim())
+    .find((l) =>
+      l.startsWith(
+        "run: docker exec sai-reh psql -v ON_ERROR_STOP=1 -U postgres -d b -c '",
+      ),
+    );
+  assert.ok(line, "the step's line");
+  // The text psql gets: the single-quoted argument of -c (it holds no single quote of its own).
+  const sql = /-c '([^']*)'$/.exec(line)?.[1] ?? "";
+  assert.match(sql, /^do \$do\$ .* end \$do\$$/);
+  const db = new PGlite();
+  try {
+    await db.exec(
+      "create table filled (x integer); create table other (y text); insert into filled values (1)",
+    );
+    await assert.rejects(db.exec(sql), /a public table has no row/);
+    await db.exec("insert into other values ('a')");
+    await db.exec(sql);
+    // A table of another schema is not read.
+    await db.exec("create schema side; create table side.empty (z integer)");
+    await db.exec(sql);
+  } finally {
+    await db.close();
+  }
 });
