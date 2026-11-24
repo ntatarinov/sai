@@ -74,3 +74,11 @@ TEST-DESIGNER (lane auth) found with the new test ADD-4 that `app/server/db/pg.j
 ## Addition 6 — the acceptance of step 8, 2026-11-24
 
 UAT-RUNNER (`docs/uat/M2AUTH-20261123-01.md`) found every flow working and one major look defect F-1: at 390 px the TOTP enrolment note and the `otpauth://` address are cut at the right edge (hidden by the page's `overflow-x` clipping). Fixed now by FRONTEND-DEV (rework 02d): the note and the address wrap (`overflow-wrap: anywhere` on exactly those elements; `app/public/css/site.css` joins the write set for that one rule); and the prompt «enter the code» after a right password is shown as a prompt, not under the error label. Then a narrow REVIEWER pass and a UAT re-check at 390 and 320 in ru and en.
+
+## Addition 7 — the release gate of step 9, 2026-11-24
+
+RELEASE-VALIDATOR gave FAIL on two gaps of the records, none in the code or the tests (`handoffs/M2AUTH-20261123-01/step-09-release-validator.json`):
+
+- **RV-F1** REQ-114 c14 asks SECURITY-REVIEWER to answer ASVS 4.0.3 V2 and V3 row by row as design 9.4 lists them; its record answered by topic. A narrow SECURITY-REVIEWER pass (step 03d) writes one entry per row of 9.4, the reset-link rows 2.5.1-2.5.4 and 2.2.3 included.
+- **RV-F2** two test edits had no guard row: `app/test/unit/vercel-build.test.js` (the four account pages in its CHANGED list, the consequence of Addition 3) and `app/test/fixtures/pg-env.js` (the teardown order, step 06). They become rows A27 and A28 of design section 11 («was → became»); step 05b already checked both.
+- **REQ-120 c5** needs the rehearsal job green on the first pushed commit of `main` that holds 0002, which exists only after the push. ORCH reads that run right after the push (the RELEASE-FINALIZER part of decisions/0134 item 2), and REQ-120 becomes `done` only then; REQ-114 and REQ-115 become `done` after the narrow step 9 re-check.

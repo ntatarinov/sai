@@ -1118,6 +1118,8 @@ V3: 3.2.1–3.2.3 (32 random bytes, rotated at login, HMAC at rest), 3.3.1–3.3
 | A24 | app/test/e2e/landing.test.js DEMO_ROUTES; demo.test.js; demo-parity.test.js; stage.test.js | unchanged (CS-3 proves the demo answers as before) | — |
 | A25 | app/test/int/api-entry.test.js AE-1–AE-5 | unchanged (the entry adds an env argument; the paths and answers stay) | — |
 | A26 | tools/test | none (F18) | — |
+| A27 | app/test/unit/vercel-build.test.js:23 CHANGED (commit 5f229ba; decisions/0137 Additions 3 and 7, RV-F2) | the five entries (index.html, how.html, demo.html, 404.html, shared/i18n/texts.js) → the same five + admin-totp.html, login.html, reset.html, setup.html. Not weakened: each account page holds one kk region that the open build cuts (Addition 3), so it really changes; the rule «every other file byte for byte» still holds for every file not on the list, and the list is a literal that names each allowed file (the same four as A6/A7 of public-build.test.js) | literal |
+| A28 | app/test/fixtures/pg-env.js:51-63 `freshDatabase` and `client` (commit 5f229ba, step 06; Addition 7, RV-F2) | the after hook dropped the fresh database `with (force)` while the test's own clients were still open (node:test runs after hooks in registration order; the force drop ended them with 57P01, an uncaught error of a pg.Client without a listener) → `client()` records each client opened on a fresh database, and the hook ends those clients first, then drops the database with force as before. Not weakened: a fixture's teardown order only; no assertion, case or test changed, the database is still dropped and every client still ended; a failure inside a test still fails it | — |
 
 ---
 

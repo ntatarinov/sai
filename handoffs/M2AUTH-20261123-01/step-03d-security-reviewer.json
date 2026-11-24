@@ -1,0 +1,229 @@
+{
+  "handoff_id": "step03d-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "03d",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/M2AUTH-20261123-01/step-03d-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/M2AUTH-accounts-tenancy-backup.md section 9.4 (the ASVS 4.0.3 rows)",
+      "your records step-03, 03b, 03c",
+      "handoffs/M2AUTH-20261123-01/step-09-release-validator.json (RV-F1)",
+      "decisions/0137 Addition 7",
+      "the code at 0358107"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "rework_of": "handoffs/M2AUTH-20261123-01/step-03c-security-reviewer.json",
+    "write_set": [
+      "handoffs/M2AUTH-20261123-01/step-03d-security-reviewer.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "Narrow SECURITY-REVIEWER pass (REQ-114 c14, decisions/0137 Addition 7 RV-F1): answer ASVS 4.0.3 V2 and V3 ROW BY ROW exactly as design 9.4 lists them — one entry per row id (2.1.1, 2.1.2, 2.1.7, 2.2.1, 2.2.3, 2.4.1, 2.4.4, 2.5.1, 2.5.2, 2.5.3, 2.5.4, 2.7, 2.8, 2.8.4, 2.10, 3.2.1-3.2.3, 3.3.1-3.3.3, 3.4.1-3.4.5, 3.5.3, 3.7.1 and any other row 9.4 names): met / not applicable / residual, the file:line or probe that shows it, on commit 0358107. Re-use your earlier probes; add one for the reset-link rows 2.5.1-2.5.4. PASS or FAIL. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-24T03:50:29Z",
+  "started_at": "2026-11-24T03:50:31Z",
+  "completed_at": "2026-11-24T03:55:04Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "scope": "REQ-114 c14 (decisions/0137 Addition 7, RV-F1): ASVS 4.0.3 V2 and V3 answered row by row as design 9.4 lists them, on commit 0358107. Since my pass 3 (5c85759) the code changed only in four page files (admin-totp.html, css/site.css, js/pages/login.js, login.html: wrapping and the code prompt, every value still set through textContent), plus tests and records. Probed on a fresh clone of 0358107 under <scratch> (npm ci in app/; PGlite, app.request): new sp7-reset-rows 22/22; re-used sp1-pipeline 125/125, sp5-rework 26/26, sp2-db-ip 42/45 (the 3 are my probe's owner cases after the login-role switch, covered by sp2b-owner 6/6), sp4-scripts 18/18. Real Postgres rows are read from GitHub: app run 45319467386 on 423b84d, the CI snapshot of 0358107 (git diff 423b84d 0358107 -- app is empty): check, pg, e2e, docker, migration-rehearsal all success. No repository suite, npm run check, node --test or e2e was run on this PC (decision 0110).",
+      "verdict_rule": "Every row of 9.4 is met or not applicable. Three rows are met at the level REQ-114 sets, with a residual named against the stricter ASVS text: 2.1.1 (10, not 12, characters), 3.3.2 (12 h idle and 7 d absolute meet L1, not L2), 3.5.3 (literally about stateless tokens). These are requirement choices, not code defects, so they do not make the verdict FAIL.",
+      "rows": [
+        {
+          "id": "2.1.1",
+          "asvs": "user-set passwords at least 12 characters",
+          "result": "met at the REQ-114 level; residual against the ASVS text",
+          "evidence": "rules() refuses fewer than 10 code points (app/server/auth/password.js:18, 81-86), as REQ-114 fixes «length 10 to 128» and design 9.4 lists it. Probe sp1: 9 code points → 400 password_rules at setup and reset; 10 accepted. Residual: ASVS 4.0.3 asks for 12; the 10 is the requirement's choice, so raising it is a REQ-114 change for the owner."
+        },
+        {
+          "id": "2.1.2",
+          "asvs": "at least 64 characters permitted, at most 128 denied above",
+          "result": "met",
+          "evidence": "MAX_LENGTH 128 (password.js:19, 83), counted in code points after NFC; a new password is a text of up to 1024 in the schema and then rules() (routes/auth.js:175), the login password up to 128 (auth.js:176). Probe sp1: 128 accepted, 129 → password_rules."
+        },
+        {
+          "id": "2.1.7",
+          "asvs": "passwords checked against a set of breached passwords",
+          "result": "met at the V1 level design 9.4 names",
+          "evidence": "The bundled list app/server/auth/common-passwords.js (2311 entries, 10-128 code points, from the SecLists 100 000 list), checked after NFC and lower case at setup, password change and reset (password.js:30, 84); never at login. Probe sp1 and the developer's PW-4: '1234567890' and 'PASSWORD123' → password_rules. It is a local common list, not a breach service; 9.4 names that as the V1 level."
+        },
+        {
+          "id": "2.2.1",
+          "asvs": "anti-automation effective against brute force and credential stuffing",
+          "result": "met",
+          "evidence": "Ordinary account and an e-mail without an active account: 5 failures in 15 min lock for 15 min under SELECT … FOR UPDATE of the counter row (auth.js:307-374, auth-store.js:146-152, 361-371). Platform admin: never locked, a per-address delay 1, 2, 4 … 60 s on the locked login_delays row (auth.js:383-426, lockout.js:52-53). Rate limits 10 per 15 min for login and reset, 5 per hour for setup (rate-limit.js:12-17), keyed IPv4 whole and IPv6 by /64 (rate-limit.js addressKey, Addition 4). Probes: sp1 (5 failures → 429 locked; sixth unknown e-mail → 429 locked; 11th login from one address → 429; admin delay 429 from the same address, 200 from a clean one; admin failed_logins stays 0), sp5 (11 addresses of one /64 → 429; the delay row shared by the /64). Row-lock races (AUTH-RACE-1..3) green on Postgres in the pg job of run 45319467386. Residual tells as 9.4 names them: the admin delay reveals the admin's e-mail (0137 O8, N2c); totp_required reveals a right admin password, bounded by the delay; an unknown e-mail and a locked account answer like a wrong password until the lock (sp1: byte-equal 401, one scrypt each; sp3: medians 539, 540, 542 ms)."
+        },
+        {
+          "id": "2.2.3",
+          "asvs": "secure notifications after updates to authentication details",
+          "result": "not applicable",
+          "evidence": "V1 has no e-mail or message channel (REQ-114 «no e-mail service in V1», G16), so there is nothing to notify through. Probe sp7: no mail or SMS sender in the routes or in app/package.json. Every change of authentication details writes an audit row instead (auth.password_change, auth.reset_used, auth.totp_enrol, auth.totp_confirm, auth.totp_off; services/audit.js:20-35)."
+        },
+        {
+          "id": "2.4.1",
+          "asvs": "passwords stored with a salted, approved one-way key derivation function",
+          "result": "met",
+          "evidence": "crypto.scrypt only (async, the libuv pool), 16-byte random salt per hash, 64-byte key, stored as scrypt$17$8$1$<salt>$<key> (password.js:9-16, 37-57); the column check refuses another form (0002_identity.sql:14). Verify compares all 64 bytes with timingSafeEqual (password.js:65-73). Probe sp1: no password in any row or log line; sp3: a malformed stored hash → false without a computation."
+        },
+        {
+          "id": "2.4.4",
+          "asvs": "the work factor is as large as verification performance allows (written for bcrypt; read for scrypt as 9.4 does)",
+          "result": "met",
+          "evidence": "N = 2^17, r = 8, p = 1: the OWASP minimum for scrypt (decisions/0137 Addition 2, N2a); maxmem 160 MiB (password.js:9-13). Measured here: 528-541 ms per computation (sp3 and the developer's probe). The time bound on one Vercel vCPU is the named residual R1 and SEC F4 (design section 7)."
+        },
+        {
+          "id": "2.5.1",
+          "asvs": "a system-generated recovery secret is not sent to the user in clear text",
+          "result": "met",
+          "evidence": "The reset code is 16 random bytes (128 bits; admin.js:67), shown once only in the answer to the platform admin's own POST, which needs a fresh re-auth token of purpose reset_link (admin.js:194; auth-mw.js:161-173). The system sends it nowhere: there is no e-mail, and the admin hands it over himself. The code rides in the fragment #c=, which a browser never sends to a server or in a Referer (Referrer-Policy no-referrer). The page clears the fragment with history.replaceState and keeps the code in memory only (public/js/pages/reset.js:27-39). Stored only as HMAC-SHA256 (auth-store.js:538-543). One use, 30 minutes (admin.js:30; auth-store.js:552-558); a new link voids the earlier ones (admin.js:68); a password change voids it (auth.js:546). Probe sp7 (22/22): an ordinary user with a reset_link token → uniform 404; the admin without re-auth → 403; a disabled account → 404; the answer is {link} only with no-store; the code is in no row, audit row or log line; second use, a voided code and a code at 30 min → reset_invalid; the 11th guess from one address → 429; every issue and use is audited (≥ 5 rows)."
+        },
+        {
+          "id": "2.5.2",
+          "asvs": "password hints or knowledge-based answers are not present",
+          "result": "met",
+          "evidence": "Neither the migration nor the routes have a hint, question or answer column or field (probe sp7 reads 0002_identity.sql, routes/auth.js and routes/admin.js). The only recovery is the admin-issued link."
+        },
+        {
+          "id": "2.5.3",
+          "asvs": "password recovery does not reveal the current password",
+          "result": "met",
+          "evidence": "POST /api/auth/reset sets a new password and answers {\"ok\":true} only (auth.js:613-640); no route answers a password or its hash (GET /api/auth/me keys: id, name, language, platform_admin, memberships, csrf). Probe sp7: the reset answer text is exactly {\"ok\":true}; afterwards the old password is refused, the new one works, and every session of the user has ended (auth.js:632)."
+        },
+        {
+          "id": "2.5.4",
+          "asvs": "shared or default accounts are not present",
+          "result": "met",
+          "evidence": "A migrated database holds no account. The one platform admin is created once by POST /api/auth/setup with the one-time token whose sha256 the host holds (setup.js:16-34), using the owner's own e-mail and password (rules apply). Afterwards setup answers the uniform 404 forever (auth.js:444-468); the unique index allows at most one admin (0002_identity.sql:35). Probe sp7: a fresh database has 0 users; admin/admin, root/password → 401; setup without SETUP_TOKEN_HASH → 404 with no account made. sp1: a second setup → 404, exactly one admin."
+        },
+        {
+          "id": "2.7",
+          "asvs": "out-of-band verifiers (9.4 lists this row together with 2.8 for TOTP)",
+          "result": "not applicable as an ASVS chapter; the TOTP points of 9.4 are answered under 2.8",
+          "evidence": "There is no SMS, push or e-mail verifier in V1. The design's 2.7/2.8 text (TOTP RFC 6238, replay, ±1 step, secret encrypted) is shown under 2.8 and 2.8.4."
+        },
+        {
+          "id": "2.8",
+          "asvs": "one-time verifiers (TOTP): defined lifetime, approved algorithm, secret protected",
+          "result": "met",
+          "evidence": "RFC 4226/6238 HOTP with HMAC-SHA1 and dynamic truncation, 30 s steps, 6 digits, steps t-1, t, t+1, compared with timingSafeEqual (totp.js:18-65). The secret is 20 random bytes (admin.js:94), stored only as AES-256-GCM under a key derived from SECRET_PEPPER by HKDF, with the user id as AAD (keys.js:49-82). It is required at login and re-auth only after confirmation with a valid code (auth.js:126-154; admin.js:115-145), and only the platform admin reaches enrolment (meta.admin). Ten recovery codes (80 bits each) are shown once and stored as HMAC. Probe sp1: the secret and the recovery codes are not in the users row in clear; a pending secret is not yet required; t-2 refused; t-1 and t+1 accepted; no code → totp_required; re-auth with TOTP on needs the code."
+        },
+        {
+          "id": "2.8.4",
+          "asvs": "a time-based code can be used only once within its validity period",
+          "result": "met",
+          "evidence": "The step is claimed by one conditional update, totp_last_step < $2 (auth-store.js:582-588); a recovery code is used by one conditional array_remove (auth-store.js:610-616). Probe sp1: a replay of t+1 → totp_invalid; t after t+1 was used → totp_invalid; the step claimed by confirm refused at login; a recovery code reused → totp_invalid; recovery codes are case-insensitive."
+        },
+        {
+          "id": "2.10",
+          "asvs": "service authentication: no secret in source code (2.10.4)",
+          "result": "met",
+          "evidence": "SECRET_PEPPER and SETUP_TOKEN_HASH come from the environment only (config.js:116-150; the start is refused in production without the pepper); the app's database password comes from APP_DB_PASSWORD; CI makes throwaway peppers at run time with ::add-mask:: (app.yml). The pass-1 secret search over the change and the page files found no secret (step-03 self_check S1); the rework changed no literal (step-03b). DUMMY_HASH and the seed hashes are not secrets."
+        },
+        {
+          "id": "3.2.1",
+          "asvs": "a new session token on user authentication",
+          "result": "met",
+          "evidence": "Every successful login opens a new session with a fresh token and deletes the session of the cookie sent with it, in the same transaction (auth.js:256-282; sessions.js:93-105). Probe sp1: after the login the new token differs, the old cookie → 401, the new → 200."
+        },
+        {
+          "id": "3.2.2",
+          "asvs": "session tokens have at least 64 bits of entropy",
+          "result": "met",
+          "evidence": "32 bytes from crypto.randomBytes, base64url, 43 characters: 256 bits (sessions.js:32). Probe sp1: the token decodes to 32 bytes; 2000 tokens unique; only the 43-character form is read (sessions.js:17, 82)."
+        },
+        {
+          "id": "3.2.3",
+          "asvs": "session tokens stored in the browser by secure methods (and, as 9.4 adds, HMAC at rest)",
+          "result": "met",
+          "evidence": "Only in the HttpOnly cookie (3.4) and never in the browser storage: api.js keeps only the CSRF token, in page memory. The server keeps HMAC-SHA256(pepper, 'session\\0'+token) and the CSRF hash (sessions.js:96-103). Probe sp1: neither the token nor the CSRF token is in auth_sessions in clear; the stored token_hash equals my own HMAC."
+        },
+        {
+          "id": "3.3.1",
+          "asvs": "logout and expiration invalidate the session token",
+          "result": "met",
+          "evidence": "POST /api/auth/logout deletes the session row and answers a clearing cookie (Max-Age=0) (auth.js:471-491). An expired or idle session reads as none (auth-store.js:36-42). Probe sp1: after logout the old cookie → 401 and the clear cookie has the exact flags; after the idle or absolute limit → 401."
+        },
+        {
+          "id": "3.3.2",
+          "asvs": "re-authentication after a period of time (L1 30 days; L2 12 h or 30 min idle)",
+          "result": "met at the REQ-114 level (L1); residual against L2",
+          "evidence": "Idle 12 h (last_seen_at + 12 h) and absolute 7 days (sessions.js:12-13; auth-store.js:38); the cookie Max-Age is 7 days. Probe sp1: alive at idle 12 h − 1 s twice in a row, dead at exactly 12 h idle, dead after 7 days even while used. Residual: ASVS L2 asks for 12 h absolute or 30 min idle; the 12 h idle and 7 d of REQ-114 meet L1 only. Dangerous actions need a fresh re-auth (3.7.1)."
+        },
+        {
+          "id": "3.3.3",
+          "asvs": "the option to end every other session after a password change",
+          "result": "met (automatic)",
+          "evidence": "The password change deletes every other session of the user in its transaction (auth.js:544); their re-auth tokens go with them (on delete cascade, 0002_identity.sql:53); a reset ends every session (auth.js:632); a password change also voids unused reset codes (auth.js:546). Probes sp1 and sp5: the other session → 401, the current one → 200; the other session's re-auth token is gone; the old password is refused."
+        },
+        {
+          "id": "3.4.1",
+          "asvs": "cookie Secure attribute",
+          "result": "met",
+          "evidence": "When APP_ORIGIN is https the cookie is __Host-sai_s with Secure (sessions.js:38-51). The plain sai_s without Secure exists only for APP_ORIGIN exactly http://127.0.0.1:<port>; any other http origin gets no cookie and 503 server_config. Probe sp1 (https world): Set-Cookie ends in '; Secure'; APP_ORIGIN http://localhost → 503 server_config."
+        },
+        {
+          "id": "3.4.2",
+          "asvs": "cookie HttpOnly attribute",
+          "result": "met",
+          "evidence": "Always set (sessions.js:51); clear cookies too. Probe sp1: present in the set and the clear cookie."
+        },
+        {
+          "id": "3.4.3",
+          "asvs": "cookie SameSite attribute",
+          "result": "met",
+          "evidence": "SameSite=Lax always (sessions.js:51), plus the Origin and CSRF rule of 3.5.3 for every non-GET session route. Probe sp1."
+        },
+        {
+          "id": "3.4.4",
+          "asvs": "cookie __Host- prefix",
+          "result": "met",
+          "evidence": "__Host-sai_s on https, with Secure, Path=/ and no Domain (sessions.js:39, 51). Probe sp1: the exact text '__Host-sai_s=<43>; Path=/; Max-Age=604800; HttpOnly; SameSite=Lax; Secure'; a cookie named sai_s is ignored on https; two cookies of the name read as no session."
+        },
+        {
+          "id": "3.4.5",
+          "asvs": "cookie path as precise as possible (Path=/ for the one app)",
+          "result": "met",
+          "evidence": "Path=/ with no Domain (sessions.js:51): the app owns the whole origin, and __Host- requires Path=/. Probe sp1."
+        },
+        {
+          "id": "3.5.3",
+          "asvs": "stateless tokens are signed or encrypted (9.4 lists this row for the CSRF token and Origin)",
+          "result": "met for the design's point; the literal ASVS row is not applicable",
+          "evidence": "Literal 3.5.3: the session is stateful (an opaque random token looked up by its HMAC), with no JWT or other stateless token, so it is not applicable. The design's point, CSRF: every non-GET request of a session route needs Origin equal to APP_ORIGIN and application/json, and a signed-in caller also needs x-sai-csrf equal to the session's CSRF token, which is HMAC(pepper, 'csrf\\0'+token), compared with timingSafeEqual (auth-mw.js:140-146; csrf.js:13-44). Probe sp1, all refused with the session left alive: missing, 'null', trailing slash, other port, localhost and upper-case Origin → 403 origin_refused; text/plain, form, charset=latin1, a list and an extra parameter → 415; missing, one-off, shorter, longer and another session's CSRF token → 403 csrf_refused; login and setup need Origin."
+        },
+        {
+          "id": "3.7.1",
+          "asvs": "a full valid session or re-authentication before sensitive transactions",
+          "result": "met",
+          "evidence": "The dangerous admin routes (reset link, TOTP enrol, TOTP off) consume a re-auth token of their purpose: 5 minutes, single use, bound to the user, the session and the purpose, consumed in the request's transaction (reauth.js:16-90; auth-mw.js:161-173; auth-store.js:513-519). Re-auth needs the password and, with TOTP on, a code; it has its own lock (5 in 15 min). A password change needs the current password under the same lock. Probe sp1: a wrong purpose, another session, exactly 5 min and malformed headers → 403; 3 parallel uses → one 200; a thrown refusal after the consume leaves the token usable; 5 wrong re-auths → 429 reauth_locked and failed_logins untouched; sp7: no reset link without re-auth."
+        }
+      ],
+      "other_items": "Q7-Q11, R2, R3: unchanged from pass 1-3. The four page files of rework 02d set every dynamic text through textContent (frame.say) and add no sink, storage or script. Q11, R2, R3 not applicable."
+    },
+    "findings": [],
+    "self_check": {
+      "commit": "Fresh clone of 0358107 under <scratch>; git log -1 → 0358107. Code change since 5c85759: git diff --stat 5c85759 0358107 -- app/server app/api app/scripts app/db app/public .github → only app/public/admin-totp.html, css/site.css, js/pages/login.js, login.html (20 insertions, 6 deletions).",
+      "probes": "Node v22.23.4 first on PATH. node sprobe/sp7-reset-rows.mjs → SUMMARY 22/22 pass; sp1-pipeline → 125/125; sp5-rework → 26/26; sp2-db-ip → 42/45 (owner cases after the login-role switch, my probe's error as before); sp2b-owner → 6 PASS; sp4-scripts → 18 PASS. No server was started.",
+      "github": "gh run view 45319467386 (workflow app, head 423b84d = «ci snapshot of the work line at 0358107», git diff 423b84d 0358107 -- app empty) → check success, pg success, e2e success, docker success, migration-rehearsal success (read only).",
+      "hashes": "No file of the clone or of the repository was changed by this pass; the clone has no tracked change (only the untracked probe folder in <scratch>)."
+    },
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Three rows are met at the level REQ-114 sets, with a residual against the stricter ASVS text: 2.1.1 (10 rather than 12 characters), 3.3.2 (12 h idle and 7 d absolute meet L1 only; L2 asks 12 h absolute or 30 min idle) and 3.5.3 (the literal row is about stateless tokens). Changing any of them is a REQ-114 decision for the owner, not a code defect."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
